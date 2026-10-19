@@ -539,7 +539,7 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: root.arrangeOpen ? settingsPane : keyCatcher
-    contentWidth: panel.fittedContentWidth(root.look.sp(620))
+    contentWidth: panel.fittedContentWidth(root.look.sp(440))
 
     // Fill the available height while preserving the host's bar gap and screen margins.
     contentHeight: panel.cappedContentHeight(panel.availableCardHeight)

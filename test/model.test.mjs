@@ -2229,7 +2229,7 @@ test("compact panel keeps its existing fitted width", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
   const surface = panel.match(/KeyboardPanel \{\s*id: panel\b([\s\S]*?)PanelKeyCatcher \{/)
   assert.ok(surface, "compact KeyboardPanel surface must exist")
-  assert.match(surface[1], /^\s*contentWidth: panel\.fittedContentWidth\(root\.look\.sp\(620\)\)\s*$/m)
+  assert.match(surface[1], /^\s*contentWidth: panel\.fittedContentWidth\(root\.look\.sp\(440\)\)\s*$/m)
 })
 
 test("the Installed list has no url field and no install entry point", () => {
