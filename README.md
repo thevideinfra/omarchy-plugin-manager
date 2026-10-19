@@ -14,7 +14,7 @@ plugin no longer installs from a catalog.
 ![kind: bar-widget](https://img.shields.io/badge/kind-bar--widget-informational)
 
 ![The popup: a puzzle icon and Plugins heading with an installed, total, and
-to-update summary, labelled Source, Kind, and Status dropdowns, a Search field,
+to-update summary, Installed and Built-in tabs, labelled Kind and Status dropdowns, a Search field,
 and separated plugin rows with descriptions, metadata, repository links, update
 badges, switches, and actions above a hint bar with filter keys on the left and
 row actions on the right](preview.png)
@@ -48,8 +48,9 @@ the one key changes.
 | `showSummary` | on / off | on | The "installed, total, to update" counts in the header |
 | `showKeyHints` | on / off | on | The filter and action key hints at the bottom |
 | `showSearch` | on / off | on | The search box above the list; off also drops the `/` hint and key, and clears any search term |
+| `accentToggles` | on / off | on | Colour the on/off switches (the Settings page and every plugin row) with the accent; off uses the text colour |
 
-Density, font size and accent are picked from small rounded buttons in the settings page (the accent ones carry a dot in the palette colour), and the on/off settings use accent switches.
+Density and font size are picked from small rounded buttons in the settings page. The accent is picked from round colour swatches (a `Theme` pill first, then the theme's palette colours; the chosen one is ringed and hovering shows its name). The on/off settings use accent switches.
 
 Switching a line off collapses it; the list reclaims the space. Key hints are
 display only, so the shortcuts keep working when they are hidden. When the popup
@@ -132,7 +133,7 @@ host: avoid concurrent bar edits while a move is pending.
 
 ## The Installed list
 
-What the shell actually found, in two sections:
+What the shell actually found, in two sections, shown as two tabs (**Installed** and **Built-in**) at the top of the filter block:
 
 - **Installed** — everything under `~/.config/omarchy/plugins`, with update
   and remove buttons alongside the on/off switch.
@@ -183,9 +184,12 @@ and the update button; without the badge they would look identical.
 A labelled filter row sits above Search, and every control narrows both lists
 at once:
 
-- **Source filter** (`s`) — **All**, **Installed**, or **Built-in**. Picking one
-  section hides the other, which is also the quickest way to see that a
-  section is empty.
+- **Installed / Built-in tabs** (`s` switches between them) — the list shows
+  only the selected tab's section, which is also the quickest way to see that
+  one is empty. Installed is the default. The tab is a view, not a filter: it
+  does not turn on the "showing X of Y" header or the clear button, and
+  clearing the search leaves it alone. Kind, Status and Search all apply
+  within the selected tab.
 - **Kind filter** (`f`) — bar-widget, panel, overlay, menu, service. The
   dropdown is built from the kinds actually installed, so the row never offers a
   filter that would match nothing. A plugin that replaces the whole bar and one
@@ -196,17 +200,17 @@ at once:
   Update shows checkouts with a newer marketplace-verified snapshot for their
   GitHub origin, and, only with **Allow updating unverified plugins** switched
   on, checkouts with detected upstream changes as well.
-- **Search by name** (`/`) — matches the name and the id, so typing
+- **Search by name** (`/`) — searches within the selected tab; it matches the name and the id, so typing
   `hyprmoncfg` finds `crmne.hyprmoncfg`. It deliberately does not search
   descriptions: a search that matched prose would surface plugins whose names
   look nothing like what you typed. An `x` appears at the end of the box while
   there is a term to clear.
 
-The hint bar under the list shows the filters on the left — `[S] SOURCE
+The hint bar under the list shows the filters on the left — `[S] TAB
 [F] KIND  [T] STATUS`, each naming its dropdown while neutral and its value,
 brighter, once it narrows — and the row actions on the right.
 When nothing matches, the message names whichever controls excluded everything
-— including source and status when they are hiding otherwise matching plugins.
+— including the tab and status when they are hiding otherwise matching plugins.
 
 ### Knowing what needs updating
 
@@ -630,7 +634,7 @@ url cannot become a command. Urls are also validated against `https://`,
 | `u` | Update all |
 | `/` | Focus the search box |
 | `f` | Cycle the Kind dropdown |
-| `s` | Cycle the Source dropdown |
+| `s` | Switch between the Installed and Built-in tabs |
 | `t` | Cycle the Status dropdown |
 | `r` | Refresh the plugin list and re-check updates |
 | `Tab` / `Shift+Tab` | Switch to the next / previous bar panel |
@@ -732,6 +736,7 @@ omarchy-shell shell toggle io.github.juancasanueva.plugin-manager '{}'
 | `Panel.qml` | The popup: Installed list, filters, search, header actions, Settings, Arrange, and the dialogs |
 | `MoveOwner.qml` | Headless retained owner (the `panel` entry point) of bar moves, so Arrange survives the bar rebuild; also lets shell summon/toggle/hide open and close the popup |
 | `PanelStyle.qml`, `AccentSource.qml` | Density, font size and accent settings |
+| `AccentSwitch.qml` | The on/off switch used by plugin rows and the Settings page |
 | `PluginStore.qml` | The data layer: plugin list, update check, verified-update data, actions, and what is pending confirmation |
 | `PluginRow.qml` | One row: name, author/kind/version, description, repository link, on/off switch, and its buttons |
 | `SettingsInfo.qml` | The Settings Info card and Delete update data |

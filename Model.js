@@ -461,15 +461,20 @@ function sectionHeading(rows, group) {
   return groupLabel(group).toUpperCase() + "  ·  " + count
 }
 
-// The two sections are a fixed pair, so unlike kinds the options need no
-// deriving from the rows — and an empty section is still worth naming, since
-// picking it is how you learn that it is empty.
+// The two tabs are a fixed pair, so unlike kinds the options need no deriving
+// from the rows — and an empty tab is still worth naming, since opening it is
+// how you learn that it is empty. There is no All: a tab shows one section.
 function groupOptions() {
   return [
-    { value: ALL_GROUPS, label: "All" },
     { value: GROUP_INSTALLED, label: groupLabel(GROUP_INSTALLED) },
     { value: GROUP_BUILT_IN, label: groupLabel(GROUP_BUILT_IN) }
   ]
+}
+
+// Any stored or unknown value lands on the Installed tab, so a saved "all"
+// from the dropdown days still restores to something that exists.
+function normalizeGroup(group) {
+  return group === GROUP_BUILT_IN ? GROUP_BUILT_IN : GROUP_INSTALLED
 }
 
 function filterByGroup(rows, group) {
@@ -612,10 +617,10 @@ function filterRows(rows, kind, status, query, group) {
   return out
 }
 
-function isFiltering(kind, status, query, group) {
+// The tab (group) is a view, not a narrowing, so it is not an argument.
+function isFiltering(kind, status, query) {
   return (kind !== undefined && kind !== null && kind !== ALL_KINDS)
     || (status !== undefined && status !== null && status !== ALL_STATUSES)
-    || (group !== undefined && group !== null && group !== ALL_GROUPS)
     || String(query || "").trim() !== ""
 }
 
@@ -1127,16 +1132,15 @@ function optionLabel(options, value) {
   return String(value || "")
 }
 
-// The Installed list's filter row: three dropdowns.
+// The Installed list's filter row: the tab key and two dropdowns. The tab is a
+// view rather than a narrowing, so its hint always reads TAB and never lights.
 function installedFilterHints(filters, options) {
   var f = filters || {}
   var o = options || {}
-  var groupNeutral = !f.group || f.group === ALL_GROUPS
   var kindNeutral = !f.kind || f.kind === ALL_KINDS
   var statusNeutral = !f.status || f.status === ALL_STATUSES
   return [
-    { key: "s", active: !groupNeutral,
-      text: groupNeutral ? "SOURCE" : optionLabel(o.group, f.group).toUpperCase() },
+    { key: "s", active: false, text: "TAB" },
     { key: "f", active: !kindNeutral,
       text: kindNeutral ? "KIND" : optionLabel(o.kind, f.kind).toUpperCase() },
     { key: "t", active: !statusNeutral,

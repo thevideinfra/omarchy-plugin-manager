@@ -23,8 +23,8 @@ test("PanelDropdown: scalable copy of the shell dropdown", () => {
 
 test("Panel uses PanelDropdown with the caption size", () => {
   assert.doesNotMatch(panel.replace(/PanelDropdown/g, ""), /\bDropdown \{/)
-  assert.equal(panel.split("PanelDropdown {").length - 1, 3)
-  for (const id of ["groupDropdown", "kindDropdown", "statusDropdown"]) {
+  assert.equal(panel.split("PanelDropdown {").length - 1, 2)
+  for (const id of ["kindDropdown", "statusDropdown"]) {
     const at = panel.indexOf("id: " + id)
     const block = panel.slice(at, at + 700)
     assert.match(block, /fontSize: root\.look\.font\.caption/, id)
@@ -45,7 +45,7 @@ test("look-applied guard list does not include PanelDropdown", () => {
 
 // ---- 3. choice chips
 test("choice rows are accent chips", () => {
-  const row = panel.slice(panel.indexOf("component ChoiceRow"), panel.indexOf("component ShowToggleCard"))
+  const row = panel.slice(panel.indexOf("component ChoiceRow"), panel.indexOf("component AccentSwatchRow"))
   assert.match(row, /Rectangle \{/)
   assert.match(row, /radius: root\.look\.sp\(6\)/)
   assert.match(row, /border\.width: 1/)
@@ -57,10 +57,31 @@ test("choice rows are accent chips", () => {
   assert.match(row, /Qt\.PointingHandCursor/)
   assert.match(row, /choiceRow\.picked\(/)
   assert.doesNotMatch(row, /underline/)
-  assert.match(row, /property bool swatches: false/)
-  assert.match(row, /radius: width \/ 2/)
-  assert.match(row, /root\.look\.accentSwatch\(/)
-  assert.match(panel, /label: "Accent"[\s\S]{0,200}swatches: true/)
+  // The accent row is swatches now, not name chips.
+  assert.doesNotMatch(row, /swatches|accentSwatch/)
+  assert.doesNotMatch(panel, /label: "Accent"[\s\S]{0,200}ChoiceRow|swatches: true/)
+})
+
+test("accent choices are round swatches with a ring and a name tooltip", () => {
+  const at = panel.indexOf("component AccentSwatchRow")
+  assert.notEqual(at, -1)
+  const comp = panel.slice(at, panel.indexOf("component ShowToggleCard"))
+  assert.match(comp, /model: root\.look\.accentChoices/)
+  assert.match(comp, /chosen: root\.look\.accentChoice === modelData/)
+  assert.match(comp, /isTheme: modelData === "theme"/)
+  assert.match(comp, /height: root\.look\.sp\(23\)/)
+  assert.match(comp, /radius: height \/ 2/)
+  assert.match(comp, /color: swatch\.isTheme \? Qt\.alpha\(root\.contentForeground, 0\.06\) : root\.look\.accentSwatch\(modelData\)/)
+  assert.match(comp, /border\.width: chosen \? 2 : 1/)
+  assert.match(comp, /border\.color: chosen \? root\.contentForeground/)
+  assert.match(comp, /text: "Theme"/)
+  assert.match(comp, /root\.look\.accentSwatch\("theme"\)/)
+  assert.match(comp, /font\.bold: swatch\.chosen/)
+  assert.match(comp, /Qt\.PointingHandCursor/)
+  assert.match(comp, /root\.setSetting\("accent", swatch\.modelData\)/)
+  assert.match(comp, /PanelToolTip \{\s*visible: swatchMouse\.containsMouse\s*text: swatch\.isTheme \? "Theme accent" : swatch\.modelData\.charAt\(0\)\.toUpperCase\(\) \+ swatch\.modelData\.slice\(1\)/)
+  assert.doesNotMatch(comp, /Color\.accent|Style\.space|Style\.font\./)
+  assert.match(panel, /AccentSwatchRow \{/)
 })
 
 test("PanelStyle.accentSwatch maps names to palette colours", () => {
@@ -70,21 +91,17 @@ test("PanelStyle.accentSwatch maps names to palette colours", () => {
 // ---- 4. accent switch
 test("settings cards use an AccentSwitch, not the grey ToggleSwitch", () => {
   assert.doesNotMatch(panel, /\bToggleSwitch \{/)
-  const sw = panel.slice(panel.indexOf("component AccentSwitch"), panel.indexOf("component ShowToggleCard"))
+  const sw = read("AccentSwitch.qml")
   assert.match(sw, /signal toggled\(\)/)
-  assert.match(sw, /property bool checked: false/)
-  assert.match(sw, /property bool interactive: true/)
-  assert.match(sw, /property bool busy: false/)
-  assert.match(sw, /readonly property bool containsMouse: swMouse\.containsMouse/)
   assert.match(sw, /implicitWidth: root\.look\.sp\(34\)/)
   assert.match(sw, /implicitHeight: root\.look\.sp\(18\)/)
-  assert.match(sw, /Qt\.alpha\(root\.look\.accent, 0\.3\)/)
-  assert.match(sw, /Qt\.alpha\(root\.contentForeground, 0\.1\)/)
-  assert.match(sw, /Qt\.alpha\(root\.contentForeground, 0\.25\)/)
-  assert.match(sw, /Qt\.darker\(root\.contentForeground, 1\.4\)/)
+  assert.match(sw, /Qt\.alpha\(root\.tint, 0\.3\)/)
+  assert.match(sw, /Qt\.alpha\(root\.foreground, 0\.1\)/)
+  assert.match(sw, /Qt\.alpha\(root\.foreground, 0\.25\)/)
+  assert.match(sw, /Qt\.darker\(root\.foreground, 1\.4\)/)
   assert.match(sw, /radius: height \/ 2/)
   assert.equal(panel.split("AccentSwitch {").length - 1, 2) // the two cards
-  assert.match(panel, /AccentSwitch \{\s*id: unverifiedSwitch[\s\S]{0,400}busy: root\.busy/)
+  assert.match(panel, /AccentSwitch \{\s*id: unverifiedSwitch[\s\S]{0,500}busy: root\.busy/)
 })
 
 test("PanelDropdown imports qs.Ui for the types the shell copy got implicitly", () => {

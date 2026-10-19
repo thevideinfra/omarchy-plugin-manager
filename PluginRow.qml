@@ -436,8 +436,9 @@ Rectangle {
     // bar widget asks where it goes first, and a knob that threw itself across
     // before that question was answered would be reporting a state the shell
     // has not reached — and would stay wrong if the question was cancelled.
-    ToggleSwitch {
+    AccentSwitch {
       id: enabledSwitch
+      look: root.look
       anchors.verticalCenter: parent.verticalCenter
       visible: root.row !== null
       checked: root.row ? root.row.enabled === true : false
@@ -450,6 +451,7 @@ Rectangle {
       busy: !root.actionsEnabled
       opacity: root.canToggle ? 1 : 0.4
       foreground: root.foreground
+      useAccent: root.look.accentToggles
       onToggled: root.canDisable ? root.disableRequested() : root.enableRequested()
 
       PanelToolTip {

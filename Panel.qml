@@ -101,7 +101,8 @@ Panel {
   property alias loading: store.loading
   property alias loadError: store.loadError
   property int selectedIndex: -1
-  property string groupFilter: "all"
+  // The Installed / Built-in tab. Never "all": a tab shows one section.
+  property string groupFilter: "installed"
   readonly property var groupOptions: Model.groupOptions()
   property string kindFilter: "all"
   readonly property var kindOptions: Model.kindOptions(rows)
@@ -146,62 +147,14 @@ Panel {
     font.bold: true
   }
 
-  // On/off switch in the accent colour: accent track and knob when on, a dim
-  // neutral track when off (the look omaudiopanel uses). busy dims it and
-  // stops clicks, like the grey switch it replaces.
-  component AccentSwitch: Item {
-    id: sw
-    property bool checked: false
-    property bool interactive: true
-    property bool busy: false
-    readonly property bool containsMouse: swMouse.containsMouse
-    signal toggled()
-
-    implicitWidth: root.look.sp(34)
-    implicitHeight: root.look.sp(18)
-    opacity: sw.busy || !sw.interactive ? 0.5 : 1.0
-
-    Rectangle {
-      anchors.fill: parent
-      radius: height / 2
-      color: sw.checked ? Qt.alpha(root.look.accent, 0.3) : Qt.alpha(root.contentForeground, 0.1)
-      border.width: 1
-      border.color: sw.checked ? root.look.accent : Qt.alpha(root.contentForeground, 0.25)
-      Behavior on color { ColorAnimation { duration: 120 } }
-
-      Rectangle {
-        width: parent.height - root.look.sp(6)
-        height: width
-        radius: width / 2
-        anchors.verticalCenter: parent.verticalCenter
-        x: sw.checked ? parent.width - width - (parent.height - height) / 2 : (parent.height - height) / 2
-        color: sw.checked ? root.look.accent : Qt.darker(root.contentForeground, 1.4)
-        Behavior on x { NumberAnimation { duration: 120 } }
-        Behavior on color { ColorAnimation { duration: 120 } }
-      }
-    }
-
-    MouseArea {
-      id: swMouse
-      anchors.fill: parent
-      anchors.margins: -root.look.sp(3)
-      hoverEnabled: true
-      enabled: sw.interactive && !sw.busy
-      cursorShape: Qt.PointingHandCursor
-      onClicked: sw.toggled()
-    }
-  }
-
   // A label with a row of choice chips; the selected one is accent filled and
-  // bold. choices: array of strings; the chips wrap, so a long list such as
-  // the accent names stays inside the pane. swatches puts a colour dot before
-  // each name (the accent row). Clicking one emits picked(value).
+  // bold. choices: array of strings; the chips wrap so a long list stays
+  // inside the pane. Clicking one emits picked(value).
   component ChoiceRow: Item {
     id: choiceRow
     property string label: ""
     property var choices: []
     property string selected: ""
-    property bool swatches: false
     signal picked(string value)
 
     width: parent ? parent.width : 0
@@ -248,15 +201,6 @@ Panel {
             anchors.centerIn: parent
             spacing: root.look.sp(5)
 
-            Rectangle {
-              visible: choiceRow.swatches
-              anchors.verticalCenter: parent.verticalCenter
-              width: root.look.sp(8)
-              height: width
-              radius: width / 2
-              color: root.look.accentSwatch(chip.modelData)
-            }
-
             Text {
               textFormat: Text.PlainText
               anchors.verticalCenter: parent.verticalCenter
@@ -275,6 +219,96 @@ Panel {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: choiceRow.picked(chip.modelData)
+          }
+        }
+      }
+    }
+  }
+
+  // The accent row: the theme's own accent, then the other colours of its
+  // palette, each drawn in its real colour. The chosen one is ringed; the name
+  // is a hover tooltip. Clicking one writes the setting.
+  component AccentSwatchRow: Item {
+    id: swatchRow
+    property string label: ""
+
+    width: parent ? parent.width : 0
+    height: Math.max(swatchLabel.implicitHeight, swatchFlow.implicitHeight) + root.look.sp(4)
+
+    Text {
+      id: swatchLabel
+      textFormat: Text.PlainText
+      anchors.left: parent.left
+      anchors.top: parent.top
+      anchors.topMargin: root.look.sp(4)
+      width: root.look.sp(90)
+      text: swatchRow.label
+      color: root.contentForeground
+      font.family: root.contentFontFamily
+      font.pixelSize: root.look.font.bodySmall
+    }
+
+    Flow {
+      id: swatchFlow
+      anchors.left: swatchLabel.right
+      anchors.right: parent.right
+      anchors.top: parent.top
+      spacing: root.look.sp(5)
+
+      Repeater {
+        model: root.look.accentChoices
+
+        Rectangle {
+          id: swatch
+          required property string modelData
+          readonly property bool chosen: root.look.accentChoice === modelData
+          readonly property bool isTheme: modelData === "theme"
+
+          width: isTheme ? themeLabel.implicitWidth + root.look.sp(30) : root.look.sp(23)
+          height: root.look.sp(23)
+          radius: height / 2
+          color: swatch.isTheme ? Qt.alpha(root.contentForeground, 0.06) : root.look.accentSwatch(modelData)
+          border.width: chosen ? 2 : 1
+          border.color: chosen ? root.contentForeground : Qt.alpha(root.contentForeground, isTheme ? 0.25 : 0.15)
+
+          // The theme entry is a pill with a dot in the theme's own accent.
+          Rectangle {
+            visible: swatch.isTheme
+            anchors.left: parent.left
+            anchors.leftMargin: root.look.sp(7)
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.look.sp(11)
+            height: width
+            radius: width / 2
+            color: root.look.accentSwatch("theme")
+          }
+
+          Text {
+            id: themeLabel
+            visible: swatch.isTheme
+            anchors.right: parent.right
+            anchors.rightMargin: root.look.sp(8)
+            anchors.verticalCenter: parent.verticalCenter
+            textFormat: Text.PlainText
+            text: "Theme"
+            color: root.contentForeground
+            font.family: root.contentFontFamily
+            font.pixelSize: root.look.font.caption
+            font.bold: swatch.chosen
+          }
+
+          MouseArea {
+            id: swatchMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.setSetting("accent", swatch.modelData)
+          }
+
+          PanelToolTip {
+            visible: swatchMouse.containsMouse
+            text: swatch.isTheme ? "Theme accent" : swatch.modelData.charAt(0).toUpperCase() + swatch.modelData.slice(1)
+            fontFamily: root.contentFontFamily
           }
         }
       }
@@ -327,6 +361,9 @@ Panel {
 
     AccentSwitch {
       id: toggleSwitch
+      look: root.look
+      foreground: root.contentForeground
+      useAccent: root.look.accentToggles
       anchors.right: parent.right
       anchors.rightMargin: root.look.sp(12)
       anchors.verticalCenter: parent.verticalCenter
@@ -352,8 +389,6 @@ Panel {
   // every filter a key can cycle replays later changes into its dropdown.
   onKindFilterChanged: if (kindDropdown && kindDropdown.value !== kindFilter)
     kindDropdown.value = kindFilter
-  onGroupFilterChanged: if (groupDropdown && groupDropdown.value !== groupFilter)
-    groupDropdown.value = groupFilter
   onStatusFilterChanged: if (statusDropdown && statusDropdown.value !== statusFilter)
     statusDropdown.value = statusFilter
 
@@ -378,7 +413,7 @@ Panel {
   readonly property alias releaseProbeBusy: releaseNavigator.busy
 
   readonly property alias installedTotal: store.installedTotal
-  readonly property bool filtered: Model.isFiltering(kindFilter, statusFilter, searchQuery, groupFilter)
+  readonly property bool filtered: Model.isFiltering(kindFilter, statusFilter, searchQuery)
   readonly property var installedFilterHints: Model.installedFilterHints(
     { group: groupFilter, kind: kindFilter, status: statusFilter },
     { group: groupOptions, kind: kindOptions, status: statusOptions })
@@ -415,7 +450,7 @@ Panel {
     if (!placementRowsReady && !finalAttempt && (loading || loadError === "")) return false
     settingsOpen = false
     arrangeOpen = false
-    groupFilter = origin.group
+    groupFilter = Model.normalizeGroup(origin.group)
     var kindAvailable = kindOptions.some(function(option) { return option.value === origin.kind })
     kindFilter = kindAvailable ? origin.kind : "all"
     statusFilter = origin.status
@@ -760,7 +795,7 @@ Panel {
       anchors.fill: parent
       blocked: root.confirming || root.placing || root.settingsOpen || root.arrangeOpen
         || root.searchFieldFocused
-        || groupDropdown.popupOpen || kindDropdown.popupOpen || statusDropdown.popupOpen
+        || kindDropdown.popupOpen || statusDropdown.popupOpen
 
       onMoveRequested: function(dx, dy) { root.moveSelection(dx, dy) }
       onActivateRequested: root.startUpdate(root.selectedRow)
@@ -1016,7 +1051,7 @@ Panel {
             elide: Text.ElideRight
             text: {
               if (root.loading && root.rows.length === 0) return "reading…"
-              if (root.filtered) return "showing " + root.visibleRows.length + " of " + root.rows.length
+              if (root.filtered) return "showing " + root.visibleRows.length + " of " + Model.rowsInGroup(root.rows, root.groupFilter).length
               // Tight separators keep the line short even on its own row.
               var summary = root.installedTotal + " installed · " + root.rows.length + " total"
               if (root.behindCount > 0) return summary + " · " + root.behindCount + " to update"
@@ -1040,6 +1075,11 @@ Panel {
           readonly property real controlHeight: Math.ceil(filterLabelMetrics.height + root.look.sp(12))
           readonly property real filterRowHeight: filterLabelMetrics.height
             + root.look.sp(4) + controlHeight
+          // Top to bottom: the tab strip, the Kind / Status dropdown row, then
+          // the search row. Every y below is derived from these three.
+          readonly property real tabsHeight: Math.ceil(filterLabelMetrics.height + root.look.sp(10))
+          readonly property real filtersTop: tabsHeight + root.look.sp(8)
+          readonly property real searchTop: filtersTop + filterRowHeight + root.look.sp(8)
 
           FontMetrics {
             id: filterLabelMetrics
@@ -1048,59 +1088,73 @@ Panel {
           }
 
           width: parent.width
-          height: filterRowHeight + (root.look.showSearch ? root.look.sp(8) + controlHeight : 0)
+          height: searchTop + (root.look.showSearch ? controlHeight : 0)
+
+          // Installed / Built-in. Styled like the Settings chips; the tab only
+          // chooses which section the list shows, so it is not a filter.
+          Row {
+            id: sourceTabs
+            anchors.left: parent.left
+            anchors.top: parent.top
+            height: filterControls.tabsHeight
+            spacing: root.look.sp(6)
+
+            Repeater {
+              model: root.groupOptions
+
+              Rectangle {
+                id: tab
+                required property var modelData
+                readonly property bool chosen: root.groupFilter === modelData.value
+
+                width: tabLabel.implicitWidth + root.look.sp(8) * 2
+                height: sourceTabs.height
+                radius: root.look.sp(6)
+                border.width: 1
+                color: tab.chosen ? Qt.alpha(root.look.accent, 0.12)
+                  : Qt.alpha(root.contentForeground, tabMouse.containsMouse ? 0.09 : 0.05)
+                border.color: tab.chosen ? Qt.alpha(root.look.accent, 0.45) : Qt.alpha(root.contentForeground, 0.1)
+
+                Text {
+                  id: tabLabel
+                  textFormat: Text.PlainText
+                  anchors.centerIn: parent
+                  text: tab.modelData.label
+                  color: tab.chosen ? root.look.accent : root.contentForeground
+                  opacity: tab.chosen ? 1.0 : 0.8
+                  font.family: root.contentFontFamily
+                  font.pixelSize: root.look.font.caption
+                  font.bold: tab.chosen
+                }
+
+                MouseArea {
+                  id: tabMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    root.closeArrange()
+                    root.setGroupFilter(tab.modelData.value)
+                  }
+                }
+              }
+            }
+          }
 
           Item {
             id: installedFilters
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
+            anchors.topMargin: filterControls.filtersTop
             height: filterControls.filterRowHeight
 
             readonly property real gap: root.look.sp(6)
-            readonly property real optionWidth: Math.floor((width - gap * 2) / 3)
-
-            Item {
-              id: groupFilterControl
-              anchors.left: parent.left
-              width: installedFilters.optionWidth
-              height: parent.height
-
-              Text {
-                textFormat: Text.PlainText
-                anchors.left: parent.left
-                anchors.top: parent.top
-                text: "Source"
-                color: root.secondaryForeground
-                font.family: root.contentFontFamily
-                font.pixelSize: root.look.font.caption
-                font.bold: true
-              }
-
-              PanelDropdown {
-                id: groupDropdown
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                height: filterControls.controlHeight
-                rowHeight: filterControls.controlHeight
-                popupRowHeight: root.look.sp(28)
-                showLabel: false
-                fontSize: root.look.font.caption
-                labelFontSize: root.look.font.caption
-                accent: root.look.accent
-                options: root.groupOptions
-                value: root.groupFilter
-                foreground: root.contentForeground
-                fontFamily: root.contentFontFamily
-                onChanged: function(value) { root.closeArrange(); root.setGroupFilter(value) }
-              }
-            }
+            readonly property real optionWidth: Math.floor((width - gap) / 2)
 
             Item {
               id: kindFilterControl
-              anchors.left: groupFilterControl.right
-              anchors.leftMargin: installedFilters.gap
+              anchors.left: parent.left
               width: installedFilters.optionWidth
               height: parent.height
 
@@ -1185,7 +1239,7 @@ Panel {
             anchors.left: parent.left
             anchors.right: clearFiltersButton.visible ? clearFiltersButton.left : parent.right
             anchors.rightMargin: clearFiltersButton.visible ? root.look.sp(4) : 0
-            y: filterControls.filterRowHeight + root.look.sp(8)
+            y: filterControls.searchTop
             height: filterControls.controlHeight
             visible: root.look.showSearch
             active: root.opened && root.look.showSearch
@@ -1227,7 +1281,7 @@ Panel {
           PanelActionButton {
             id: clearFiltersButton
             anchors.right: parent.right
-            y: filterControls.filterRowHeight + root.look.sp(8)
+            y: filterControls.searchTop
             visible: root.look.showSearch && root.searchText !== ""
             iconText: "󰅙"
             tooltipText: "Clear the search"
@@ -1665,13 +1719,7 @@ Panel {
             onPicked: function(value) { root.setSetting("fontSize", value) }
           }
 
-          ChoiceRow {
-            label: "Accent"
-            choices: root.look.accentChoices
-            selected: root.look.accentChoice
-            swatches: true
-            onPicked: function(value) { root.setSetting("accent", value) }
-          }
+          AccentSwatchRow { label: "Accent" }
 
           SettingsHeading { text: "Show" }
 
@@ -1680,6 +1728,7 @@ Panel {
           ShowToggleCard { key: "showSummary"; title: "Summary counts"; caption: "Installed, total and update counts in the header" }
           ShowToggleCard { key: "showKeyHints"; title: "Key hints"; caption: "Filter and action keys at the bottom" }
           ShowToggleCard { key: "showSearch"; title: "Search"; caption: "Search box above the list" }
+          ShowToggleCard { key: "accentToggles"; title: "Accent switches"; caption: "Colour the on/off switches with the accent" }
 
           // Off is the verified-snapshot promise; on is the user's own call, and
           // the caption says so in the same words the confirmation will.
@@ -1726,6 +1775,9 @@ Panel {
 
             AccentSwitch {
               id: unverifiedSwitch
+              look: root.look
+              foreground: root.contentForeground
+              useAccent: root.look.accentToggles
               anchors.right: parent.right
               anchors.rightMargin: root.look.sp(12)
               anchors.verticalCenter: parent.verticalCenter

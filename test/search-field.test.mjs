@@ -81,7 +81,7 @@ test("Panel.qml: the loader takes the field's geometry and restores and snapshot
   const source = read("Panel.qml")
   const at = source.search(/Loader \{\s*id: searchFieldLoader/)
   const loader = source.slice(at, block(source, at).end)
-  assert.match(loader, /id: searchFieldLoader\s*anchors\.left: parent\.left\s*anchors\.right: clearFiltersButton\.visible \? clearFiltersButton\.left : parent\.right\s*anchors\.rightMargin: clearFiltersButton\.visible \? root\.look\.sp\(4\) : 0\s*y: filterControls\.filterRowHeight \+ root\.look\.sp\(8\)\s*height: filterControls\.controlHeight/)
+  assert.match(loader, /id: searchFieldLoader\s*anchors\.left: parent\.left\s*anchors\.right: clearFiltersButton\.visible \? clearFiltersButton\.left : parent\.right\s*anchors\.rightMargin: clearFiltersButton\.visible \? root\.look\.sp\(4\) : 0\s*y: filterControls\.searchTop\s*height: filterControls\.controlHeight/)
   assert.match(source, /query: searchText, group: groupFilter/)
   assert.match(source, /searchText = origin\.query\s*flushSearch\(\)/)
   assert.match(source, /\|\| root\.searchFieldFocused\n/)

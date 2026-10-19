@@ -28,7 +28,7 @@ test("showSearch: settings card in the Show section", () => {
 })
 
 test("showSearch: field hidden and filter block shrinks without a gap", () => {
-  assert.match(panel, /height: filterRowHeight \+ \(root\.look\.showSearch \? root\.look\.sp\(8\) \+ controlHeight : 0\)/)
+  assert.match(panel, /height: searchTop \+ \(root\.look\.showSearch \? controlHeight : 0\)/)
   assert.match(panel, /id: searchFieldLoader[\s\S]{0,600}active: root\.opened && root\.look\.showSearch/)
   assert.match(panel, /id: searchFieldLoader[\s\S]{0,600}visible: root\.look\.showSearch/)
   assert.match(panel, /id: clearFiltersButton[\s\S]{0,300}visible: root\.look\.showSearch && root\.searchText !== ""/)
