@@ -34,3 +34,11 @@ test("choices follow the live look and use the accent", () => {
   assert.match(panel, /component ChoiceRow/)
   assert.match(panel, /color: chosen \? root\.look\.accent : root\.contentForeground/)
 })
+
+test("the key hints stack on two lines when they do not fit one", () => {
+  const bar = panel.slice(panel.indexOf("id: hintBar"))
+  assert.match(bar, /readonly property bool stacked: filterHints\.implicitWidth \+ actionHints\.implicitWidth \+ root\.look\.sp\(12\) > width/)
+  assert.match(bar, /height: stacked \? filterHints\.implicitHeight \+ actionHints\.implicitHeight \+ root\.look\.sp\(4\)\s*: Math\.max\(filterHints\.implicitHeight, actionHints\.implicitHeight\)/)
+  assert.match(bar, /id: filterHints[\s\S]{0,200}y: hintItem\.stacked \? 0 : \(hintItem\.height - height\) \/ 2/)
+  assert.match(bar, /id: actionHints[\s\S]{0,200}y: hintItem\.stacked \? filterHints\.implicitHeight \+ root\.look\.sp\(4\) : \(hintItem\.height - height\) \/ 2/)
+})

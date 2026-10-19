@@ -1187,13 +1187,17 @@ Panel {
         PanelSeparator { foreground: root.contentForeground }
 
         Item {
+          id: hintItem
           width: parent.width
-          height: Math.max(filterHints.implicitHeight, actionHints.implicitHeight)
+          // Two lines when the filters and actions together do not fit one.
+          readonly property bool stacked: filterHints.implicitWidth + actionHints.implicitWidth + root.look.sp(12) > width
+          height: stacked ? filterHints.implicitHeight + actionHints.implicitHeight + root.look.sp(4)
+            : Math.max(filterHints.implicitHeight, actionHints.implicitHeight)
 
           Row {
             id: filterHints
             anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
+            y: hintItem.stacked ? 0 : (hintItem.height - height) / 2
             spacing: root.look.sp(10)
 
             Repeater {
@@ -1205,7 +1209,7 @@ Panel {
           Row {
             id: actionHints
             anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
+            y: hintItem.stacked ? filterHints.implicitHeight + root.look.sp(4) : (hintItem.height - height) / 2
             spacing: root.look.sp(10)
 
             Repeater {
