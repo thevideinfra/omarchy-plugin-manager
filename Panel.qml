@@ -147,15 +147,13 @@ Panel {
   }
 
   // A label with a row of choice chips; the selected one is accent filled and
-  // bold. choices: array of strings; the chips wrap, so a long list such as
-  // the accent names stays inside the pane. swatches puts a colour dot before
-  // each name (the accent row). Clicking one emits picked(value).
+  // bold. choices: array of strings; the chips wrap so a long list stays
+  // inside the pane. Clicking one emits picked(value).
   component ChoiceRow: Item {
     id: choiceRow
     property string label: ""
     property var choices: []
     property string selected: ""
-    property bool swatches: false
     signal picked(string value)
 
     width: parent ? parent.width : 0
@@ -202,15 +200,6 @@ Panel {
             anchors.centerIn: parent
             spacing: root.look.sp(5)
 
-            Rectangle {
-              visible: choiceRow.swatches
-              anchors.verticalCenter: parent.verticalCenter
-              width: root.look.sp(8)
-              height: width
-              radius: width / 2
-              color: root.look.accentSwatch(chip.modelData)
-            }
-
             Text {
               textFormat: Text.PlainText
               anchors.verticalCenter: parent.verticalCenter
@@ -229,6 +218,96 @@ Panel {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: choiceRow.picked(chip.modelData)
+          }
+        }
+      }
+    }
+  }
+
+  // The accent row: the theme's own accent, then the other colours of its
+  // palette, each drawn in its real colour. The chosen one is ringed; the name
+  // is a hover tooltip. Clicking one writes the setting.
+  component AccentSwatchRow: Item {
+    id: swatchRow
+    property string label: ""
+
+    width: parent ? parent.width : 0
+    height: Math.max(swatchLabel.implicitHeight, swatchFlow.implicitHeight) + root.look.sp(4)
+
+    Text {
+      id: swatchLabel
+      textFormat: Text.PlainText
+      anchors.left: parent.left
+      anchors.top: parent.top
+      anchors.topMargin: root.look.sp(4)
+      width: root.look.sp(90)
+      text: swatchRow.label
+      color: root.contentForeground
+      font.family: root.contentFontFamily
+      font.pixelSize: root.look.font.bodySmall
+    }
+
+    Flow {
+      id: swatchFlow
+      anchors.left: swatchLabel.right
+      anchors.right: parent.right
+      anchors.top: parent.top
+      spacing: root.look.sp(5)
+
+      Repeater {
+        model: root.look.accentChoices
+
+        Rectangle {
+          id: swatch
+          required property string modelData
+          readonly property bool chosen: root.look.accentChoice === modelData
+          readonly property bool isTheme: modelData === "theme"
+
+          width: isTheme ? themeLabel.implicitWidth + root.look.sp(30) : root.look.sp(23)
+          height: root.look.sp(23)
+          radius: height / 2
+          color: swatch.isTheme ? Qt.alpha(root.contentForeground, 0.06) : root.look.accentSwatch(modelData)
+          border.width: chosen ? 2 : 1
+          border.color: chosen ? root.contentForeground : Qt.alpha(root.contentForeground, isTheme ? 0.25 : 0.15)
+
+          // The theme entry is a pill with a dot in the theme's own accent.
+          Rectangle {
+            visible: swatch.isTheme
+            anchors.left: parent.left
+            anchors.leftMargin: root.look.sp(7)
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.look.sp(11)
+            height: width
+            radius: width / 2
+            color: root.look.accentSwatch("theme")
+          }
+
+          Text {
+            id: themeLabel
+            visible: swatch.isTheme
+            anchors.right: parent.right
+            anchors.rightMargin: root.look.sp(8)
+            anchors.verticalCenter: parent.verticalCenter
+            textFormat: Text.PlainText
+            text: "Theme"
+            color: root.contentForeground
+            font.family: root.contentFontFamily
+            font.pixelSize: root.look.font.caption
+            font.bold: swatch.chosen
+          }
+
+          MouseArea {
+            id: swatchMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.setSetting("accent", swatch.modelData)
+          }
+
+          PanelToolTip {
+            visible: swatchMouse.containsMouse
+            text: swatch.isTheme ? "Theme accent" : swatch.modelData.charAt(0).toUpperCase() + swatch.modelData.slice(1)
+            fontFamily: root.contentFontFamily
           }
         }
       }
@@ -1622,13 +1701,7 @@ Panel {
             onPicked: function(value) { root.setSetting("fontSize", value) }
           }
 
-          ChoiceRow {
-            label: "Accent"
-            choices: root.look.accentChoices
-            selected: root.look.accentChoice
-            swatches: true
-            onPicked: function(value) { root.setSetting("accent", value) }
-          }
+          AccentSwatchRow { label: "Accent" }
 
           SettingsHeading { text: "Show" }
 

@@ -50,7 +50,7 @@ the one key changes.
 | `showSearch` | on / off | on | The search box above the list; off also drops the `/` hint and key, and clears any search term |
 | `accentToggles` | on / off | on | Colour the on/off switches (the Settings page and every plugin row) with the accent; off uses the text colour |
 
-Density, font size and accent are picked from small rounded buttons in the settings page (the accent ones carry a dot in the palette colour), and the on/off settings use accent switches.
+Density and font size are picked from small rounded buttons in the settings page. The accent is picked from round colour swatches (a `Theme` pill first, then the theme's palette colours; the chosen one is ringed and hovering shows its name). The on/off settings use accent switches.
 
 Switching a line off collapses it; the list reclaims the space. Key hints are
 display only, so the shortcuts keep working when they are hidden. When the popup

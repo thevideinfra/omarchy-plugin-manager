@@ -45,7 +45,7 @@ test("look-applied guard list does not include PanelDropdown", () => {
 
 // ---- 3. choice chips
 test("choice rows are accent chips", () => {
-  const row = panel.slice(panel.indexOf("component ChoiceRow"), panel.indexOf("component ShowToggleCard"))
+  const row = panel.slice(panel.indexOf("component ChoiceRow"), panel.indexOf("component AccentSwatchRow"))
   assert.match(row, /Rectangle \{/)
   assert.match(row, /radius: root\.look\.sp\(6\)/)
   assert.match(row, /border\.width: 1/)
@@ -57,10 +57,31 @@ test("choice rows are accent chips", () => {
   assert.match(row, /Qt\.PointingHandCursor/)
   assert.match(row, /choiceRow\.picked\(/)
   assert.doesNotMatch(row, /underline/)
-  assert.match(row, /property bool swatches: false/)
-  assert.match(row, /radius: width \/ 2/)
-  assert.match(row, /root\.look\.accentSwatch\(/)
-  assert.match(panel, /label: "Accent"[\s\S]{0,200}swatches: true/)
+  // The accent row is swatches now, not name chips.
+  assert.doesNotMatch(row, /swatches|accentSwatch/)
+  assert.doesNotMatch(panel, /label: "Accent"[\s\S]{0,200}ChoiceRow|swatches: true/)
+})
+
+test("accent choices are round swatches with a ring and a name tooltip", () => {
+  const at = panel.indexOf("component AccentSwatchRow")
+  assert.notEqual(at, -1)
+  const comp = panel.slice(at, panel.indexOf("component ShowToggleCard"))
+  assert.match(comp, /model: root\.look\.accentChoices/)
+  assert.match(comp, /chosen: root\.look\.accentChoice === modelData/)
+  assert.match(comp, /isTheme: modelData === "theme"/)
+  assert.match(comp, /height: root\.look\.sp\(23\)/)
+  assert.match(comp, /radius: height \/ 2/)
+  assert.match(comp, /color: swatch\.isTheme \? Qt\.alpha\(root\.contentForeground, 0\.06\) : root\.look\.accentSwatch\(modelData\)/)
+  assert.match(comp, /border\.width: chosen \? 2 : 1/)
+  assert.match(comp, /border\.color: chosen \? root\.contentForeground/)
+  assert.match(comp, /text: "Theme"/)
+  assert.match(comp, /root\.look\.accentSwatch\("theme"\)/)
+  assert.match(comp, /font\.bold: swatch\.chosen/)
+  assert.match(comp, /Qt\.PointingHandCursor/)
+  assert.match(comp, /root\.setSetting\("accent", swatch\.modelData\)/)
+  assert.match(comp, /PanelToolTip \{\s*visible: swatchMouse\.containsMouse\s*text: swatch\.isTheme \? "Theme accent" : swatch\.modelData\.charAt\(0\)\.toUpperCase\(\) \+ swatch\.modelData\.slice\(1\)/)
+  assert.doesNotMatch(comp, /Color\.accent|Style\.space|Style\.font\./)
+  assert.match(panel, /AccentSwatchRow \{/)
 })
 
 test("PanelStyle.accentSwatch maps names to palette colours", () => {
