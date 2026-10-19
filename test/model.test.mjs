@@ -2502,7 +2502,7 @@ test("one hint bar: filter hints left, action hints right, keys cycle the dropdo
 
   // The scroll region stops above the bar.
   const list = panel.slice(panel.indexOf("id: listScroll"), panel.indexOf("id: listScroll") + 600)
-  assert.match(list, /anchors\.bottom: hintBar\.top/)
+  assert.match(list, /anchors\.bottom: root\.look\.showKeyHints ? hintBar\.top : parent\.bottom/)
   assert.doesNotMatch(panel, /hints\.implicitHeight|hints\.top/)
 })
 
@@ -2894,7 +2894,7 @@ test("the popup subtitle sits on its own full-width row under the title", () => 
   const row = panel.slice(rowStart, rowEnd)
   assert.match(row, /x: title\.x/)
   assert.match(row, /width: parent\.width - x/)
-  assert.match(row, /height: subtitle\.implicitHeight/)
+  assert.match(row, /height: subtitle\.visible \? subtitle\.implicitHeight : 0/)
   const sub = panel.slice(panel.indexOf("id: subtitle"), panel.indexOf("id: subtitle") + 700)
   assert.match(sub, /visible: text !== ""/)
   assert.doesNotMatch(sub, /anchors\.baseline: title\.baseline/)

@@ -2178,6 +2178,14 @@ function fontSizeScale(name) {
   return 0.95
 }
 
+// A boolean setting. Bar settings arrive as true/false from the settings UI
+// but as "true"/"false" strings from `omarchy bar set` without --json.
+function settingBool(value, fallback) {
+  if (value === true || value === "true") return true
+  if (value === false || value === "false") return false
+  return fallback
+}
+
 // A string setting restricted to a known set; anything else is the fallback.
 function choiceSetting(settings, key, allowed, fallback) {
   if (!settings || !hasOwnKey(settings, key)) return fallback

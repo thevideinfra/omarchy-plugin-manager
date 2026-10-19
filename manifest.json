@@ -24,7 +24,11 @@
     "defaults": {
       "density": "normal",
       "fontSize": "normal",
-      "accent": "theme"
+      "accent": "theme",
+      "showDescriptions": true,
+      "showMeta": true,
+      "showSummary": true,
+      "showKeyHints": true
     },
     "schema": [
       {
@@ -67,6 +71,34 @@
         ],
         "defaultValue": "theme",
         "description": "The colour the panel highlights with: the theme's accent, or a colour from its palette."
+      },
+      {
+        "key": "showDescriptions",
+        "type": "boolean",
+        "label": "Show descriptions",
+        "defaultValue": true,
+        "description": "Show each plugin's description under its name."
+      },
+      {
+        "key": "showMeta",
+        "type": "boolean",
+        "label": "Show details line (author, kind, version)",
+        "defaultValue": true,
+        "description": "Show the author, kind and version line under each plugin."
+      },
+      {
+        "key": "showSummary",
+        "type": "boolean",
+        "label": "Show summary counts in the header",
+        "defaultValue": true,
+        "description": "Show the installed and update counts under the title."
+      },
+      {
+        "key": "showKeyHints",
+        "type": "boolean",
+        "label": "Show key hints",
+        "defaultValue": true,
+        "description": "Show the keyboard hints at the bottom of the panel."
       }
     ]
   }

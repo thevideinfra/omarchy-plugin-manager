@@ -254,6 +254,7 @@ Rectangle {
       // Never rich text: AutoText would fetch what a crafted string points at.
       textFormat: Text.PlainText
       width: parent.width
+      visible: root.look.showDescriptions
       text: Model.descriptionLine(root.row)
       // The panel foreground, dimmed a little — not Color.muted. The author
       // and kinds above are glanceable metadata and can afford to recede; the
@@ -299,6 +300,7 @@ Rectangle {
     Row {
       id: metadataLine
       width: parent.width
+      visible: root.look.showMeta
 
       Text {
         id: metadataText

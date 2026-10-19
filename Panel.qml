@@ -792,7 +792,7 @@ Panel {
         Item {
           x: title.x
           width: parent.width - x
-          height: subtitle.implicitHeight
+          height: subtitle.visible ? subtitle.implicitHeight : 0
 
           Text {
             id: subtitle
@@ -801,7 +801,7 @@ Panel {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            visible: text !== ""
+            visible: root.look.showSummary && text !== ""
             elide: Text.ElideRight
             text: {
               if (root.loading && root.rows.length === 0) return "reading…"
@@ -1049,6 +1049,7 @@ Panel {
       //      the left, each "[key] value", and the row actions on the right.
       Column {
         id: hintBar
+        visible: root.look.showKeyHints
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
@@ -1125,7 +1126,7 @@ Panel {
         anchors.right: parent.right
         anchors.top: header.bottom
         anchors.topMargin: root.look.sp(10)
-        anchors.bottom: hintBar.top
+        anchors.bottom: root.look.showKeyHints ? hintBar.top : parent.bottom
         anchors.bottomMargin: root.look.sp(10)
         contentWidth: width
         contentHeight: listColumn.implicitHeight

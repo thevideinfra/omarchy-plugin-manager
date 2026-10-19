@@ -13,6 +13,10 @@ Item {
   readonly property string density: Model.choiceSetting(settings, "density", ["compact", "normal", "comfortable"], "normal")
   readonly property string fontSizeChoice: Model.choiceSetting(settings, "fontSize", ["small", "normal", "large"], "normal")
   readonly property string accentChoice: settings && typeof settings.accent === "string" ? settings.accent : "theme"
+  readonly property bool showDescriptions: Model.settingBool(settings && settings.showDescriptions, true)
+  readonly property bool showMeta: Model.settingBool(settings && settings.showMeta, true)
+  readonly property bool showSummary: Model.settingBool(settings && settings.showSummary, true)
+  readonly property bool showKeyHints: Model.settingBool(settings && settings.showKeyHints, true)
 
   readonly property real densityScale: Model.densityScale(density)
   readonly property real fontScale: (0.5 + 0.5 * densityScale) * Model.fontSizeScale(fontSizeChoice)

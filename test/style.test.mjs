@@ -9,7 +9,7 @@ const source = readFileSync(new URL("../Model.js", import.meta.url), "utf8")
 const Model = new Function(
   source + `
   return {
-    densityScale, fontSizeScale, parsePalette, accentChoices, paletteAccent, choiceSetting
+    densityScale, fontSizeScale, parsePalette, accentChoices, paletteAccent, choiceSetting, settingBool
   }`
 )()
 
@@ -68,4 +68,16 @@ test("choiceSetting returns an allowed string value, else the fallback", () => {
   assert.equal(Model.choiceSetting({ density: 3 }, "density", allowed, "normal"), "normal")
   assert.equal(Model.choiceSetting({}, "density", allowed, "normal"), "normal")
   assert.equal(Model.choiceSetting(null, "density", allowed, "normal"), "normal")
+})
+
+test("settingBool accepts booleans and their string forms, else the fallback", () => {
+  assert.equal(Model.settingBool(true, false), true)
+  assert.equal(Model.settingBool(false, true), false)
+  assert.equal(Model.settingBool("true", false), true)
+  assert.equal(Model.settingBool("false", true), false)
+  assert.equal(Model.settingBool(undefined, true), true)
+  assert.equal(Model.settingBool(undefined, false), false)
+  assert.equal(Model.settingBool("garbage", true), true)
+  assert.equal(Model.settingBool(1, false), false)
+  assert.equal(Model.settingBool(null, true), true)
 })
