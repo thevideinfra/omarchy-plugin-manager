@@ -2162,18 +2162,20 @@ function paletteAccent(choice, palette) {
   return null
 }
 
-// Multiplier for the panel's spacing and widths. Normal is the stock look.
+// Multiplier for the panel's spacing and widths, relative to the shell's stock
+// sizes. Same scale as omaudiopanel: all three are smaller than stock, and
+// normal is the default.
 function densityScale(name) {
-  if (name === "compact") return 0.82
-  if (name === "comfortable") return 1.15
-  return 1
+  if (name === "compact") return 0.61
+  if (name === "comfortable") return 0.83
+  return 0.71
 }
 
 // Text multiplier chosen in settings, on top of the density's own text scaling.
 function fontSizeScale(name) {
-  if (name === "small") return 0.88
-  if (name === "large") return 1.12
-  return 1
+  if (name === "small") return 0.85
+  if (name === "large") return 1.07
+  return 0.95
 }
 
 // A string setting restricted to a known set; anything else is the fallback.
