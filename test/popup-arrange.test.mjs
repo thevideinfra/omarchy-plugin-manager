@@ -158,31 +158,26 @@ test("active local processes reject a move before reading host layout, including
 function popup(owner = null) {
   const events = []
   const state = { popupMoveOwner: owner, opened: false, arrangeOpen: false, settingsOpen: true,
-    detailsEntry: { id: "old" },
     store: { actionRunning: false, statusRefreshes: 0, refreshUpdateData() { this.statusRefreshes++ } },
     busy: false, confirming: false, placing: false,
-    bar: {}, anchorItem: {}, activeTab: "installed", pendingTab: "browse", contentFlipAngle: 45,
-    contentFlipping: false, contentFlip: { stop() { events.push("stop flip") } },
+    bar: {}, anchorItem: {},
     barBoard: { heldSnapshot: null, cancelDrag() { this.heldSnapshot = null; events.push("cancel drag") } },
     settingsPane: { visible: true, forceActiveFocus() {} },
-    revokeReleaseNavigation() {}, returnFocusToList() {}, closeDetails() { this.detailsEntry = null },
+    revokeReleaseNavigation() {}, returnFocusToList() {},
     open() { this.opened = true }, close() { this.opened = false },
     hostWidget: { cancelPopupArrange() { events.push("cancel return") },
       requestPopupMove(...args) { events.push(args); return true } } }
   state.root = state
-  for (const name of ["openArrange", "closeArrange", "requestBarMove", "useCurrentLayout", "openSettings", "openDetails", "switchTab", "handleArrangeKey"])
+  for (const name of ["openArrange", "closeArrange", "requestBarMove", "useCurrentLayout", "openSettings", "clearSearch", "handleArrangeKey"])
     state[name] = (...args) => call(panelSource, name, state, ...args)
   return { state, events }
 }
 
-test("popup Arrange opens locally, cancels an old flip and reports actual readiness", () => {
+test("popup Arrange opens locally and reports actual readiness", () => {
   const { state, events } = popup()
   assert.equal(state.openArrange(), true)
   assert.equal(state.opened && state.arrangeOpen, true)
   assert.equal(state.settingsOpen, false)
-  assert.equal(state.detailsEntry, null)
-  assert.equal(state.pendingTab, "")
-  assert.equal(state.contentFlipAngle, 0)
   assert.equal(events.includes("cancel return"), true)
   state.settingsPane.visible = false
   events.length = 0
@@ -237,7 +232,7 @@ test("explicit navigation cancels return even after an automatic close; drag Esc
   assert.equal(state.arrangeOpen, true)
   assert.equal(state.handleArrangeKey({ key: 1 }), true)
   assert.equal(state.arrangeOpen, false)
-  for (const leave of [() => state.openSettings(), () => state.openDetails({ id: "new" }), () => state.switchTab("installed")]) {
+  for (const leave of [() => state.openSettings(), () => state.clearSearch()]) {
     state.openArrange()
     state.arrangeOpen = false // automatic close/rebuild must not revoke the retained route
     leave()
@@ -284,7 +279,7 @@ function placementPopup(owner = { busy: false, pending: false, status: "Moved", 
     reload() { s.loading = true; p.events.push("reload"); return true } })
   for (const name of ["confirmPlacement", "openPlacementView", "flushSearch"])
     s[name] = (...args) => call(panelSource, name, s, ...args)
-  s.opened = true; s.settingsOpen = false; s.detailsEntry = null
+  s.opened = true; s.settingsOpen = false
   return p
 }
 
@@ -306,7 +301,7 @@ test("popup chooser dispatches the shipped positional plan and closes only on ac
 
 test("popup refused, missing, stale and owner-busy choices never detach or consume the chooser", () => {
   for (const change of [s => s.popupMoveOwner = null, s => s.popupMoveOwner.busy = true,
-    s => s.rows = [], s => s.rows[0].barSection = "center", s => s.contentFlipping = true,
+    s => s.rows = [], s => s.rows[0].barSection = "center",
     s => s.hostWidget = null, s => s.hostWidget.requestPopupMove = () => false]) {
     const { state: s, events } = placementPopup()
     change(s); s.confirmPlacement("right")
@@ -326,12 +321,12 @@ test("Installed restoration waits for fresh rows, preserves view, and safely los
     s.rows = missing ? [] : [{ id: "a", name: "Refreshed" }]; s.visibleRows = s.rows
     s.loading = false; s.clampSelection = () => {}
     Function("root", panelSource.match(/function onRowsLoaded\(\) \{([\s\S]*?)\n    \}/)[1])(s)
-    s.activeTab = "browse"; s.searchText = "other"; s.listScroll.contentY = 0
+    s.searchText = "other"; s.listScroll.contentY = 0
     assert.equal(s.openPlacementView(origin, false), true)
-    assert.equal(s.activeTab, "installed"); assert.equal(s.searchQuery, "A")
+    assert.equal(s.searchQuery, "A")
     assert.deepEqual([s.groupFilter, s.kindFilter, s.statusFilter], ["installed", "bar", "enabled"])
     assert.equal(s.selectedIndex, missing ? -1 : 0); assert.equal(s.listScroll.contentY, 125)
-    assert.equal(s.arrangeOpen, false); assert.equal(s.detailsEntry, null)
+    assert.equal(s.arrangeOpen, false)
     assert.equal(s.statusSource, "layout")
     if (missing) assert.match(s.status, /no longer.*visible/i)
   }

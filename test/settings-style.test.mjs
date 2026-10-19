@@ -72,8 +72,7 @@ test("SettingsInfo shares safe, content-sized Info and About cards", () => {
 })
 
 const switches = [
-  ["unverifiedSwitch", "unverifiedText"],
-  ["unverifiedInstallSwitch", "unverifiedInstallText"]
+  ["unverifiedSwitch", "unverifiedText"]
 ]
 
 for (const file of ["Panel.qml"]) {

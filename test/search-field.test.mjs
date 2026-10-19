@@ -84,7 +84,6 @@ test("Panel.qml: the loader takes the field's geometry and restores and snapshot
   assert.match(loader, /id: searchFieldLoader\s*anchors\.left: parent\.left\s*anchors\.right: clearFiltersButton\.visible \? clearFiltersButton\.left : parent\.right\s*anchors\.rightMargin: clearFiltersButton\.visible \? Style\.space\(4\) : 0\s*y: filterControls\.filterRowHeight \+ Style\.space\(8\)\s*height: filterControls\.controlHeight/)
   assert.match(source, /query: searchText, group: groupFilter/)
   assert.match(source, /searchText = origin\.query\s*flushSearch\(\)/)
-  assert.match(source, /searchText = cleared\.query/)
   assert.match(source, /\|\| root\.searchFieldFocused\n/)
   assert.match(source, /function focusSearchField\(\) \{[\s\S]*?field\.selectAll\(\)\s*\}/)
 })

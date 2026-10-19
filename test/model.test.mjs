@@ -2026,12 +2026,6 @@ test("Browse sort options put Recently added first", () => {
   ])
 })
 
-test("Browse sort dropdown defaults to Recently added", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  assert.match(panel, /^  property string catalogSort: "recently-added"$/m)
-  assert.match(panel, /^                value: root\.catalogSort$/m)
-})
-
 test("catalog kind filtering uses the same case-insensitive key as its option", () => {
   const entries = [
     { id: "upper", kind: "Panel", name: "Upper", author: "", description: "", category: "Tools" },
@@ -3178,22 +3172,17 @@ test("compact panel keeps its existing fitted width", () => {
   assert.match(surface[1], /^\s*contentWidth: panel\.fittedContentWidth\(Style\.space\(620\)\)\s*$/m)
 })
 
-test("the Installed tab has no url field: plugins are added from Browse only", () => {
+test("the Installed list has no url field and no install entry point", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
 
   assert.doesNotMatch(panel, /urlField|addButton/)
   assert.doesNotMatch(panel, /function askAdd\(|function focusUrlField\(/)
   assert.doesNotMatch(panel, /https:\/\/github\.com\/user\/omarchy-plugin\.git/)
   assert.doesNotMatch(panel, /\ba add\b/)
-  // The install-and-place path survives: Browse still installs through it,
-  // the panel handing its pending answer to the store's request builder.
-  assert.match(panel, /function startAdd\(section\) \{\s*store\.startAdd\(section\)\s*\}/)
-  const storeSource = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  assert.match(storeSource, /function startAdd\(section\) \{[\s\S]*?Model\.installRequest\(entry, section, allowUnverifiedInstalls\)/)
-  assert.match(storeSource, /function launchInstall\(request, label\) \{[\s\S]*?pinnedProc\.running = true/)
+  assert.doesNotMatch(panel, /startAdd|askInstall/)
 })
 
-test("Installed filters share the Browse shape: labels on top, Search on its own row", () => {
+test("Installed filters: labels on top, Search on its own row", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
 
   assert.match(panel, /property string groupFilter: "all"/)
@@ -3204,13 +3193,13 @@ test("Installed filters share the Browse shape: labels on top, Search on its own
   assert.match(panel, /function setGroupFilter\(group\)/)
 
   // The Installed row is one labelled block, Source · Kind · Status, sized in
-  // equal columns exactly like the Browse row.
+  // equal columns.
   const start = panel.indexOf("id: installedFilters")
-  const end = panel.indexOf("id: browseFilters", start)
+  const end = panel.indexOf("id: searchFieldLoader", start)
   assert.notEqual(start, -1)
   assert.notEqual(end, -1)
   const block = panel.slice(start, end)
-  assert.match(block, /visible: !root\.browsing/)
+  assert.doesNotMatch(panel, /browsing/)
   assert.match(block, /readonly property real optionWidth: Math\.floor\(\(width - gap \* 2\) \/ 3\)/)
   for (const label of ["Source", "Kind", "Status"]) {
     assert.match(block, new RegExp(`anchors\\.top: parent\\.top\\s+text: "${label}"`), label)
@@ -3219,39 +3208,11 @@ test("Installed filters share the Browse shape: labels on top, Search on its own
     assert.match(block, new RegExp(`id: ${id}\\s+anchors\\.left: parent\\.left\\s+anchors\\.right: parent\\.right\\s+anchors\\.bottom: parent\\.bottom`), id)
   }
 
-  // Search sits below the filter row on both tabs, and the key catcher
+  // Search sits below the filter row, and the key catcher
   // yields to the new dropdown's popup like the others.
   assert.doesNotMatch(panel, /anchors\.left: root\.browsing \? parent\.left : statusFilterControl\.right/)
   assert.doesNotMatch(panel, /function dropdownWidth\(/)
   assert.match(panel, /groupDropdown\.popupOpen/)
-})
-
-test("the tab buttons sit in the same place on both tabs; Marketplace goes to their left", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-
-  const tabs = panel.slice(panel.indexOf("id: tabs"), panel.indexOf("id: marketplaceLink"))
-  assert.match(tabs, /anchors\.right: arrangeButton\.left/)
-  assert.doesNotMatch(tabs, /root\.browsing/)
-
-  const marketplace = panel.slice(panel.indexOf("id: marketplaceLink"), panel.indexOf("id: refreshButton"))
-  assert.match(marketplace, /anchors\.right: tabs\.left/)
-  assert.match(marketplace, /visible: root\.browsing/)
-})
-
-test("Marketplace is drawn as a link, in the same idiom as the repository links", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const link = panel.slice(panel.indexOf("id: marketplaceLink"), panel.indexOf("id: refreshButton"))
-
-  assert.doesNotMatch(link, /^\s*Button \{/m)
-  assert.doesNotMatch(link, /bordered: true/)
-  assert.match(link, /textFormat: Text\.PlainText/)
-  assert.match(link, /text: "󰖟  Marketplace"/)
-  assert.match(link, /color: marketplaceMouse\.containsMouse \? Color\.accent : root\.secondaryForeground/)
-  assert.match(link, /font\.underline: marketplaceMouse\.containsMouse/)
-  assert.match(link, /cursorShape: Qt\.PointingHandCursor/)
-  assert.match(link, /PanelToolTip \{\s+visible: marketplaceMouse\.containsMouse/)
-  assert.match(link, /onClicked: root\.navigateExternalUrl\("https:\/\/omarchyplugins\.com\/"\)/)
-  assert.doesNotMatch(panel, /marketplaceButton/)
 })
 
 test("browseFilterHints names the filter when neutral and its value when narrowing", () => {
@@ -3345,7 +3306,7 @@ test("Installed rows wear the marketplace's verified pill beside the name", () =
 
 test("the header refresh button is display-sized and spins instead of greying while refreshing", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  assert.match(panel, /readonly property bool refreshing: browsing \? catalogLoading : \(loading \|\| checkingUpdates\)/)
+  assert.match(panel, /readonly property bool refreshing: loading \|\| checkingUpdates/)
 
   const button = panel.slice(panel.indexOf("id: refreshButton"), panel.indexOf("id: refreshSpinner"))
   assert.match(button, /fontSize: Style\.font\.display/)
@@ -3392,46 +3353,6 @@ test("the title puzzle piece snaps into place when the panel opens", () => {
   const settle = intro.slice(intro.indexOf("id: titleIconSettle"))
   assert.match(settle, /property: "scale"[\s\S]*?to: 0\.88[\s\S]*?property: "scale"[\s\S]*?to: 1\.08[\s\S]*?property: "scale"[\s\S]*?to: 1\b/)
   assert.match(settle, /property: "rotation"[\s\S]*?to: 8[\s\S]*?property: "rotation"[\s\S]*?to: -5[\s\S]*?property: "rotation"[\s\S]*?to: 0/)
-})
-
-test("switching tabs flips the content area like a card", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-
-  // The switch is deferred to the edge-on midpoint of the flip; the tab bar
-  // highlights the destination immediately so the click feels acknowledged.
-  assert.match(panel, /property string pendingTab: ""/)
-  assert.match(panel, /property real contentFlipAngle: 0/)
-  assert.match(panel, /readonly property bool contentFlipping: contentFlip\.running/)
-  assert.match(panel, /readonly property real contentFlipScale: 1 - 0\.06 \* Math\.sin\(Math\.abs\(contentFlipAngle\) \* Math\.PI \/ 180\)/)
-  assert.match(panel, /value: root\.pendingTab !== "" \? root\.pendingTab : root\.activeTab/)
-
-  const switchTab = panel.slice(panel.indexOf("function switchTab(tab) {"), panel.indexOf("function applyPendingTab() {"))
-  // A click during a flip finishes that flip first instead of being dropped.
-  assert.match(switchTab, /if \(contentFlip\.running\) \{\s*contentFlip\.stop\(\)\s*if \(pendingTab !== ""\) applyPendingTab\(\)\s*contentFlipAngle = 0\s*\}/)
-  assert.match(switchTab, /if \(activeTab === tab\) return/)
-  assert.match(switchTab, /pendingTab = tab\s*contentFlip\.direction = tab === "browse" \? 1 : -1\s*contentFlip\.restart\(\)/)
-  assert.doesNotMatch(switchTab, /activeTab = tab/)
-
-  const apply = panel.slice(panel.indexOf("function applyPendingTab() {"), panel.indexOf("onSearchQueryChanged"))
-  assert.match(apply, /pendingTab = ""(?:\s*\/\/[^\n]*)*\s*clearSearch\(\)\s*activeTab = tab\s*resetSelection\(\)/)
-  assert.match(apply, /if \(tab === "browse" && !catalogLoaded && !catalogLoading\) loadCatalog\(false\)/)
-
-  // Turn to edge-on, swap, turn back in from the other side — same rotational
-  // direction throughout, mirrored for the way back.
-  const flip = panel.slice(panel.indexOf("id: contentFlip\n"), panel.indexOf("id: contentFlip\n") + 1400)
-  assert.match(flip, /property int direction: 1/)
-  assert.match(flip, /property: "contentFlipAngle"[\s\S]*?from: 0[\s\S]*?to: -90 \* contentFlip\.direction[\s\S]*?easing\.type: Easing\.InCubic/)
-  assert.match(flip, /ScriptAction \{ script: root\.applyPendingTab\(\) \}/)
-  assert.match(flip, /property: "contentFlipAngle"[\s\S]*?from: 90 \* contentFlip\.direction[\s\S]*?to: 0[\s\S]*?easing\.type: Easing\.OutCubic/)
-
-  // Both faces of the card carry the same transform; the layer only exists
-  // while turning so the idle panel pays nothing.
-  for (const id of ["id: listScroll", "id: catalogGrid"]) {
-    const face = panel.slice(panel.indexOf(id), panel.indexOf(id) + 1200)
-    assert.match(face, /transform: Rotation \{[\s\S]*?axis \{ x: 0; y: 1; z: 0 \}[\s\S]*?angle: root\.contentFlipAngle/, id)
-    assert.match(face, /scale: root\.contentFlipScale/, id)
-    assert.match(face, /layer\.enabled: root\.contentFlipping/, id)
-  }
 })
 
 test("the row state bar is a 5px rule", () => {
@@ -3501,9 +3422,7 @@ test("every keyboard-cycled filter replays its value into its dropdown", () => {
   // A mouse pick assigns Dropdown.value and breaks the binding; a later key
   // cycle must push the filter back in or the dropdown shows a stale choice.
   for (const [filter, dropdown] of [
-    ["kindFilter", "kindDropdown"], ["groupFilter", "groupDropdown"], ["statusFilter", "statusDropdown"],
-    ["categoryFilter", "categoryDropdown"], ["catalogKindFilter", "catalogKindDropdown"],
-    ["availabilityFilter", "availabilityDropdown"], ["catalogSort", "sortDropdown"]
+    ["kindFilter", "kindDropdown"], ["groupFilter", "groupDropdown"], ["statusFilter", "statusDropdown"]
   ]) {
     const handler = "on" + filter[0].toUpperCase() + filter.slice(1) + "Changed"
     assert.match(panel, new RegExp(`${handler}: if \\(${dropdown} && ${dropdown}\\.value !== ${filter}\\)\\s+${dropdown}\\.value = ${filter}`), handler)
@@ -3519,21 +3438,18 @@ test("nextOption cycles any option list and nextKind is that same walk", () => {
   assert.equal(Model.nextKind(options, "hearts"), Model.nextOption(options, "hearts"))
 })
 
-test("one hint bar on both tabs: filter hints left, action hints right, keys cycle the dropdowns", () => {
+test("one hint bar: filter hints left, action hints right, keys cycle the dropdowns", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
 
-  assert.match(panel, /readonly property var browseFilterHints: Model\.browseFilterHints\(/)
   assert.match(panel, /readonly property var installedFilterHints: Model\.installedFilterHints\(/)
-  for (const name of ["cycleCategoryFilter", "cycleCatalogKindFilter", "cycleAvailabilityFilter", "cycleCatalogSort",
-                      "cycleGroupFilter", "cycleKindFilter", "cycleStatusFilter"])
+  for (const name of ["cycleGroupFilter", "cycleKindFilter", "cycleStatusFilter"])
     assert.match(panel, new RegExp(`function ${name}\\(\\) \\{\\s+(?:closeArrange\\(\\)\\s+)?set\\w+\\(Model\\.nextOption\\(`), name)
 
   const keys = panel.slice(panel.indexOf("onTextKey:"), panel.indexOf("// ---- Fixed chrome"))
-  assert.match(keys, /t === "f" \|\| t === "F"\) root\.browsing \? root\.cycleCatalogKindFilter\(\) : root\.cycleKindFilter\(\)/)
-  assert.match(keys, /t === "s" \|\| t === "S"\) root\.browsing \? root\.cycleCatalogSort\(\) : root\.cycleGroupFilter\(\)/)
-  assert.match(keys, /\(t === "c" \|\| t === "C"\) && root\.browsing\) root\.cycleCategoryFilter\(\)/)
-  assert.match(keys, /\(t === "a" \|\| t === "A"\) && root\.browsing\) root\.cycleAvailabilityFilter\(\)/)
-  assert.match(keys, /\(t === "t" \|\| t === "T"\) && !root\.browsing\) root\.cycleStatusFilter\(\)/)
+  assert.match(keys, /t === "f" \|\| t === "F"\) root\.cycleKindFilter\(\)/)
+  assert.match(keys, /t === "s" \|\| t === "S"\) root\.cycleGroupFilter\(\)/)
+  assert.match(keys, /t === "t" \|\| t === "T"\) root\.cycleStatusFilter\(\)/)
+  assert.doesNotMatch(keys, /browsing|switchTab/)
 
   // The old centred hints line is gone; one bar carries both groups.
   assert.doesNotMatch(panel, /id: hints\b/)
@@ -3543,39 +3459,18 @@ test("one hint bar on both tabs: filter hints left, action hints right, keys cyc
   assert.match(bar, /PanelSeparator \{/)
   assert.match(bar, /id: filterHints\s+anchors\.left: parent\.left/)
   assert.match(bar, /id: actionHints\s+anchors\.right: parent\.right/)
-  assert.match(bar, /model: root\.browsing \? root\.browseFilterHints : root\.installedFilterHints/)
-  assert.match(bar, /model: Model\.actionHints\(root\.browsing, root\.bulkUpdatableCount > 0\)/)
+  assert.match(bar, /model: root\.installedFilterHints/)
+  assert.match(bar, /model: Model\.actionHints\(false, root\.bulkUpdatableCount > 0\)/)
   // One delegate for both groups, keys shown uppercase in the accent.
   assert.equal(bar.split("delegate: hintDelegate").length - 1, 2)
   assert.match(bar, /text: "\[" \+ hint\.modelData\.key\.toUpperCase\(\) \+ "\]"\s+color: Color\.accent/)
   assert.match(bar, /color: hint\.modelData\.active \? root\.contentForeground : root\.secondaryForeground/)
   assert.doesNotMatch(bar, /Text\.RichText|Text\.AutoText|StyledText/)
 
-  // Both scroll regions stop above the bar.
-  const grid = panel.slice(panel.indexOf("id: catalogGrid"), panel.indexOf("id: catalogGrid") + 600)
-  assert.match(grid, /anchors\.bottom: hintBar\.top/)
+  // The scroll region stops above the bar.
   const list = panel.slice(panel.indexOf("id: listScroll"), panel.indexOf("id: listScroll") + 600)
   assert.match(list, /anchors\.bottom: hintBar\.top/)
   assert.doesNotMatch(panel, /hints\.implicitHeight|hints\.top/)
-})
-
-test("Panel keeps open details synchronized with catalog install state", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  // The store re-stamps install state without knowing about any open details;
-  // it only publishes a new catalog when something actually changed.
-  assert.match(store,
-    /var stampedState = Model\.restampCatalogInstallState\(\s*catalog, Model\.installedIdSet\(rows\), null, allowUnverifiedInstalls\)/)
-  assert.match(store, /if \(!stampedState\.changed\) return\s*catalog = stampedState\.entries/)
-  assert.match(store, /onRowsChanged: restampCatalog\(\)/)
-  // A fresh fetch is built on the worker thread and published from its reply.
-  assert.match(store, /catalog = message\.entries/)
-  // Every published catalog — re-stamp or fresh fetch — refreshes the open
-  // details entry from the same list the cards are drawn from. A snapshot
-  // click also restores the scroll offset the rebuild dropped.
-  assert.match(panel, /onCatalogChanged: \{\s*if \(detailsEntry\) detailsEntry = Model\.findRow\(catalog, detailsEntry\.id\)/)
-  assert.match(panel, /catalogGrid\.contentY = Math\.min\(restoreY/)
-  assert.doesNotMatch(panel, /restampCatalogInstallState|Model\.catalogEntries\(/)
 })
 
 test("Panel delegates data, processes and actions to PluginStore", () => {
@@ -3590,7 +3485,7 @@ test("Panel delegates data, processes and actions to PluginStore", () => {
     assert.doesNotMatch(panel, new RegExp(`id: ${id}\\b`), id)
   }
   // The probe and its state machine glue live in ReleaseNavigator.qml,
-  // shared by the popup and the expanded panel.
+  // used by the popup.
   assert.doesNotMatch(panel, /Process \{\s*id: releaseProbe/)
   assert.match(panel, /ReleaseNavigator \{ id: releaseNavigator \}/)
   for (const script of ["updateScript", "noticeScript"]) {
@@ -3603,8 +3498,7 @@ test("Panel delegates data, processes and actions to PluginStore", () => {
   // State the surface binds to is aliased, so existing bindings read the
   // store without naming it.
   for (const name of [
-    "rows", "loading", "loadError", "checkingUpdates", "catalog", "catalogLoading",
-    "catalogLoaded", "catalogError", "previewsSupported", "busyKind", "busyRowId",
+    "rows", "loading", "loadError", "checkingUpdates", "busyKind", "busyRowId",
     "busyId", "status", "statusIsError"
   ]) assert.match(panel, new RegExp(`property alias ${name}: store\\.${name}\\b`), name)
   for (const name of ["busy", "verifiedIds", "behindCount", "installedTotal", "updateActionsEnabled"])
@@ -3613,7 +3507,6 @@ test("Panel delegates data, processes and actions to PluginStore", () => {
   // release navigation — a panel concern — revoked where it always was.
   assert.match(panel, /function reload\(\) \{\s*revokeReleaseNavigation\(\)\s*return store\.reload\(\)\s*\}/)
   assert.match(panel, /function checkUpdates\(\) \{\s*return store\.checkUpdates\(\)\s*\}/)
-  assert.match(panel, /function loadCatalog\(force\) \{\s*revokeReleaseNavigation\(\)\s*store\.loadCatalog\(force\)\s*\}/)
   assert.match(panel, /function setStatus\(text, isError, source\) \{\s*store\.setStatus\(text, isError, source\)\s*\}/)
   // The store announces what the panel used to do inline.
   assert.match(store, /signal reloadStarted\(\)/)
@@ -4115,26 +4008,6 @@ test("the popup subtitle sits on its own full-width row under the title", () => 
   assert.match(panel, /var summary = root\.installedTotal \+ " installed · " \+ root\.rows\.length \+ " total"/)
   assert.match(panel, /return summary \+ " · " \+ root\.behindCount \+ " to update"/)
   assert.doesNotMatch(panel, /"  ·  "/)
-})
-
-test("the popup's expand button hands the current tab to the shell panel", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  assert.match(panel, /readonly property string pluginId: "io\.github\.juancasanueva\.plugin-manager"/)
-  const button = panel.slice(panel.indexOf("id: expandButton"), panel.indexOf("id: refreshButton"))
-  assert.match(button, /anchors\.right: refreshButton\.left/)
-  assert.match(button, /anchors\.rightMargin: Style\.space\(6\)/)
-  assert.match(button, /iconText: "󰊓"/)
-  assert.match(button, /fontSize: Style\.font\.display/)
-  assert.match(button, /tooltipText: "Expand into a full panel"/)
-  assert.match(button, /onClicked: root\.advanceOpenAs\(\)/)
-  // Arrange sits beside Settings without moving the tabs between pages.
-  assert.match(panel, /id: tabs\s*anchors\.right: arrangeButton\.left/)
-  assert.match(panel, /id: settingsButton\s*anchors\.right: windowButton\.left/)
-  // The count line lives on its own row now, so nothing yields to the tabs.
-  assert.doesNotMatch(panel, /id: subtitle[\s\S]{0,400}anchors\.right: marketplaceLink/)
-  // Close first, then summon: the popup and the panel are never up together,
-  // and a bar without a shell reference (tests, odd hosts) is a no-op.
-  assert.match(panel, /function expand\(page, mode\) \{\s*if \(!bar \|\| !bar\.shell \|\| typeof bar\.shell\.summon !== "function"\) return[\s\S]*?close\(\)\s*var payload = \{ tab: tab, screen: screenName, page: page === "arrange" \? "arrange" : "" \}\s*if \(mode === "overlay" \|\| mode === "window"\) payload\.mode = mode\s*bar\.shell\.summon\(pluginId, JSON\.stringify\(payload\)\)\s*\}/)
 })
 
 test("PopupBridge hands the expanded window back to the popup on its own output", async () => {
@@ -4649,20 +4522,21 @@ test("bulk update confirms once and delegates every bound verified or unverified
   assert.match(store, /if \(pendingKind === "bulk-update"\) \{[\s\S]*?var queue = bulkQueue\.slice\(\)/)
   assert.match(store, /JSON\.stringify\(\{ schemaVersion: 1, bulkUpdates: requests \}\)/)
   assert.match(store, /function finishBulkProcess\(\)[\s\S]*?outcomes\[update\.id\] = update/)
-  for (const [surface, expandId] of [["Panel.qml", "expandButton"]]) {
+  for (const [surface, precedingId] of [["Panel.qml", "settingsButton"]]) {
     const source = readFileSync(new URL("../" + surface, import.meta.url), "utf8")
     assert.match(source, /readonly property alias bulkUpdatableCount: store\.bulkUpdatableCount/, surface)
     const button = source.slice(source.indexOf("id: updateAllButton"), source.indexOf("id: updateAllButton") + 700)
-    assert.match(button, /visible: !root\.browsing/, surface)
+    assert.doesNotMatch(button, /visible:/, surface)
     assert.match(button, /iconText: "󰑐"/, surface)
     assert.match(button, /tooltipText: "Update all"/, surface)
     assert.match(button, /enabled: root\.updateActionsEnabled/, surface)
     assert.match(button, /opacity: root\.bulkUpdatableCount > 0 && enabled \? 1 : 0\.4/, surface)
     assert.match(button, /onClicked: (root\.)?(askBulkUpdate\(\)|store\.askBulkUpdate\(\))/, surface)
-    assert.ok(source.indexOf(`id: ${expandId}`) < source.indexOf("id: updateAllButton"), surface)
+    assert.ok(source.indexOf(`id: ${precedingId}`) < source.indexOf("id: updateAllButton"), surface)
     assert.ok(source.indexOf("id: updateAllButton") < source.indexOf("id: refreshButton"), surface)
-    const expand = source.slice(source.indexOf(`id: ${expandId}`), source.indexOf(`id: ${expandId}`) + 500)
-    assert.match(expand, /anchors\.right: updateAllButton\.visible \? updateAllButton\.left : refreshButton\.left/, surface)
+    const preceding = source.slice(source.indexOf(`id: ${precedingId}`), source.indexOf(`id: ${precedingId}`) + 500)
+    assert.match(preceding, /anchors\.right: updateAllButton\.left/, surface)
+    assert.match(button, /anchors\.right: refreshButton\.left/, surface)
   }
 
   const model = Function(source + `; return { pinnedRequest, unverifiedRequest, findRow, shortSha,
