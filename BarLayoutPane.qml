@@ -2,6 +2,7 @@ import QtQuick
 
 Item {
     id: root
+    required property var look
     // Only Model.barLayoutSnapshot results belong here; never mutate them in place.
     property var snapshot: null
     property var labels: ({}) // Optional ID -> display name; instance identity stays raw.

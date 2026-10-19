@@ -1280,8 +1280,8 @@ test("action confirmation scrolls long messages while keeping both button layout
   assert.match(viewport[1], /wrapMode: Text\.WrapAtWordBoundaryOrAnywhere/)
   assert.doesNotMatch(viewport[1], /elide:|maximumLineCount:|\.slice\(|\.substring\(/)
   assert.match(dialog, /height: content\.implicitHeight \+ contentTopInset \+ contentBottomInset/)
-  assert.match(dialog, /spacing: Style\.space\(20\)/)
-  assert.match(dialog, /height: Style\.space\(root\.actionVisible \? 78 : 34\)/)
+  assert.match(dialog, /spacing: root\.look\.sp\(20\)/)
+  assert.match(dialog, /height: root\.look\.sp\(root\.actionVisible \? 78 : 34\)/)
   const expression = viewport[1].match(/height: (Math\.min[\s\S]*?)\n\s*clip:/)[1]
   const height = Function("root", "Style", "card", "buttons", "content", "contentHeight", `return (${expression})`)
   for (const scale of [1, 1.5]) for (const paneHeight of [300, 480, 900]) {
@@ -1292,11 +1292,11 @@ test("action confirmation scrolls long messages while keeping both button layout
       const content = { spacing: Style.space(20) }
       const reserved = card.contentTopInset + card.contentBottomInset + buttons.height + content.spacing
       const available = paneHeight - Style.space(32) - reserved
-      const actual = height({ height: paneHeight }, Style, card, buttons, content, textHeight)
+      const actual = height({ height: paneHeight, look: { sp: Style.space } }, Style, card, buttons, content, textHeight)
       assert.equal(actual, Math.min(textHeight, available))
       assert.ok(actual + reserved <= paneHeight - Style.space(32), "buttons fit inside the pane")
       assert.equal(textHeight > actual, textHeight === 20000, "only overflowing messages scroll")
-      assert.equal(height({ height: 50 }, Style, card, buttons, content, textHeight), 0,
+      assert.equal(height({ height: 50, look: { sp: Style.space } }, Style, card, buttons, content, textHeight), 0,
         "impossibly small panes never create a negative viewport")
     }
   }
@@ -2229,7 +2229,7 @@ test("compact panel keeps its existing fitted width", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
   const surface = panel.match(/KeyboardPanel \{\s*id: panel\b([\s\S]*?)PanelKeyCatcher \{/)
   assert.ok(surface, "compact KeyboardPanel surface must exist")
-  assert.match(surface[1], /^\s*contentWidth: panel\.fittedContentWidth\(Style\.space\(620\)\)\s*$/m)
+  assert.match(surface[1], /^\s*contentWidth: panel\.fittedContentWidth\(root\.look\.sp\(620\)\)\s*$/m)
 })
 
 test("the Installed list has no url field and no install entry point", () => {
@@ -2332,7 +2332,7 @@ test("Installed rows wear the marketplace's verified pill beside the name", () =
   const pill = row.slice(row.indexOf("id: verifiedPill"), row.indexOf("id: verifiedPill") + 900)
   assert.match(pill, /visible: root\.verified/)
   assert.match(pill, /text: "󰄬 verified"/)
-  assert.match(pill, /color: Color\.accent/)
+  assert.match(pill, /color: root\.look\.accent/)
   assert.match(pill, /textFormat: Text\.PlainText/)
   // The name yields to the pill instead of eliding it off the row.
   assert.match(row, /id: name[\s\S]*?width: Math\.max\(0, Math\.min\(implicitWidth,[\s\S]*?verifiedPill\.visible \? verifiedPill\.width \+ nameLine\.spacing : 0/)
@@ -2343,7 +2343,7 @@ test("the header refresh button is display-sized and spins instead of greying wh
   assert.match(panel, /readonly property bool refreshing: loading \|\| checkingUpdates/)
 
   const button = panel.slice(panel.indexOf("id: refreshButton"), panel.indexOf("id: refreshSpinner"))
-  assert.match(button, /fontSize: Style\.font\.display/)
+  assert.match(button, /fontSize: root\.look\.font\.display/)
   // The button's own glyph steps aside while refreshing; the spinner takes its place.
   assert.match(button, /iconText: root\.refreshing \? "" : "󰉹"/)
   assert.doesNotMatch(button, /opacity: enabled \? 1 : 0\.4/)
@@ -2392,16 +2392,16 @@ test("the title puzzle piece snaps into place when the panel opens", () => {
 test("the row state bar is a 5px rule", () => {
   const row = readFileSync(new URL("../PluginRow.qml", import.meta.url), "utf8")
   const bar = row.slice(row.indexOf("id: stateBar"), row.indexOf("id: stateBar") + 500)
-  assert.match(bar, /width: Style\.space\(5\)/)
+  assert.match(bar, /width: root\.look\.sp\(5\)/)
 })
 
 test("the row's update and remove buttons use the large icon size", () => {
   const row = readFileSync(new URL("../PluginRow.qml", import.meta.url), "utf8")
   const update = row.slice(row.indexOf("id: updateButton"), row.indexOf("PanelActionButton {", row.indexOf("id: updateButton")))
-  assert.match(update, /fontSize: Style\.font\.iconLarge/)
+  assert.match(update, /fontSize: root\.look\.font\.iconLarge/)
   const remove = row.slice(row.indexOf("PanelActionButton {", row.indexOf("id: updateButton")))
   assert.match(remove, /iconText: "󰩹"/)
-  assert.match(remove, /fontSize: Style\.font\.iconLarge/)
+  assert.match(remove, /fontSize: root\.look\.font\.iconLarge/)
 })
 
 test("a row's update button spins while that row is being updated", () => {
@@ -2496,7 +2496,7 @@ test("one hint bar: filter hints left, action hints right, keys cycle the dropdo
   assert.match(bar, /model: Model\.actionHints\(root\.bulkUpdatableCount > 0\)/)
   // One delegate for both groups, keys shown uppercase in the accent.
   assert.equal(bar.split("delegate: hintDelegate").length - 1, 2)
-  assert.match(bar, /text: "\[" \+ hint\.modelData\.key\.toUpperCase\(\) \+ "\]"\s+color: Color\.accent/)
+  assert.match(bar, /text: "\[" \+ hint\.modelData\.key\.toUpperCase\(\) \+ "\]"\s+color: root\.look\.accent/)
   assert.match(bar, /color: hint\.modelData\.active \? root\.contentForeground : root\.secondaryForeground/)
   assert.doesNotMatch(bar, /Text\.RichText|Text\.AutoText|StyledText/)
 
@@ -2805,7 +2805,7 @@ test("the small panel row marks updatable plugins and leaves unknown states unma
   assert.doesNotMatch(row, /root\.installable \? root\.updateMarkColor : root\.foreground/)
   assert.match(mark, /textFormat: Text\.PlainText/)
   assert.match(mark, /font\.family: root\.fontFamily/)
-  assert.match(mark, /font\.pixelSize: Style\.font\.title/)
+  assert.match(mark, /font\.pixelSize: root\.look\.font\.title/)
   assert.match(mark, /font\.bold: true/)
 
   // Exercise the shipped visibility binding, not an unchecked => current guess.
@@ -2853,8 +2853,8 @@ test("the popup comparison chip follows verification on the title line, not the 
   assert.match(chip, /anchors\.verticalCenter: parent\.verticalCenter/)
   assert.match(chip, /text: "󰚰 " \+ Model\.updateBadge\(root\.row\)/)
   assert.match(chip, /textFormat: Text\.PlainText/)
-  assert.match(chip, /color: root\.installable\s*\? Qt\.rgba\(Color\.accent\.r, Color\.accent\.g, Color\.accent\.b, 0\.16\)\s*: Qt\.rgba\(Color\.muted\.r, Color\.muted\.g, Color\.muted\.b, 0\.16\)/)
-  assert.match(chip, /color: root\.installable \? Color\.accent : root\.secondaryForeground/)
+  assert.match(chip, /color: root\.installable\s*\? Qt\.rgba\(root\.look\.accent\.r, root\.look\.accent\.g, root\.look\.accent\.b, 0\.16\)\s*: Qt\.rgba\(Color\.muted\.r, Color\.muted\.g, Color\.muted\.b, 0\.16\)/)
+  assert.match(chip, /color: root\.installable \? root\.look\.accent : root\.secondaryForeground/)
   assert.match(chip, /font\.underline: updateBadgeMouse\.containsMouse/)
   assert.match(chip, /enabled: root\.compareUrl !== ""/)
   assert.match(chip, /onClicked: root\.openComparison\(\)/)
@@ -2870,7 +2870,7 @@ test("the popup comparison chip follows verification on the title line, not the 
   assert.doesNotMatch(actions, /id: updatePill|id: updateBadge|openComparison\(\)/)
   assert.doesNotMatch(actions, /Item\s*\{\s*visible: root\.hasUpdate/)
   // The title's available width ends before the action controls, not at the row edge.
-  assert.match(row, /id: details[\s\S]*?anchors\.right: actions\.left\s*anchors\.rightMargin: Style\.space\(10\)/)
+  assert.match(row, /id: details[\s\S]*?anchors\.right: actions\.left\s*anchors\.rightMargin: root\.look\.sp\(10\)/)
   assert.match(title, /id: nameLine\s*width: parent\.width/)
 })
 

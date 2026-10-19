@@ -45,7 +45,7 @@ Panel {
   // Guarded so the panel renders before the bar is injected (the bar-widget
   // contract instantiates it bare).
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
-  readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
+  readonly property string contentFontFamily: bar ? bar.fontFamily : root.look.font.family
   // Secondary copy follows the panel's own text role instead of the palette's
   // much darker generic muted swatch. At 54% over the current popup surface it
   // remains subordinate to descriptions while staying well above that swatch.
@@ -537,7 +537,7 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: root.arrangeOpen ? settingsPane : keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(620))
+    contentWidth: panel.fittedContentWidth(root.look.sp(620))
 
     // Fill the available height while preserving the host's bar gap and screen margins.
     contentHeight: panel.cappedContentHeight(panel.availableCardHeight)
@@ -571,7 +571,7 @@ Panel {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        spacing: Style.space(10)
+        spacing: root.look.sp(10)
 
         // What this is, how much of it there is, and a way to re-read without
         // closing the panel.
@@ -669,12 +669,12 @@ Panel {
             // Never rich text: AutoText would fetch what a crafted string points at.
             textFormat: Text.PlainText
             anchors.left: titleIcon.right
-            anchors.leftMargin: Style.space(8)
+            anchors.leftMargin: root.look.sp(8)
             anchors.verticalCenter: parent.verticalCenter
             text: "Plugins"
             color: root.contentForeground
             font.family: root.contentFontFamily
-            font.pixelSize: Style.font.display
+            font.pixelSize: root.look.font.display
             font.bold: true
           }
 
@@ -682,10 +682,10 @@ Panel {
           PanelActionButton {
             id: arrangeButton
             anchors.right: settingsButton.left
-            anchors.rightMargin: Style.space(6)
+            anchors.rightMargin: root.look.sp(6)
             anchors.verticalCenter: parent.verticalCenter
             iconText: "󰕮"
-            fontSize: Style.font.display
+            fontSize: root.look.font.display
             tooltipText: "Arrange"
             foreground: root.contentForeground
             fontFamily: root.contentFontFamily
@@ -698,12 +698,12 @@ Panel {
           PanelActionButton {
             id: settingsButton
             anchors.right: updateAllButton.left
-            anchors.rightMargin: Style.space(6)
+            anchors.rightMargin: root.look.sp(6)
             anchors.verticalCenter: parent.verticalCenter
             iconText: "󰒓"
-            fontSize: Style.font.display
+            fontSize: root.look.font.display
             tooltipText: root.settingsOpen ? "Back to the list" : "Settings"
-            foreground: root.settingsOpen ? Color.accent : root.contentForeground
+            foreground: root.settingsOpen ? root.look.accent : root.contentForeground
             fontFamily: root.contentFontFamily
             enabled: !root.busy
             opacity: enabled ? 1 : 0.4
@@ -713,10 +713,10 @@ Panel {
           PanelActionButton {
             id: updateAllButton
             anchors.right: refreshButton.left
-            anchors.rightMargin: Style.space(6)
+            anchors.rightMargin: root.look.sp(6)
             anchors.verticalCenter: parent.verticalCenter
             iconText: "󰑐"
-            fontSize: Style.font.display
+            fontSize: root.look.font.display
             tooltipText: "Update all"
             foreground: root.contentForeground
             fontFamily: root.contentFontFamily
@@ -736,7 +736,7 @@ Panel {
             // The one icon in the header, next to two text buttons: at the
             // default size it read as an afterthought beside them. Display
             // size puts it on the same scale as the title at the other end.
-            fontSize: Style.font.display
+            fontSize: root.look.font.display
             tooltipText: "Refresh plugin list"
             foreground: root.contentForeground
             fontFamily: root.contentFontFamily
@@ -755,8 +755,8 @@ Panel {
               textFormat: Text.PlainText
               anchors.right: parent.right
               anchors.bottom: parent.bottom
-              anchors.rightMargin: Style.space(2)
-              anchors.bottomMargin: Style.space(2)
+              anchors.rightMargin: root.look.sp(2)
+              anchors.bottomMargin: root.look.sp(2)
               visible: !root.refreshing
               text: "󰑐"
               color: refreshButton.foreground
@@ -811,7 +811,7 @@ Panel {
             }
             color: root.secondaryForeground
             font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
+            font.pixelSize: root.look.font.caption
           }
 
         }
@@ -826,16 +826,16 @@ Panel {
 
           readonly property real controlHeight: kindDropdown.implicitHeight
           readonly property real filterRowHeight: filterLabelMetrics.height
-            + Style.space(4) + controlHeight
+            + root.look.sp(4) + controlHeight
 
           FontMetrics {
             id: filterLabelMetrics
             font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
+            font.pixelSize: root.look.font.caption
           }
 
           width: parent.width
-          height: filterRowHeight + Style.space(8) + controlHeight
+          height: filterRowHeight + root.look.sp(8) + controlHeight
 
           Item {
             id: installedFilters
@@ -844,7 +844,7 @@ Panel {
             anchors.top: parent.top
             height: filterControls.filterRowHeight
 
-            readonly property real gap: Style.space(6)
+            readonly property real gap: root.look.sp(6)
             readonly property real optionWidth: Math.floor((width - gap * 2) / 3)
 
             Item {
@@ -860,7 +860,7 @@ Panel {
                 text: "Source"
                 color: root.secondaryForeground
                 font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
+                font.pixelSize: root.look.font.caption
                 font.bold: true
               }
 
@@ -893,7 +893,7 @@ Panel {
                 text: "Kind"
                 color: root.secondaryForeground
                 font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
+                font.pixelSize: root.look.font.caption
                 font.bold: true
               }
 
@@ -926,7 +926,7 @@ Panel {
                 text: "Status"
                 color: root.secondaryForeground
                 font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
+                font.pixelSize: root.look.font.caption
                 font.bold: true
               }
 
@@ -956,8 +956,8 @@ Panel {
             id: searchFieldLoader
             anchors.left: parent.left
             anchors.right: clearFiltersButton.visible ? clearFiltersButton.left : parent.right
-            anchors.rightMargin: clearFiltersButton.visible ? Style.space(4) : 0
-            y: filterControls.filterRowHeight + Style.space(8)
+            anchors.rightMargin: clearFiltersButton.visible ? root.look.sp(4) : 0
+            y: filterControls.filterRowHeight + root.look.sp(8)
             height: filterControls.controlHeight
             active: root.opened
             sourceComponent: Component {
@@ -972,8 +972,8 @@ Panel {
                 foreground: root.contentForeground
                 placeholderTextColor: root.secondaryForeground
                 font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
-                verticalPadding: Style.spacing.xs
+                font.pixelSize: root.look.font.caption
+                verticalPadding: root.look.sp(4)
 
                 // Enter hands the list back the keyboard with the results in
                 // place, so you can type a name and arrow straight into it.
@@ -998,7 +998,7 @@ Panel {
           PanelActionButton {
             id: clearFiltersButton
             anchors.right: parent.right
-            y: filterControls.filterRowHeight + Style.space(8)
+            y: filterControls.filterRowHeight + root.look.sp(8)
             visible: root.searchText !== ""
             iconText: "󰅙"
             tooltipText: "Clear the search"
@@ -1029,7 +1029,7 @@ Panel {
           color: root.statusIsError || (root.barMovePending && root.popupMoveOwner.statusIsError)
             || root.loadError !== "" ? Color.urgent : root.secondaryForeground
           font.family: root.contentFontFamily
-          font.pixelSize: Style.font.caption
+          font.pixelSize: root.look.font.caption
           wrapMode: Text.WordWrap
         }
         WidgetButton {
@@ -1050,7 +1050,7 @@ Panel {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        spacing: Style.space(8)
+        spacing: root.look.sp(8)
 
         PanelSeparator { foreground: root.contentForeground }
 
@@ -1062,7 +1062,7 @@ Panel {
             id: filterHints
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Style.space(10)
+            spacing: root.look.sp(10)
 
             Repeater {
               model: root.installedFilterHints
@@ -1074,7 +1074,7 @@ Panel {
             id: actionHints
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Style.space(10)
+            spacing: root.look.sp(10)
 
             Repeater {
               model: Model.actionHints(root.bulkUpdatableCount > 0)
@@ -1089,15 +1089,15 @@ Panel {
           Row {
             id: hint
             required property var modelData
-            spacing: Style.space(4)
+            spacing: root.look.sp(4)
 
             Text {
               // Never rich text: AutoText would fetch what a crafted string points at.
               textFormat: Text.PlainText
               text: "[" + hint.modelData.key.toUpperCase() + "]"
-              color: Color.accent
+              color: root.look.accent
               font.family: root.contentFontFamily
-              font.pixelSize: Style.font.caption
+              font.pixelSize: root.look.font.caption
               font.bold: true
             }
 
@@ -1107,7 +1107,7 @@ Panel {
               text: hint.modelData.text
               color: hint.modelData.active ? root.contentForeground : root.secondaryForeground
               font.family: root.contentFontFamily
-              font.pixelSize: Style.font.caption
+              font.pixelSize: root.look.font.caption
             }
           }
         }
@@ -1122,9 +1122,9 @@ Panel {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: header.bottom
-        anchors.topMargin: Style.space(10)
+        anchors.topMargin: root.look.sp(10)
         anchors.bottom: hintBar.top
-        anchors.bottomMargin: Style.space(10)
+        anchors.bottomMargin: root.look.sp(10)
         contentWidth: width
         contentHeight: listColumn.implicitHeight
         onMovementStarted: root.closeArrange()
@@ -1135,7 +1135,7 @@ Panel {
         Column {
           id: listColumn
           width: listScroll.width
-          spacing: Style.space(2)
+          spacing: root.look.sp(2)
 
           Text {
             // Never rich text: AutoText would fetch what a crafted string points at.
@@ -1145,9 +1145,9 @@ Panel {
             text: Model.emptyMessage(root.kindFilter, root.statusFilter, root.searchQuery, root.groupFilter)
             color: root.secondaryForeground
             font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-            topPadding: Style.space(12)
-            bottomPadding: Style.space(12)
+            font.pixelSize: root.look.font.caption
+            topPadding: root.look.sp(12)
+            bottomPadding: root.look.sp(12)
             horizontalAlignment: Text.AlignHCenter
           }
 
@@ -1157,13 +1157,14 @@ Panel {
             foreground: root.contentForeground
             color: root.secondaryForeground
             fontFamily: root.contentFontFamily
-            bottomPadding: Style.space(4)
+            bottomPadding: root.look.sp(4)
           }
 
           Repeater {
             model: root.installedRows
 
             PluginRow {
+              look: root.look
               required property int index
               required property var modelData
 
@@ -1210,14 +1211,15 @@ Panel {
             foreground: root.contentForeground
             color: root.secondaryForeground
             fontFamily: root.contentFontFamily
-            topPadding: Style.space(12)
-            bottomPadding: Style.space(4)
+            topPadding: root.look.sp(12)
+            bottomPadding: root.look.sp(4)
           }
 
           Repeater {
             model: root.builtinRows
 
             PluginRow {
+              look: root.look
               required property int index
               required property var modelData
 
@@ -1289,7 +1291,7 @@ Panel {
           bordered: true
           foreground: root.contentForeground
           fontFamily: root.contentFontFamily
-          fontSize: Style.font.caption
+          fontSize: root.look.font.caption
           onClicked: root.arrangeOpen ? root.closeArrange() : root.closeSettings()
         }
 
@@ -1299,8 +1301,8 @@ Panel {
           anchors.left: parent.left
           anchors.right: parent.right
           anchors.top: settingsBackButton.bottom
-          anchors.topMargin: Style.space(12)
-          spacing: Style.space(8)
+          anchors.topMargin: root.look.sp(12)
+          spacing: root.look.sp(8)
 
           Text {
             width: parent.width
@@ -1312,7 +1314,7 @@ Panel {
               : root.popupMoveOwner.status
             color: root.popupMoveOwner && root.popupMoveOwner.statusIsError ? Color.urgent : root.secondaryForeground
             font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
+            font.pixelSize: root.look.font.caption
           }
           Text {
             width: parent.width
@@ -1325,19 +1327,19 @@ Panel {
               : "Review the layout below. Accept it without retrying, or hide the popup; moves stay locked."
             color: root.secondaryForeground
             font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
+            font.pixelSize: root.look.font.caption
           }
           Row {
             visible: root.barMovePending
             height: visible ? implicitHeight : 0
-            spacing: Style.space(8)
+            spacing: root.look.sp(8)
             Button {
               text: "Use current layout"
               enabled: root.popupMoveOwner && root.popupMoveOwner.exited && root.barSnapshot !== null
               bordered: true
               foreground: root.contentForeground
               fontFamily: root.contentFontFamily
-              fontSize: Style.font.caption
+              fontSize: root.look.font.caption
               onClicked: root.useCurrentLayout()
             }
             Button {
@@ -1345,19 +1347,20 @@ Panel {
               bordered: true
               foreground: root.contentForeground
               fontFamily: root.contentFontFamily
-              fontSize: Style.font.caption
+              fontSize: root.look.font.caption
               onClicked: { root.closeArrange(); root.close() }
             }
           }
         }
 
         BarLayoutPane {
+          look: root.look
           id: barBoard
           visible: root.arrangeOpen
           anchors.left: parent.left
           anchors.right: parent.right
           anchors.top: arrangeStatus.bottom
-          anchors.topMargin: Style.space(12)
+          anchors.topMargin: root.look.sp(12)
           anchors.bottom: parent.bottom
           snapshot: root.barSnapshot
           busy: root.arrangeBusy
@@ -1374,12 +1377,12 @@ Panel {
           foreground: root.contentForeground
           mutedForeground: root.secondaryForeground
           borderColor: Color.menu.border
-          accent: Color.accent
+          accent: root.look.accent
           fontFamily: root.contentFontFamily
-          fontPixelSize: Style.font.caption
-          spacing: Style.space(8)
+          fontPixelSize: root.look.font.caption
+          spacing: root.look.sp(8)
           radius: Style.cornerRadius
-          rowHeight: Style.space(40)
+          rowHeight: root.look.sp(40)
         }
 
         Flickable {
@@ -1388,7 +1391,7 @@ Panel {
           anchors.left: parent.left
           anchors.right: parent.right
           anchors.top: settingsBackButton.bottom
-          anchors.topMargin: Style.space(16)
+          anchors.topMargin: root.look.sp(16)
           anchors.bottom: parent.bottom
           contentHeight: settingsContent.implicitHeight
           clip: true
@@ -1400,7 +1403,7 @@ Panel {
           id: settingsContent
           parent: settingsScroll.contentItem
           width: settingsScroll.width
-          spacing: Style.space(14)
+          spacing: root.look.sp(14)
 
           Text {
             // Never rich text: AutoText would fetch what a crafted string points at.
@@ -1408,7 +1411,7 @@ Panel {
             text: "Settings"
             color: root.contentForeground
             font.family: root.contentFontFamily
-            font.pixelSize: Style.font.title
+            font.pixelSize: root.look.font.title
             font.bold: true
           }
 
@@ -1416,7 +1419,7 @@ Panel {
           // the caption says so in the same words the confirmation will.
           Rectangle {
             width: parent.width
-            height: Math.max(unverifiedText.implicitHeight, unverifiedSwitch.implicitHeight) + Style.space(12) * 2
+            height: Math.max(unverifiedText.implicitHeight, unverifiedSwitch.implicitHeight) + root.look.sp(12) * 2
             radius: Style.cornerRadius
             color: Style.normalFill
             border.width: 1
@@ -1425,11 +1428,11 @@ Panel {
             Column {
               id: unverifiedText
               anchors.left: parent.left
-              anchors.leftMargin: Style.space(12)
+              anchors.leftMargin: root.look.sp(12)
               anchors.right: unverifiedSwitch.left
-              anchors.rightMargin: Style.space(16)
+              anchors.rightMargin: root.look.sp(16)
               anchors.verticalCenter: parent.verticalCenter
-              spacing: Style.space(4)
+              spacing: root.look.sp(4)
 
               Text {
                 // Never rich text: AutoText would fetch what a crafted string points at.
@@ -1438,7 +1441,7 @@ Panel {
                 text: "Allow updating unverified plugins"
                 color: root.contentForeground
                 font.family: root.contentFontFamily
-                font.pixelSize: Style.font.body
+                font.pixelSize: root.look.font.body
                 wrapMode: Text.WordWrap
               }
 
@@ -1450,7 +1453,7 @@ Panel {
                   + "On: upstream commits nobody has reviewed can be installed, pinned to the exact commit the check observed, after a confirmation."
                 color: root.secondaryForeground
                 font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
+                font.pixelSize: root.look.font.caption
                 wrapMode: Text.WordWrap
               }
             }
@@ -1458,7 +1461,7 @@ Panel {
             ToggleSwitch {
               id: unverifiedSwitch
               anchors.right: parent.right
-              anchors.rightMargin: Style.space(12)
+              anchors.rightMargin: root.look.sp(12)
               anchors.verticalCenter: parent.verticalCenter
               checked: store.allowUnverifiedUpdates
               interactive: true
@@ -1478,7 +1481,7 @@ Panel {
           // archive: a bounded threshold, never a weaker proof.
           Rectangle {
             width: parent.width
-            height: Math.max(transactionLimitText.implicitHeight, limitStepRow.implicitHeight) + Style.space(12) * 2
+            height: Math.max(transactionLimitText.implicitHeight, limitStepRow.implicitHeight) + root.look.sp(12) * 2
             radius: Style.cornerRadius
             color: Style.normalFill
             border.width: 1
@@ -1487,11 +1490,11 @@ Panel {
             Column {
               id: transactionLimitText
               anchors.left: parent.left
-              anchors.leftMargin: Style.space(12)
+              anchors.leftMargin: root.look.sp(12)
               anchors.right: limitStepRow.left
-              anchors.rightMargin: Style.space(16)
+              anchors.rightMargin: root.look.sp(16)
               anchors.verticalCenter: parent.verticalCenter
-              spacing: Style.space(4)
+              spacing: root.look.sp(4)
 
               Text {
                 // Never rich text: AutoText would fetch what a crafted string points at.
@@ -1500,7 +1503,7 @@ Panel {
                 text: "Transaction history limit"
                 color: root.contentForeground
                 font.family: root.contentFontFamily
-                font.pixelSize: Style.font.body
+                font.pixelSize: root.look.font.body
                 wrapMode: Text.WordWrap
               }
 
@@ -1511,7 +1514,7 @@ Panel {
                 text: "Keeps " + store.transactionLimit + " entries (8–128, default 32). History now: " + store.updateDataCount + "."
                 color: root.secondaryForeground
                 font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
+                font.pixelSize: root.look.font.caption
                 wrapMode: Text.WordWrap
               }
 
@@ -1524,7 +1527,7 @@ Panel {
                 text: "Nearly full: run Delete update data in Info below, or raise the limit."
                 color: root.contentForeground
                 font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
+                font.pixelSize: root.look.font.caption
                 wrapMode: Text.WordWrap
               }
 
@@ -1537,7 +1540,7 @@ Panel {
                 text: "The helper is using " + (store.updateDataStatus ? store.updateDataStatus.limit : "") + ": the saved value was unreadable, so the default applies."
                 color: root.contentForeground
                 font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
+                font.pixelSize: root.look.font.caption
                 wrapMode: Text.WordWrap
               }
             }
@@ -1545,9 +1548,9 @@ Panel {
             Row {
               id: limitStepRow
               anchors.right: parent.right
-              anchors.rightMargin: Style.space(12)
+              anchors.rightMargin: root.look.sp(12)
               anchors.verticalCenter: parent.verticalCenter
-              spacing: Style.space(8)
+              spacing: root.look.sp(8)
 
               Button {
                 id: limitDecreaseButton
@@ -1558,7 +1561,7 @@ Panel {
                 opacity: enabled ? 1 : 0.4
                 foreground: root.contentForeground
                 fontFamily: root.contentFontFamily
-                fontSize: Style.font.caption
+                fontSize: root.look.font.caption
                 onClicked: store.adjustTransactionLimit(-Model.TRANSACTION_LIMIT_STEP)
               }
 
@@ -1571,7 +1574,7 @@ Panel {
                 opacity: enabled ? 1 : 0.4
                 foreground: root.contentForeground
                 fontFamily: root.contentFontFamily
-                fontSize: Style.font.caption
+                fontSize: root.look.font.caption
                 onClicked: store.adjustTransactionLimit(Model.TRANSACTION_LIMIT_STEP)
               }
             }
@@ -1582,7 +1585,7 @@ Panel {
           // that a restart alone can go on serving.
           Rectangle {
             width: parent.width
-            height: restartShellButton.implicitHeight + Style.space(12) * 2
+            height: restartShellButton.implicitHeight + root.look.sp(12) * 2
             radius: Style.cornerRadius
             color: Style.normalFill
             border.width: 1
@@ -1591,7 +1594,7 @@ Panel {
             Button {
               id: restartShellButton
               anchors.right: parent.right
-              anchors.rightMargin: Style.space(12)
+              anchors.rightMargin: root.look.sp(12)
               anchors.verticalCenter: parent.verticalCenter
               iconText: "󰜉"
               text: "Restart Shell"
@@ -1601,12 +1604,13 @@ Panel {
               opacity: enabled ? 1 : 0.4
               foreground: root.contentForeground
               fontFamily: root.contentFontFamily
-              fontSize: Style.font.caption
+              fontSize: root.look.font.caption
               onClicked: store.restartShell()
             }
           }
 
           SettingsInfo {
+            look: root.look
             width: parent.width
             pluginsBasePath: store.updateDataPaths ? store.updateDataPaths.plugins : ""
             updateDataPath: store.updateDataPaths ? store.updateDataPaths.active : ""
@@ -1627,6 +1631,7 @@ Panel {
       }
 
       ActionConfirmDialog {
+        look: root.look
         id: confirm
         anchors.fill: parent
         z: 10
@@ -1656,6 +1661,7 @@ Panel {
       }
 
       ChoiceDialog {
+        look: root.look
         id: placement
         anchors.fill: parent
         z: 10

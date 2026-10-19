@@ -42,7 +42,7 @@ test("SettingsInfo shares safe, content-sized Info and About cards", () => {
     assert.match(card.body, /radius: Style\.cornerRadius/)
     assert.match(card.body, /border\.width: 1/)
     assert.match(card.body, /border\.color: Qt\.alpha\(root\.secondaryForeground, 0\.35\)/)
-    assert.match(card.body, /height: \w+\.implicitHeight \+ Style\.space\(12\) \* 2/)
+    assert.match(card.body, /height: \w+\.implicitHeight \+ root\.look\.sp\(12\) \* 2/)
   }
   for (const text of all.filter(object => object.type === "Text")) {
     assert.match(text.body, /textFormat: Text\.PlainText/)
@@ -55,7 +55,7 @@ test("SettingsInfo shares safe, content-sized Info and About cards", () => {
   const path = byId(all, "pathValue")
   assert.equal(label.parent, path.parent)
   assert.match(label.body, /color: root\.secondaryForeground/)
-  assert.match(path.body, /color: Color\.accent/)
+  assert.match(path.body, /color: root\.look\.accent/)
   assert.match(path.body, /text: root\.displayPath\(entry\.path\)/)
   assert.match(path.body, /font\.bold: true/)
   for (const text of [label, path]) assert.match(text.body, /width: parent\.width/)
@@ -104,10 +104,10 @@ for (const file of ["Panel.qml"]) {
       assert.match(card.body, /border\.width:\s*1\b/)
       assert.match(card.body, /border\.color:\s*Qt\.alpha\(root\.secondaryForeground,\s*0\.35\)/)
       assert.match(control.body, /anchors\.right:\s*parent\.right\b/)
-      assert.match(control.body, /anchors\.rightMargin:\s*Style\.space\(12\)/)
+      assert.match(control.body, /anchors\.rightMargin:\s*root\.look\.sp\(12\)/)
       const height = card.body.match(/^\s*height:\s*(.+)$/m)?.[1]
       assert.ok(height, `${id} has content-driven height`)
-      const context = { Style: { space: n => n } }
+      const context = { root: { look: { sp: n => n } } }
       for (const [switchId, textId] of switches) {
         context[switchId] = { implicitHeight: 24 }
         context[textId] = { implicitHeight: 80 }
@@ -122,13 +122,13 @@ for (const file of ["Panel.qml"]) {
       const control = byId(all, id)
       const label = byId(all, textId)
       assert.equal(label.parent, control.parent, "label and toggle share the card")
-      assert.match(label.body, /anchors\.leftMargin:\s*Style\.space\(12\)/)
+      assert.match(label.body, /anchors\.leftMargin:\s*root\.look\.sp\(12\)/)
       assert.match(label.body, new RegExp(`anchors\\.right:\\s*${id}\\.left\\b`))
       assert.equal((label.body.match(/wrapMode:\s*Text\.WordWrap/g) || []).length, 2)
       const height = control.parent.body.match(/^\s*height:\s*(.+)$/m)?.[1]
       for (const textHeight of [18, 240]) {
         assert.equal(runInNewContext(height, {
-          Style: { space: n => n * 1.5 },
+          root: { look: { sp: n => n * 1.5 } },
           [id]: { implicitHeight: 36 }, [textId]: { implicitHeight: textHeight }
         }), Math.max(36, textHeight) + 36)
       }
