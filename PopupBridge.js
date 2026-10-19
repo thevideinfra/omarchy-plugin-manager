@@ -1,13 +1,11 @@
-// The way back from the expanded window to the popup.
+// Shared registry of per-monitor bar widgets plus the headless move owner.
 //
-// A panel plugin's scoped shell carries no bar reference, and shell.summon
-// routes a plugin that also declares a panel kind to the panel loader, never
-// to its bar widget. So the expanded window cannot ask the host to reopen the
-// popup. Both windows live in one QML engine, and a `.pragma library` script
-// is a single shared instance there: each per-monitor bar widget registers
-// itself here, and the expanded window picks the one on the output it was
-// summoned to. Nothing crosses a process or trusts anything but live QML
-// objects the plugin itself created.
+// A `.pragma library` script is a single shared instance in one QML engine:
+// each bar widget registers itself here, and the retained move owner
+// (MoveOwner.qml, the keepLoaded panel entry that survives a bar rebuild)
+// uses it to reopen the popup on the right output after a bar move. Nothing
+// crosses a process or trusts anything but live QML objects the plugin itself
+// created.
 .pragma library
 
 var widgets = []
@@ -18,12 +16,14 @@ var continuation = null
 function register(widget) {
   if (widget && widgets.indexOf(widget) < 0) widgets.push(widget)
   if (widget && typeof widget.setMoveOwner === "function") widget.setMoveOwner(moveOwner)
+  popupOpenedChanged()
 }
 
 function unregister(widget) {
   var index = widgets.indexOf(widget)
   if (index >= 0) widgets.splice(index, 1)
   if (widget && typeof widget.setMoveOwner === "function") widget.setMoveOwner(null)
+  popupOpenedChanged()
 }
 
 function registerOwner(owner) {
@@ -31,6 +31,25 @@ function registerOwner(owner) {
   cancelArrange()
   moveOwner = owner
   for (var i = 0; i < widgets.length; i++) register(widgets[i])
+  popupOpenedChanged()
+}
+
+// The shell asks the retained owner whether "the plugin" is open (toggle and
+// hide route there once it declares a panel). This array is not observable,
+// so each widget pushes its opened changes and the owner holds the result.
+function popupOpenedChanged() {
+  if (!moveOwner) return
+  var anyOpen = false
+  for (var i = 0; i < widgets.length; i++)
+    if (widgets[i] && widgets[i].opened === true) { anyOpen = true; break }
+  moveOwner.popupOpen = anyOpen
+}
+
+// Shell hide/toggle-off: close every popup that can close.
+function closePopups() {
+  var list = widgets.slice()
+  for (var i = 0; i < list.length; i++)
+    if (list[i] && typeof list[i].close === "function") list[i].close()
 }
 
 function unregisterOwner(owner) {

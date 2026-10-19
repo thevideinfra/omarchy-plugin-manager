@@ -208,40 +208,6 @@ function allowUnverifiedUpdates(settings) {
     && settings.allowUnverifiedUpdates === true
 }
 
-function allowUnverifiedInstalls(settings) {
-  return !!settings && hasOwnKey(settings, "allowUnverifiedInstalls")
-    && settings.allowUnverifiedInstalls === true
-}
-
-// Which window the expanded panel opens as: the layer-shell overlay, or a
-// plain toplevel the compositor tiles. Read as strictly as the other two, so
-// a hand edit that is not the boolean true leaves the overlay in place.
-function tiledExpandedPanel(settings) {
-  return !!settings && hasOwnKey(settings, "tiledExpandedPanel")
-    && settings.tiledExpandedPanel === true
-}
-
-// How the manager opens from the bar, and where its corner button sends it
-// next: the popup, the overlay, or a plain window the compositor tiles. One
-// value instead of a switch, so the button that changes it is also the place
-// it shows. An entry written before this existed carries only the tiled
-// switch, which meant "the full panel is a window", so it reads as window.
-var OPEN_AS_MODES = ["popup", "overlay", "window"]
-
-function openAs(settings) {
-  if (settings && hasOwnKey(settings, "openAs") && OPEN_AS_MODES.indexOf(settings.openAs) >= 0)
-    return settings.openAs
-  return tiledExpandedPanel(settings) ? "window" : "popup"
-}
-
-// The entry to write back with the mode set. The tiled switch it replaces is
-// dropped, so the file never says two things about the same choice.
-function withOpenAs(entry, mode) {
-  var out = withSelfSetting(entry, "tiledExpandedPanel", false)
-  out.openAs = OPEN_AS_MODES.indexOf(mode) >= 0 ? mode : "popup"
-  return out
-}
-
 // Active-transaction capacity bounds. The helper enforces the same range read
 // from the same shell.json entry, so the panel and the helper agree without a
 // new command-line or request shape: only the threshold moves, never proof.
@@ -279,65 +245,6 @@ function transactionLimitFloor(status) {
 // back while Settings still shows the saved value.
 function transactionLimitFallback(status, configured) {
   return !!status && status.available === true && status.limit !== configured
-}
-
-// This plugin's own entry, found in shell.json itself rather than in what the
-// loader printed. The expanded window has to know which kind of window to open
-// before the store's first load has run, so it reads the file and asks here.
-// The search mirrors the loader's jq: the first object whose id matches, in
-// bar.layout's sections first and in .plugins after. The text is a whole
-// config file written by hand, so it is treated as hostile throughout — the
-// same megabyte the loader reads, a guarded parse, plain objects only, and no
-// key named __proto__ is ever walked. The entry comes back as text, so it
-// feeds straight into parseSelfSettings and is bounded there too. The cap
-// counts characters where the loader counts bytes, so a file past a megabyte
-// of multibyte text can pass here after the loader's jq gave up on it: the
-// window would then open tiled while the switch shows off, until the file is
-// back under the cap. A hand-written config that size is not a case to serve.
-var MAX_SHELL_CONFIG_BYTES = 1048576
-
-function selfEntryFromShellConfig(rawJson, pluginId) {
-  var text = String(rawJson || "")
-  var wanted = String(pluginId || "")
-  if (text === "" || wanted === "" || text.length > MAX_SHELL_CONFIG_BYTES) return ""
-  var config
-  try {
-    config = JSON.parse(text)
-  } catch (error) {
-    return ""
-  }
-  if (!config || Array.isArray(config) || typeof config !== "object") return ""
-
-  var lists = []
-  var bar = hasOwnKey(config, "bar") ? config.bar : null
-  var layout = bar && typeof bar === "object" && !Array.isArray(bar) && hasOwnKey(bar, "layout")
-    ? bar.layout : null
-  if (layout && typeof layout === "object" && !Array.isArray(layout)) {
-    for (var section in layout) {
-      if (!hasOwnKey(layout, section) || section === "__proto__") continue
-      if (Array.isArray(layout[section])) lists.push(layout[section])
-    }
-  }
-  if (hasOwnKey(config, "plugins") && Array.isArray(config.plugins)) lists.push(config.plugins)
-
-  for (var i = 0; i < lists.length; i++) {
-    for (var j = 0; j < lists[i].length; j++) {
-      var entry = lists[i][j]
-      if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue
-      if (!hasOwnKey(entry, "id")) continue
-      // jq compares `.id | tostring`, which for anything but a string or a
-      // number would be comparing this id against a rendering of a value.
-      var type = typeof entry.id
-      if (type !== "string" && !(type === "number" && isFinite(entry.id))) continue
-      if (String(entry.id) !== wanted) continue
-      try {
-        return JSON.stringify(entry)
-      } catch (error) {
-        return ""
-      }
-    }
-  }
-  return ""
 }
 
 // One compact JSON object per line, with path, remote, exactTag and the
@@ -797,33 +704,6 @@ function normalizeGitUrl(raw) {
   return String(raw || "").trim()
 }
 
-// Deliberately narrow. The url becomes one argv element for `omarchy plugin
-// add`, so a leading dash would read as a flag, and whitespace never belongs
-// in a clone target. Anything that is not plainly https/ssh/scp-style git is
-// rejected here rather than handed to the CLI to fail on.
-function isValidGitUrl(raw) {
-  var url = normalizeGitUrl(raw)
-  if (url === "") return false
-  if (/\s/.test(url)) return false
-  if (/^https:\/\/[^\/\s]+\/.+/.test(url)) return true
-  if (/^ssh:\/\/[^\/\s]+\/.+/.test(url)) return true
-  if (/^git@[^:\s]+:.+/.test(url)) return true
-  return false
-}
-
-// The repo name is a better confirm-dialog subject than the full url, which
-// wraps badly and buries the part you actually check.
-function repoLabel(url) {
-  var text = normalizeGitUrl(url)
-  var withoutSuffix = text.replace(/\.git$/, "")
-  var parts = withoutSuffix.split(/[\/:]/)
-  var last = ""
-  for (var i = parts.length - 1; i >= 0; i--) {
-    if (parts[i] !== "") { last = parts[i]; break }
-  }
-  return last === "" ? text : last
-}
-
 function lastLine(text) {
   var lines = String(text || "").split("\n")
   for (var i = lines.length - 1; i >= 0; i--) {
@@ -842,16 +722,6 @@ function lastLine(text) {
 // is unplaced — and why the section has to be asked for rather than guessed.
 
 var BAR_SECTIONS = ["left", "center", "right"]
-
-// Before an install there is no manifest to read, so the registry's own
-// human-readable kind is all there is to go on: "Bar widget", "Service + Bar
-// widget", "Menu + Bar widget". "Bar" alone is a whole-bar replacement and
-// takes no place in a section — and it is a prefix of "Bar widget", so this
-// matches the phrase rather than the word.
-function catalogNeedsPlacement(entry) {
-  if (!entry) return false
-  return String(entry.kind || "").toLowerCase().indexOf("bar widget") >= 0
-}
 
 // By id, never by index: a background reload can rebuild the list while a
 // question about one of its rows is still on screen.
@@ -1056,7 +926,7 @@ function barLayoutMove(snapshot, latest, fromSection, fromIndex, section, gap) {
       "--section", section, "--index", String(target)]) })
 }
 
-// Popup section choices use the retained positional mover; Expanded keeps moveCommand.
+// Popup section choices use the retained positional mover; moveCommand stays for the direct form.
 // Return its arguments, not a dispatch: startBarMove must recheck the latest layout.
 function barSectionMovePlan(row, raw, section) {
   if (!canMove(row)) return null
@@ -1088,7 +958,6 @@ function barSectionMovePlan(row, raw, section) {
 }
 
 function actionVerb(kind) {
-  if (kind === "install") return "Install"
   if (kind === "update") return "Update"
   if (kind === "bulk-update") return "Update"
   if (kind === "remove") return "Remove"
@@ -1099,7 +968,6 @@ function actionVerb(kind) {
 }
 
 function successMessage(kind, label) {
-  if (kind === "install") return "Installed " + label
   if (kind === "update") return "Updated " + label
   if (kind === "remove") return "Removed " + label
   if (kind === "enable") return "Enabled " + label
@@ -1119,7 +987,6 @@ function failureMessage(kind, stderrText, exitCode) {
 // "Updateing" is what naive suffixing gets you; the in-flight line reads too
 // often to leave it broken.
 function actionGerund(kind) {
-  if (kind === "install") return "Installing"
   if (kind === "update") return "Updating"
   if (kind === "remove") return "Removing"
   if (kind === "enable") return "Enabling"
@@ -1130,78 +997,12 @@ function actionGerund(kind) {
 
 // ---- Marketplace catalog --------------------------------------------------
 //
-// omarchyplugins.com publishes the same resolved catalog its own site renders
-// from: name, description, author, category, GitHub stars, verification state,
-// activity timestamps, and a curated install command per plugin. Anonymous
-// Marketplace views, copies, and hearts come
-// from the site's engagement API and are joined by plugin id before parsing.
-// We read the install command, we never execute it — the install url is parsed
-// out and validated, then run through the same argv array the Installed tab uses.
+// omarchyplugins.com publishes a resolved catalog. This panel reads only what
+// it needs to manage installed plugins: who is verified, GitHub star counts,
+// and the one commit the marketplace reviewed for each listing (the only
+// snapshot a verified update may install).
 
-var CATALOG_ASSET_BASE = "https://omarchyplugins.com/"
-
-// The registry publishes thumbnails as paths under its own host. Anything
-// absolute or protocol-relative in that field is pointing the shell's image
-// loader somewhere the registry does not control, so it gets no request at
-// all rather than a request to a url built by concatenation.
-function catalogAssetUrl(path) {
-  var text = plainText(path).trim()
-  if (text === "" || text.indexOf("//") === 0 || /^[a-z][a-z0-9+.-]*:/i.test(text)) return ""
-  return CATALOG_ASSET_BASE + text.replace(/^\/+/, "")
-}
 var ALL_CATEGORIES = "all"
-var ALL_CATALOG_KINDS = "all"
-var CATALOG_AVAILABILITY_ALL = "all"
-var CATALOG_AVAILABILITY_AVAILABLE = "available"
-var CATALOG_AVAILABILITY_INSTALLED = "installed"
-var CATALOG_SORT_STARS = "stars"
-var CATALOG_SORT_HEARTS = "hearts"
-var CATALOG_SORT_RECENTLY_ADDED = "recently-added"
-var CATALOG_SORT_ACTIVITY = "updated"
-var CATALOG_SORT_VIEWS = "views"
-var CATALOG_SORT_COPIES = "copies"
-var CATALOG_SORT_RANK = "rank"
-var CATALOG_SORT_INSTALL_RATE = "installRate"
-var CATALOG_SORT_VERIFIED = "verified"
-var CATALOG_SORT_UNVERIFIED = "unverified"
-var CATALOG_SORT_NAME = "name"
-
-// The registry assigns every plugin an accent and a pair of initials — its
-// own fallback tile for listings with no screenshot. We reuse them, which
-// also covers the case where the previews cannot be decoded at all (they are
-// WebP, and Qt only reads it when qt6-imageformats is installed).
-var ACCENT_COLORS = {
-  rose: "#e0708f",
-  violet: "#9d7cd8",
-  cyan: "#4fb3c8",
-  coral: "#e08a63",
-  amber: "#d6a44f",
-  lime: "#8ebf62"
-}
-
-// "Installed" has to read as installed at a glance, and green is the only
-// colour that says that without a caption. Omarchy themes carry no success
-// role to borrow — foreground, background, accent, urgent, muted, and that is
-// all — so the badge brings its own, in the two shades it takes to stay
-// legible at both ends of the theme range (>=5:1 against either default).
-var INSTALLED_ON_DARK = "#5fb37a"
-var INSTALLED_ON_LIGHT = "#1f7a4d"
-
-function installedTint(background) {
-  if (!background) return INSTALLED_ON_DARK
-  // Weighted for how the eye actually reads brightness: a full-blue panel is
-  // dark and a full-green one is light, which neither an average nor a max
-  // would get right.
-  var lightness = 0.2126 * Number(background.r || 0)
-    + 0.7152 * Number(background.g || 0)
-    + 0.0722 * Number(background.b || 0)
-  return lightness > 0.5 ? INSTALLED_ON_LIGHT : INSTALLED_ON_DARK
-}
-
-function accentColor(name) {
-  var key = String(name || "").toLowerCase()
-  return ACCENT_COLORS.hasOwnProperty(key) ? ACCENT_COLORS[key] : ACCENT_COLORS.violet
-}
 
 function parseCatalog(raw) {
   try {
@@ -1213,39 +1014,24 @@ function parseCatalog(raw) {
   }
 }
 
-// Ids arrive at the worker as a plain list (a message crosses threads by
-// copy, and a null-prototype set would not survive the trip); rebuild the
-// same null-prototype set on the other side so hostile names stay data.
-function idSetFromList(ids) {
-  var set = Object.create(null)
-  for (var i = 0; i < (ids || []).length; i++) {
-    if (typeof ids[i] === "string" && ids[i] !== "") set[ids[i]] = true
-  }
-  return set
-}
-
 // Raw catalog text in, stamped entries out — everything the worker thread
 // needs in one pure call, so the main thread never parses 2MB of JSON or
 // sanitises thirty thousand fields while the shell should be answering IPC.
-function buildCatalog(raw, installedIdList) {
+function buildCatalog(raw) {
   var doc = parseCatalog(raw)
   if (!doc) return { entries: null, error: "Could not read the plugin catalog" }
-  return { entries: catalogEntries(doc, idSetFromList(installedIdList)), error: "" }
-}
-
-function installedIdSet(rows) {
-  // Plugin ids are untrusted property names. A null prototype keeps valid ids
-  // such as `constructor` and `__proto__` from becoming object machinery.
-  var set = Object.create(null)
-  for (var i = 0; i < (rows || []).length; i++) {
-    if (rows[i] && rows[i].id) set[String(rows[i].id)] = true
+  // A hostile field (an object whose toString is not callable) makes the
+  // sanitizers throw; that is an unreadable catalog, not a crash.
+  try {
+    return { entries: catalogEntries(doc), error: "" }
+  } catch (error) {
+    return { entries: null, error: "Could not read the plugin catalog" }
   }
-  return set
 }
 
 // The marketplace is the only party that says who passed its security
 // baseline, so the Installed rows learn it by id from the same catalog the
-// Browse cards draw. Null prototype for the same reason as installedIdSet.
+// panel's star counts come from. Null prototype so hostile ids stay data.
 function verifiedIdSet(entries) {
   var set = Object.create(null)
   for (var i = 0; i < (entries || []).length; i++) {
@@ -1284,15 +1070,6 @@ function rowStarLabel(row, starsById) {
   return rowCountLabel(row, starsById)
 }
 
-// Marketplace hearts per plugin id.
-function catalogHeartsById(entries) {
-  return catalogCountById(entries, "marketplaceHearts")
-}
-
-function rowHeartLabel(row, heartsById) {
-  return rowCountLabel(row, heartsById)
-}
-
 function isVerified(row, verifiedIds) {
   return !!(row && row.id) && hasOwnKey(verifiedIds, row.id)
 }
@@ -1311,70 +1088,8 @@ function catalogCount(value) {
   return value
 }
 
-function catalogEngagementCount(value) {
-  var count = catalogCount(value)
-  return count === null ? 0 : count
-}
-
-// The curated installCommand carries the exact clone url — including the .git
-// suffix that `repo` often omits — so the url is taken from there. It is
-// pulled out and validated rather than run: a command string from the network
-// is data, never something to hand to a shell.
-function installUrlFor(entry) {
-  if (!entry) return ""
-  var parts = String(entry.installCommand || "").trim().split(/\s+/)
-  for (var i = 0; i < parts.length; i++) {
-    if (isValidGitUrl(parts[i])) return parts[i]
-  }
-  return isValidGitUrl(entry.repo) ? normalizeGitUrl(entry.repo) : ""
-}
-
-// Whether the panel can install a listing at all. It installs one exact
-// marketplace-verified commit through the pinned helper, so a listing with no
-// unambiguous verified snapshot — unreviewed, duplicated id, non-GitHub
-// repository, no full SHA — has nothing exact to install and gets a stated
-// reason instead of a button that could only fail. `allowUnverified` is the
-// user's own opt-in (see allowUnverifiedInstalls), which adds the second path
-// below; with it off, which is the default, this is the whole of the offer.
-//
-// The displayed url and the fetched repository must also be the same place.
-// `installCommand` is free text the registry supplies and `repo` is what the
-// verified snapshot is bound to; if they were allowed to disagree, a listing
-// could show an official url in the confirmation and install somebody else's
-// repository. Comparison is canonical, so a `.git` suffix, a trailing slash,
-// an ssh form or a different case are still the same repository.
-function catalogInstallable(entry, isInstalled, allowUnverified) {
-  return catalogVerifiedInstallable(entry, isInstalled)
-    || catalogUnverifiedInstallable(entry, isInstalled, allowUnverified)
-}
-
-// What both paths need before either can be considered: a listing the
-// registry actually offers, with a usable url, that is not already here.
-function catalogInstallOffered(entry, isInstalled) {
-  return !!entry && entry.installAvailable === true && entry.installUrl !== "" && !isInstalled
-}
-
-function catalogVerifiedInstallable(entry, isInstalled) {
-  if (!catalogInstallOffered(entry, isInstalled)) return false
-  var snapshot = entry.updateSnapshot
-  return !!snapshot && canonicalUpdateRepository(entry.installUrl) === snapshot.repository
-}
-
-// The opt-in path (see allowUnverifiedInstalls), for a listing the
-// marketplace never reviewed. A verified snapshot always wins, so this is
-// reached only when there is nothing reviewed to install; the displayed url
-// and the fetched repository must agree here exactly as they must there,
-// since a listing that could disagree could install somebody else's code.
-function catalogUnverifiedInstallable(entry, isInstalled, allowUnverified) {
-  if (allowUnverified !== true || catalogVerifiedInstallable(entry, isInstalled)) return false
-  if (!catalogInstallOffered(entry, isInstalled)) return false
-  var tip = entry.unverifiedSnapshot
-  return !!tip && canonicalUpdateRepository(entry.installUrl) === tip.repository
-}
-
-function catalogEntries(doc, installedIds, allowUnverified) {
+function catalogEntries(doc) {
   if (!doc || !Array.isArray(doc.plugins)) return []
-  var installed = installedIds || {}
   var out = []
   var ids = Object.create(null)
   for (var n = 0; n < doc.plugins.length; n++) {
@@ -1385,394 +1100,25 @@ function catalogEntries(doc, installedIds, allowUnverified) {
   for (var i = 0; i < doc.plugins.length; i++) {
     var p = doc.plugins[i]
     if (!p || !p.id) continue
-    // Built-ins ship with Omarchy and are always present; listing them under
-    // "browse and install" would be offering something you already have.
+    // Built-ins ship with Omarchy and have no listing to verify against.
     if (p.sourceType === "builtin") continue
 
-    var sourceCategory = plainText(p.category).trim()
-    var categoryPresent = sourceCategory !== ""
-    var entry = {
+    out.push({
       id: plainText(p.id),
       name: plainText(p.name || p.id),
-      description: plainText(p.description).trim(),
-      author: plainText(p.author).trim(),
-      version: plainText(p.version).trim(),
-      // Missing categories still belong in the useful Other browse group, but
-      // presence travels separately so details never present that fallback as
-      // a fact supplied by the listing.
-      category: categoryPresent ? sourceCategory : "Other",
-      categoryPresent: categoryPresent,
-      kind: plainText(p.kind),
       repo: plainText(p.repo),
-      installCommand: plainText(p.installCommand),
-      installAvailable: p.installAvailable === true,
-      installNote: plainText(p.installNote).trim(),
       verified: p.verificationStatus === "verified",
       stars: catalogCount(p.stars),
-      marketplaceHearts: catalogCount(p.marketplaceHearts),
-      marketplaceViews: catalogCount(p.marketplaceViews),
-      marketplaceCopies: catalogCount(p.marketplaceCopies),
-      listedAt: plainText(p.listedAt).trim(),
-      addedAt: plainText(p.addedAt).trim(),
-      repositoryUpdatedAt: plainText(p.repositoryUpdatedAt).trim(),
-      versionUpdatedAt: plainText(p.versionUpdatedAt).trim(),
-      accent: String(p.accent || ""),
-      initials: plainText(p.initials).toUpperCase(),
-      license: plainText(p.license).trim(),
-      thumbnail: catalogAssetUrl(p.previewThumbnail),
       // The one commit the marketplace actually reviewed. Verification is a
       // statement about this snapshot, not about the branch it came from.
-      verifiedCommit: normalizeGitObjectId(p.verificationCommit),
-      updateSnapshot: ids[p.id] === 1 ? catalogUpdateSnapshot(p) : null,
-      // What the install opt-in would have to work with instead: the branch
-      // the marketplace validated, on a listing it never verified a snapshot
-      // of. Null whenever a verified snapshot exists, so the reviewed path
-      // is the only one the rest of the panel can reach for such a listing.
-      unverifiedSnapshot: ids[p.id] === 1 ? catalogUnverifiedSnapshot(p) : null,
-      branch: String(p.listingValidatedBranch || ""),
-      repoPreview: repoPreviewUrl(p.repo, p.listingValidatedBranch),
-      installed: hasOwnKey(installed, p.id)
-    }
-    // Both derived once here, on the worker thread, rather than on every
-    // keystroke: a search lowercases four fields per entry and the Recently
-    // added sort parses a date per entry, and the grid re-filters all two
-    // thousand entries each time the query changes.
-    entry.searchText = catalogSearchText(entry)
-    entry.listedTimestamp = catalogTimestamp(entry)
-    entry.activityTimestamp = catalogActivityTimestamp(entry)
-    entry.installUrl = installUrlFor(entry)
-    // A listing with no usable url, or no verified snapshot to install exactly,
-    // cannot be installed from here whatever the registry claims: the flag
-    // follows the evidence rather than the other way round.
-    entry.installable = catalogInstallable(entry, entry.installed, allowUnverified)
-    // Set only when the opt-in path is the only one on offer, so a surface can
-    // say so rather than presenting an unreviewed tip as a reviewed snapshot.
-    entry.installUnverified = catalogUnverifiedInstallable(entry, entry.installed, allowUnverified)
-    out.push(entry)
-  }
-
-  return sortCatalog(out, CATALOG_SORT_STARS)
-}
-
-function compareCatalogText(leftValue, rightValue) {
-  var left = String(leftValue || "").toLowerCase()
-  var right = String(rightValue || "").toLowerCase()
-  if (left < right) return -1
-  if (left > right) return 1
-  // Case-insensitive ordering is the contract; raw text only makes values
-  // that differ by case deterministic rather than engine-dependent.
-  left = String(leftValue || "")
-  right = String(rightValue || "")
-  if (left < right) return -1
-  if (left > right) return 1
-  return 0
-}
-
-function isCatalogListedTimestamp(value) {
-  var match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?Z$/.exec(value)
-  if (!match) return false
-
-  var year = Number(match[1])
-  var month = Number(match[2])
-  var day = Number(match[3])
-  var hour = Number(match[4])
-  var minute = Number(match[5])
-  var second = Number(match[6])
-  if (month < 1 || month > 12 || hour > 23 || minute > 59 || second > 59) return false
-
-  var daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-  if (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) daysInMonth[1] = 29
-  return day >= 1 && day <= daysInMonth[month - 1]
-}
-
-function catalogTimestamp(entry) {
-  var listedAt = plainText(entry && entry.listedAt).trim()
-  var addedAt = plainText(entry && entry.addedAt).trim()
-  var value = isCatalogListedTimestamp(listedAt) ? listedAt : addedAt
-  if (value === "") return null
-  var timestamp = Date.parse(value)
-  return isFinite(timestamp) ? timestamp : null
-}
-
-// Recent activity mirrors the website's activityTime: the newest of the
-// version and repository timestamps. Unknown stays unknown and sorts after
-// real activity, as missing stars do.
-function catalogActivityTimestamp(entry) {
-  if (!entry) return null
-  var candidates = [entry.versionUpdatedAt, entry.repositoryUpdatedAt]
-  var best = null
-  for (var i = 0; i < candidates.length; i++) {
-    var text = plainText(candidates[i]).trim()
-    if (text === "") continue
-    var timestamp = Date.parse(text)
-    if (!isFinite(timestamp)) continue
-    if (best === null || timestamp > best) best = timestamp
-  }
-  return best
-}
-
-// Install rate mirrors the website: copies per detail view ranked by the
-// lower bound of the 95% Wilson score interval, capped at 100%. Listings
-// without an install command or with fewer than 20 views are unrated (-1)
-// and sort after rated listings.
-function catalogInstallRateScore(entry) {
-  if (!entry || !String(entry.installCommand || "").trim()) return -1
-  var views = catalogEngagementCount(entry.marketplaceViews)
-  if (views < 20) return -1
-  var copies = Math.min(catalogEngagementCount(entry.marketplaceCopies), views)
-  if (!copies) return 0
-  var rate = copies / views
-  var z = 1.96
-  var center = rate + z * z / (2 * views)
-  var margin = z * Math.sqrt((rate * (1 - rate) + z * z / (4 * views)) / views)
-  return (center - margin) / (1 + z * z / views)
-}
-
-function catalogInstallRateViews(entry) {
-  var views = entry ? entry.marketplaceViews : null
-  return views === null || views === undefined ? -1 : views
-}
-
-// Top ranked mirrors the website's engagementRanks: per-metric competition
-// ranks over hearts, copies, views and stars are summed, and the smallest sum
-// wins. Listings with no signal in any metric stay unranked and sort after.
-function catalogRankScores(entries) {
-  var metrics = ["marketplaceHearts", "marketplaceCopies", "marketplaceViews", "stars"]
-  var counts = []
-  var ranked = []
-  for (var i = 0; i < (entries || []).length; i++) {
-    var row = []
-    var hasSignal = false
-    for (var m = 0; m < metrics.length; m++) {
-      var value = catalogEngagementCount(entries[i] ? entries[i][metrics[m]] : null)
-      row.push(value)
-      if (value > 0) hasSignal = true
-    }
-    counts.push(row)
-    if (hasSignal) ranked.push(i)
-  }
-  var sums = []
-  for (var k = 0; k < (entries || []).length; k++) sums.push(0)
-  var overall = []
-  for (var o = 0; o < (entries || []).length; o++) overall.push(null)
-  if (ranked.length === 0) return overall
-  for (var metric = 0; metric < metrics.length; metric++) {
-    var ordered = ranked.slice().sort(function(left, right) {
-      if (counts[right][metric] !== counts[left][metric]) return counts[right][metric] - counts[left][metric]
-      return left - right
-    })
-    var rank = 0
-    var previous = null
-    for (var n = 0; n < ordered.length; n++) {
-      var value = counts[ordered[n]][metric]
-      if (value !== previous) rank = n + 1
-      previous = value
-      sums[ordered[n]] += rank
-    }
-  }
-  var byScore = ranked.slice().sort(function(left, right) {
-    if (sums[left] !== sums[right]) return sums[left] - sums[right]
-    return left - right
-  })
-  var rank = 0
-  var previous = null
-  for (var s = 0; s < byScore.length; s++) {
-    if (sums[byScore[s]] !== previous) rank = s + 1
-    previous = sums[byScore[s]]
-    overall[byScore[s]] = rank
-  }
-  return overall
-}
-
-function compareCatalogEntries(left, right, sort) {
-  var a = left.entry
-  var b = right.entry
-  var mode = sort || CATALOG_SORT_STARS
-  if (mode === CATALOG_SORT_RECENTLY_ADDED) {
-    var leftHasTimestamp = left.timestamp !== null && left.timestamp !== undefined
-    var rightHasTimestamp = right.timestamp !== null && right.timestamp !== undefined
-    if (leftHasTimestamp !== rightHasTimestamp) return leftHasTimestamp ? -1 : 1
-    if (leftHasTimestamp && left.timestamp !== right.timestamp) return left.timestamp > right.timestamp ? -1 : 1
-  } else if (mode === CATALOG_SORT_ACTIVITY) {
-    var leftHasActivity = left.activity !== null && left.activity !== undefined
-    var rightHasActivity = right.activity !== null && right.activity !== undefined
-    if (leftHasActivity !== rightHasActivity) return leftHasActivity ? -1 : 1
-    if (leftHasActivity && left.activity !== right.activity) return left.activity > right.activity ? -1 : 1
-  } else if (mode === CATALOG_SORT_STARS || mode === CATALOG_SORT_HEARTS
-    || mode === CATALOG_SORT_VIEWS || mode === CATALOG_SORT_COPIES) {
-    var field = mode === CATALOG_SORT_HEARTS ? "marketplaceHearts"
-      : mode === CATALOG_SORT_VIEWS ? "marketplaceViews"
-      : mode === CATALOG_SORT_COPIES ? "marketplaceCopies" : "stars"
-    var leftMetric = a[field] === null || a[field] === undefined ? -1 : a[field]
-    var rightMetric = b[field] === null || b[field] === undefined ? -1 : b[field]
-    if (leftMetric !== rightMetric) return rightMetric - leftMetric
-  } else if (mode === CATALOG_SORT_INSTALL_RATE) {
-    if (left.installRate !== right.installRate) return right.installRate - left.installRate
-    var leftViews = catalogInstallRateViews(a)
-    var rightViews = catalogInstallRateViews(b)
-    if (leftViews !== rightViews) return rightViews - leftViews
-  } else if (mode === CATALOG_SORT_RANK) {
-    var leftHasRank = left.rank !== null && left.rank !== undefined
-    var rightHasRank = right.rank !== null && right.rank !== undefined
-    if (leftHasRank !== rightHasRank) return leftHasRank ? -1 : 1
-    if (leftHasRank && left.rank !== right.rank) return left.rank - right.rank
-  } else if (mode === CATALOG_SORT_VERIFIED || mode === CATALOG_SORT_UNVERIFIED) {
-    var leftVerified = a.verified === true
-    var rightVerified = b.verified === true
-    if (leftVerified !== rightVerified) {
-      if (mode === CATALOG_SORT_VERIFIED) return leftVerified ? -1 : 1
-      return leftVerified ? 1 : -1
-    }
-  }
-
-  var leftName = String(a.name || "").toLowerCase()
-  var rightName = String(b.name || "").toLowerCase()
-  var byName = leftName < rightName ? -1 : (leftName > rightName ? 1 : 0)
-  if (byName !== 0) return byName
-  var leftId = String(a.id || "").toLowerCase()
-  var rightId = String(b.id || "").toLowerCase()
-  if (leftId < rightId) return -1
-  if (leftId > rightId) return 1
-  var byRawId = compareCatalogText(a.id, b.id)
-  if (byRawId !== 0) return byRawId
-  return compareCatalogText(a.name, b.name)
-}
-
-// Decorate with the original index so exact duplicates stay stable even on a
-// QML JavaScript engine whose Array.sort stability is not guaranteed.
-function sortCatalog(entries, sort) {
-  var mode = sort || CATALOG_SORT_STARS
-  var ranks = mode === CATALOG_SORT_RANK ? catalogRankScores(entries) : null
-  var decorated = []
-  for (var i = 0; i < (entries || []).length; i++) {
-    var current = entries[i]
-    decorated.push({
-      entry: current,
-      index: i,
-      timestamp: mode !== CATALOG_SORT_RECENTLY_ADDED ? null
-        : (current && current.listedTimestamp !== undefined
-          ? current.listedTimestamp
-          : catalogTimestamp(current)),
-      activity: mode !== CATALOG_SORT_ACTIVITY ? null
-        : (current && current.activityTimestamp !== undefined
-          ? current.activityTimestamp
-          : catalogActivityTimestamp(current)),
-      installRate: mode !== CATALOG_SORT_INSTALL_RATE ? 0 : catalogInstallRateScore(current),
-      rank: ranks ? ranks[i] : null
+      updateSnapshot: ids[p.id] === 1 ? catalogUpdateSnapshot(p) : null
     })
   }
-  decorated.sort(function(a, b) {
-    return compareCatalogEntries(a, b, mode) || a.index - b.index
-  })
 
-  var out = []
-  for (var j = 0; j < decorated.length; j++) out.push(decorated[j].entry)
   return out
 }
 
-function catalogCategories(entries) {
-  var seen = Object.create(null)
-  for (var i = 0; i < (entries || []).length; i++) seen[entries[i].category] = true
-
-  var names = Object.keys(seen).sort()
-  var options = [{ value: ALL_CATEGORIES, label: "All" }]
-  for (var k = 0; k < names.length; k++) options.push({ value: names[k], label: names[k] })
-  return options
-}
-
-function catalogKindKey(kind) {
-  return String(kind || "").trim().toLowerCase()
-}
-
-function catalogKindOptions(entries) {
-  var byKey = Object.create(null)
-  for (var i = 0; i < (entries || []).length; i++) {
-    var kind = String(entries[i] && entries[i].kind || "").trim()
-    var key = catalogKindKey(kind)
-    if (key !== "" && !hasOwnKey(byKey, key)) byKey[key] = kind
-  }
-
-  var keys = Object.keys(byKey)
-  keys.sort(compareCatalogText)
-  var options = [{ value: ALL_CATALOG_KINDS, label: "All" }]
-  for (var k = 0; k < keys.length; k++) options.push({ value: keys[k], label: byKey[keys[k]] })
-  return options
-}
-
-function catalogAvailabilityOptions() {
-  return [
-    { value: CATALOG_AVAILABILITY_ALL, label: "All" },
-    { value: CATALOG_AVAILABILITY_AVAILABLE, label: "Available" },
-    { value: CATALOG_AVAILABILITY_INSTALLED, label: "Installed" }
-  ]
-}
-
-function catalogSortOptions() {
-  return [
-    { value: CATALOG_SORT_RECENTLY_ADDED, label: "Recently added" },
-    { value: CATALOG_SORT_ACTIVITY, label: "Recent activity" },
-    { value: CATALOG_SORT_STARS, label: "Most starred" },
-    { value: CATALOG_SORT_VIEWS, label: "Most viewed" },
-    { value: CATALOG_SORT_COPIES, label: "Most copied" },
-    { value: CATALOG_SORT_HEARTS, label: "Most hearts" },
-    { value: CATALOG_SORT_RANK, label: "Top ranked" },
-    { value: CATALOG_SORT_INSTALL_RATE, label: "Install rate" },
-    { value: CATALOG_SORT_NAME, label: "A–Z" },
-    { value: CATALOG_SORT_VERIFIED, label: "Verified" },
-    { value: CATALOG_SORT_UNVERIFIED, label: "Unverified" }
-  ]
-}
-
-// Author and tags join name and id here, unlike the installed-plugin search:
-// browsing is how you find something you cannot already name, so "solitaire"
-// or an author you follow both have to land.
-// The four searched fields, lowercased and joined once. Newlines separate
-// them: plainText strips every control character from each field, so a
-// needle can never match across the seam between two of them.
-function catalogSearchText(entry) {
-  if (!entry) return ""
-  return [entry.name, entry.id, entry.author, entry.description]
-    .map(function(value) { return String(value === null || value === undefined ? "" : value).toLowerCase() })
-    .join("\n")
-}
-
-function matchesCatalogQuery(entry, query) {
-  var needle = String(query || "").trim().toLowerCase()
-  if (needle === "") return true
-  if (!entry) return false
-  var haystack = typeof entry.searchText === "string" ? entry.searchText : catalogSearchText(entry)
-  return haystack.indexOf(needle) >= 0
-}
-
-// Order-preserving: filtering a sorted list leaves it sorted, which is what
-// lets a surface sort the whole catalog once per sort mode and only filter
-// on each keystroke.
-function filterCatalog(entries, category, kind, availability, query) {
-  var out = []
-  var needle = String(query || "").trim().toLowerCase()
-  var wantedKind = kind && kind !== ALL_CATALOG_KINDS ? catalogKindKey(kind) : ""
-  var wantedCategory = category && category !== ALL_CATEGORIES ? category : ""
-  for (var i = 0; i < (entries || []).length; i++) {
-    var entry = entries[i]
-    if (wantedCategory !== "" && entry.category !== wantedCategory) continue
-    if (wantedKind !== "" && catalogKindKey(entry.kind) !== wantedKind) continue
-    if (availability === CATALOG_AVAILABILITY_AVAILABLE && !entry.installable) continue
-    if (availability === CATALOG_AVAILABILITY_INSTALLED && !entry.installed) continue
-    if (needle !== "" && !matchesCatalogQuery(entry, needle)) continue
-    out.push(entry)
-  }
-  return out
-}
-
-function catalogIsFiltering(category, kind, availability, query) {
-  return !!(category && category !== ALL_CATEGORIES)
-    || !!(kind && kind !== ALL_CATALOG_KINDS)
-    || availability === CATALOG_AVAILABILITY_AVAILABLE
-    || availability === CATALOG_AVAILABILITY_INSTALLED
-    || String(query || "").trim() !== ""
-}
-
-// ---- Browse key hints -----------------------------------------------------
+// ---- Key hints --------------------------------------------------------------
 
 function optionLabel(options, value) {
   for (var i = 0; i < (options || []).length; i++) {
@@ -1781,35 +1127,7 @@ function optionLabel(options, value) {
   return String(value || "")
 }
 
-// The "[key] value" hints under the Browse grid: one per filter, so the
-// keyboard can drive the dropdowns without looking up at them. A neutral
-// filter names itself — "CATEGORY" is what the key cycles — and a narrowing
-// one shows its value, marked active so the eye finds what is hiding cards.
-// Names rather than "ALL CATEGORIES" because the bar shares one line with
-// the action hints, and at the panel's width every column counts.
-function browseFilterHints(filters, options) {
-  var f = filters || {}
-  var o = options || {}
-  var categoryNeutral = !f.category || f.category === ALL_CATEGORIES
-  var kindNeutral = !f.kind || f.kind === ALL_CATALOG_KINDS
-  var availabilityNeutral = !f.availability || f.availability === CATALOG_AVAILABILITY_ALL
-  var sort = f.sort || CATALOG_SORT_RECENTLY_ADDED
-  return [
-    { key: "c", active: !categoryNeutral,
-      text: categoryNeutral ? "CATEGORY" : optionLabel(o.category, f.category).toUpperCase() },
-    { key: "f", active: !kindNeutral,
-      text: kindNeutral ? "KIND" : optionLabel(o.kind, f.kind).toUpperCase() },
-    { key: "a", active: !availabilityNeutral,
-      text: availabilityNeutral ? "AVAILABILITY" : optionLabel(o.availability, f.availability).toUpperCase() },
-    // Sort has no neutral: it always says how the grid is ordered.
-    { key: "s", active: sort !== CATALOG_SORT_RECENTLY_ADDED,
-      text: optionLabel(o.sort, sort).toUpperCase() }
-  ]
-}
-
-// The Installed tab's row: same shape, its own three dropdowns. `s` and `f`
-// land on the same keys as Browse's Sort and Kind so the hand does not
-// relearn the row when the tab changes.
+// The Installed list's filter row: three dropdowns.
 function installedFilterHints(filters, options) {
   var f = filters || {}
   var o = options || {}
@@ -1829,36 +1147,13 @@ function installedFilterHints(filters, options) {
 // The other end of the same bar: what Enter, Delete, and / do on this tab.
 // Refresh and the tab switch have buttons in the header and Escape closes
 // every panel, so none of those earn a column here.
-function actionHints(browsing, bulkUpdateAvailable) {
-  if (browsing) return [
-    { key: "↵", text: "DETAILS", active: false },
-    { key: "/", text: "SEARCH", active: false }
-  ]
+function actionHints(bulkUpdateAvailable) {
   return [
     { key: "u", text: "UPDATE ALL", active: bulkUpdateAvailable === true },
     { key: "↵", text: "UPDATE", active: false },
     { key: "⌦", text: "REMOVE", active: false },
     { key: "/", text: "SEARCH", active: false }
   ]
-}
-
-function clearedCatalogFilters() {
-  return {
-    category: ALL_CATEGORIES,
-    kind: ALL_CATALOG_KINDS,
-    availability: CATALOG_AVAILABILITY_ALL,
-    query: ""
-  }
-}
-
-function catalogEmptyMessage(category, kind, availability, query) {
-  var needle = String(query || "").trim()
-  var narrowed = catalogIsFiltering(category, kind, availability, "")
-
-  if (needle !== "" && narrowed) return "No plugins match “" + needle + "” and the selected filters."
-  if (needle !== "") return "No plugins match “" + needle + "”."
-  if (narrowed) return "No plugins match the selected filters."
-  return "The catalog is empty."
 }
 
 function starLabel(count) {
@@ -1912,175 +1207,6 @@ function bumpCount(count, delta) {
   return Math.max(0, base + delta)
 }
 
-// What the card's button should say. The registry lists plenty of things that
-// are not one-command installable — suites with their own installers, repos
-// that are not plugin-shaped — and each carries a note saying why. Showing the
-// reason beats showing a button that cannot work.
-// The facts a listing can state about itself, in the order the details
-// surfaces show them. Absent facts are absent rows, never blank ones, and an
-// unknown count is omitted rather than shown as zero.
-function catalogDetailFields(entry, stateText, needsPlacement) {
-  var rows = []
-  if (!entry) return rows
-  var version = catalogVersionLabel(entry)
-  if (entry.author !== "") rows.push({ label: "Author", value: entry.author })
-  if (version !== "") rows.push({ label: "Version", value: version })
-  if (entry.categoryPresent === true && entry.category !== "")
-    rows.push({ label: "Category", value: entry.category })
-  if (entry.kind !== "") rows.push({ label: "Kind", value: entry.kind })
-  if (entry.license !== "") rows.push({ label: "License", value: entry.license })
-  if (entry.verified === true) rows.push({ label: "Marketplace review", value: "Verified" })
-  if (starLabel(entry.stars) !== "")
-    rows.push({ label: "GitHub stars", value: starLabel(entry.stars) })
-  if (starLabel(entry.marketplaceHearts) !== "")
-    rows.push({ label: "Marketplace hearts", value: starLabel(entry.marketplaceHearts) })
-  rows.push({ label: "Availability", value: String(stateText || "") })
-  if (needsPlacement === true)
-    rows.push({ label: "Placement", value: "Choose a bar section before installation" })
-  return rows
-}
-
-// Who made it and what it plugs into, one line under the name.
-function catalogMetaLine(entry) {
-  if (!entry) return ""
-  var parts = []
-  if (entry.author) parts.push(String(entry.author))
-  if (entry.kind) parts.push(String(entry.kind))
-  return parts.join("  ·  ")
-}
-
-function installState(entry) {
-  if (!entry) return "unavailable"
-  if (entry.installed) return "installed"
-  if (entry.installable) return "installable"
-  return "unavailable"
-}
-
-// Why an "unavailable" listing has no Install button. The registry's note is
-// the reason only while the registry itself withholds installation: every
-// listing it offers carries the same boilerplate about how Omarchy installs,
-// and when this panel is the one refusing, that sentence explains nothing.
-function installBlockedReason(entry) {
-  if (!entry) return ""
-  if (entry.installAvailable !== true && entry.installNote !== "") return entry.installNote
-  if (entry.installUrl === "") return "This listing has no usable clone url."
-  if (!entry.updateSnapshot) {
-    var unreviewed = "The marketplace has not verified a snapshot of this listing."
-    // Only where the opt-in would actually change the answer: pointing at a
-    // switch that cannot help this listing is an offer nothing can honour.
-    return catalogUnverifiedInstallable(entry, entry.installed, true)
-      ? unreviewed + " Settings can allow installing its unreviewed upstream tip." : unreviewed
-  }
-  if (canonicalUpdateRepository(entry.installUrl) !== entry.updateSnapshot.repository)
-    return "This listing's install command names a repository its verified snapshot does not."
-  return "This plugin cannot be installed from here."
-}
-
-// Re-stamps install state onto an already-built catalog. Installing something
-// changes which cards should say "installed", and switching the install opt-in
-// changes which cards are offered at all; re-deriving the whole list from the
-// raw document to learn either would throw away the sort and the fetch.
-function markInstalled(entries, installedIds, allowUnverified) {
-  var installed = installedIds || {}
-  var out = []
-  for (var i = 0; i < (entries || []).length; i++) {
-    var entry = entries[i]
-    var isInstalled = hasOwnKey(installed, entry.id)
-    var copy = {}
-    for (var key in entry) copy[key] = entry[key]
-    copy.installed = isInstalled
-    copy.installable = catalogInstallable(entry, isInstalled, allowUnverified)
-    copy.installUnverified = catalogUnverifiedInstallable(entry, isInstalled, allowUnverified)
-    out.push(copy)
-  }
-  return out
-}
-
-// A reload that changed nothing hands back the very same array and details
-// object, flagged `changed: false`, so the panel can leave its bindings alone.
-// Assigning a fresh array resets the grid's model, and a reset tears down and
-// rebuilds every visible card — a stall the eye notices when it lands during
-// an animation, which is exactly when every open triggers a reload.
-function restampCatalogInstallState(entries, installedIds, detailsEntry, allowUnverified) {
-  if (!installStateDiffers(entries, installedIds, allowUnverified)) {
-    return { entries: entries, detailsEntry: detailsEntry || null, changed: false }
-  }
-  var stamped = markInstalled(entries, installedIds, allowUnverified)
-  return {
-    entries: stamped,
-    detailsEntry: detailsEntry ? findRow(stamped, detailsEntry.id) : null,
-    changed: true
-  }
-}
-
-function installStateDiffers(entries, installedIds, allowUnverified) {
-  var installed = installedIds || Object.create(null)
-  for (var i = 0; i < (entries || []).length; i++) {
-    var entry = entries[i]
-    var isInstalled = hasOwnKey(installed, entry.id)
-    if (entry.installed !== isInstalled
-        || entry.installable !== catalogInstallable(entry, isInstalled, allowUnverified)
-        || entry.installUnverified !== catalogUnverifiedInstallable(entry, isInstalled, allowUnverified))
-      return true
-  }
-  return false
-}
-
-// The tab the expanded window opens on, read from the summon payload. The
-// payload crosses an IPC boundary anyone can write to, so it is parsed as
-// data and reduced to one of two known values — never echoed anywhere.
-function expandedTabFromPayload(json) {
-  var parsed = null
-  try { parsed = JSON.parse(String(json || "")) } catch (e) { return "installed" }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return "installed"
-  return parsed.tab === "browse" ? "browse" : "installed"
-}
-
-// The host a summon asked for. The corner button names it because the
-// setting it just wrote may not have reached the file yet; anything else
-// leaves the choice to the setting.
-function expandedModeFromPayload(json) {
-  var parsed = null
-  try { parsed = JSON.parse(String(json || "")) } catch (e) { return "" }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return ""
-  return parsed.mode === "overlay" || parsed.mode === "window" ? parsed.mode : ""
-}
-
-// Only the read-only arrangement preview is addressable through IPC.
-function expandedPageFromPayload(json) {
-  var parsed = null
-  try { parsed = JSON.parse(String(json || "")) } catch (e) { return "" }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return ""
-  return parsed.page === "arrange" ? "arrange" : ""
-}
-
-// The output the expanded window should appear on, read from the same payload.
-// A Wayland output name is short and made of letters, digits and dashes; any
-// other shape is dropped so the window falls back to the shell's default
-// screen rather than trusting a string it never chose.
-function expandedScreenFromPayload(json) {
-  var parsed = null
-  try { parsed = JSON.parse(String(json || "")) } catch (e) { return "" }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return ""
-  if (typeof parsed.screen !== "string") return ""
-  return /^[A-Za-z0-9-]{1,64}$/.test(parsed.screen) ? parsed.screen : ""
-}
-
-// Modal visibility can overlap for one synchronous handoff. The successor has
-// ownership, and a deferred list-focus restore may run only when none remains.
-function browseModalFocusOwner(detailsOpen, confirming, placing) {
-  if (placing) return "placement"
-  if (confirming) return "confirmation"
-  if (detailsOpen) return "details"
-  return "list"
-}
-
-function catalogPlacementConfirmationNote(needsPlacement) {
-  return needsPlacement
-    ? "\n\nNext, choose its bar section. Installation starts only after that choice."
-    : ""
-}
-
 // "https://github.com/acme/omarchy-weather" -> "acme/omarchy-weather". The
 // host is the same for effectively every listing, so printing it on each card
 // spends width on the one part that carries no information.
@@ -2093,7 +1219,7 @@ function repoShortLabel(url) {
   return text
 }
 
-// Only http(s) is ever handed to a browser. The repo field arrives over the
+// Only http(s) is ever handed to a web viewer. The repo field arrives over the
 // network, and a url that is not a web page has no business being opened as
 // one — javascript:, file:, and anything else are refused rather than passed
 // through to the launcher.
@@ -2110,7 +1236,7 @@ function browsableUrl(url) {
 // rather than the other way round.
 // An installed plugin names its origin the way git does — an scp-style
 // `git@host:owner/repo.git`, an ssh:// url, a trailing .git — none of which a
-// browser opens. This converts what it recognises and then hands the result
+// web viewer opens. This converts what it recognises and then hands the result
 // to browsableUrl, so there stays exactly one place that decides whether a
 // string is safe to launch.
 function repoWebUrl(url) {
@@ -2146,7 +1272,7 @@ function githubRepoSlug(url) {
   // not start or end with a hyphen. Repository names are at most 100
   // alphanumeric/dot/underscore/hyphen characters; dot path segments are not
   // repositories. The narrow character sets also reject percent escapes,
-  // backslashes, queries and fragments before a browser can normalize them.
+  // backslashes, queries and fragments before a web viewer can normalize them.
   if (owner.length > 39 || !/^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/.test(owner)) return ""
   if (repo.length > 100 || !/^[A-Za-z0-9._-]+$/.test(repo) || repo === "." || repo === "..") return ""
   return owner + "/" + repo
@@ -2234,68 +1360,6 @@ function versionFallbackUrl(row) {
 function githubRepositoryUrl(remote) {
   var slug = githubRepoSlug(remote)
   return slug === "" ? "" : "https://github.com/" + slug
-}
-
-function catalogVersionLabel(entry) {
-  return releaseVersionLabel(entry ? entry.version : "")
-}
-
-function catalogVersionReleaseCandidates(entry) {
-  if (!entry) return []
-  return githubReleaseCandidates(entry.repo, entry.version)
-}
-
-// Browse entries have no local checkout provenance. Their exact validated
-// GitHub repository is therefore the only honest fallback when neither
-// published Release exists or the click-time probe fails.
-function catalogVersionFallbackUrl(entry) {
-  if (catalogVersionReleaseCandidates(entry).length === 0) return ""
-  return githubRepositoryUrl(entry.repo)
-}
-
-function repoPreviewUrl(repo, branch) {
-  var slug = githubRepoSlug(repo)
-  if (slug === "") return ""
-
-  var ref = String(branch || "").trim()
-  return "https://raw.githubusercontent.com/" + slug + "/" + (ref !== "" ? ref : "main") + "/preview.png"
-}
-
-// Ordered best-first. A card walks this list as each source fails, and lands
-// on the accent tile when none of them decode.
-function previewCandidates(entry, allowWebp) {
-  if (!entry) return []
-  var out = []
-  if (entry.repoPreview) out.push(entry.repoPreview)
-  if (allowWebp && entry.thumbnail) out.push(entry.thumbnail)
-  return out
-}
-
-// An installed plugin's picture, best first: the checkout's own preview.png
-// (on disk, no network, and exactly what is installed), then whatever the
-// marketplace listing offers, then the repository guess from the remote. A
-// source directory is a filesystem path or nothing; anything that already
-// looks like a URL is refused rather than turned into one.
-function installedPreviewCandidates(row, entry, allowWebp) {
-  if (!row) return []
-  var out = []
-  var dir = String(row.sourceDir || "")
-  if (dir.charAt(0) === "/" && dir.indexOf("?") === -1 && dir.indexOf("#") === -1)
-    out.push("file://" + dir.replace(/\/+$/, "") + "/preview.png")
-  var listed = previewCandidates(entry, allowWebp)
-  for (var i = 0; i < listed.length; i++) if (out.indexOf(listed[i]) === -1) out.push(listed[i])
-  var guessed = repoPreviewUrl(row.remote, "")
-  if (guessed !== "" && out.indexOf(guessed) === -1) out.push(guessed)
-  return out
-}
-
-// Initials for the placeholder tile when a row has no listing to borrow
-// them from: the first letter of the first two words, "Alt+Tab" -> "AT".
-function rowInitials(row) {
-  var words = String(row && row.name || "").split(/[^A-Za-z0-9]+/).filter(function(word) { return word !== "" })
-  var out = ""
-  for (var i = 0; i < words.length && i < 2; i++) out += words[i].charAt(0).toUpperCase()
-  return out
 }
 
 // ---- Update checks ---------------------------------------------------------
@@ -2421,35 +1485,6 @@ function catalogUpdateSnapshot(entry) {
   return repo !== "" && sha !== "" ? { id: entry.id, repository: repo, verifiedCommit: sha } : null
 }
 
-// A branch name this panel is willing to hand the helper, or "". Deliberately
-// narrower than git's own rules: no option shape, no path traversal, no reflog
-// syntax and no lock file, so the name stays a ref and can never become an
-// argument. The helper validates identically before it asks the remote.
-var LISTING_BRANCH = /^[A-Za-z0-9][A-Za-z0-9._\/-]{0,199}$/
-
-function listingBranch(value) {
-  if (typeof value !== "string" || !LISTING_BRANCH.test(value)) return ""
-  if (value.indexOf("..") >= 0 || value.indexOf("//") >= 0 || value.indexOf("@{") >= 0) return ""
-  if (/[\/.]$/.test(value) || /\.lock$/.test(value)) return ""
-  return value
-}
-
-// What an unreviewed listing offers instead of a snapshot: the branch the
-// marketplace validated, which the helper resolves to one commit and pins.
-// The id rules are catalogUpdateSnapshot's, and only a listing the
-// marketplace itself calls unverified qualifies: one it calls verified but
-// names no usable commit for has nothing exact to install, and wearing the
-// verified badge beside an "unreviewed" label would contradict itself. A
-// listing with no branch has nothing to install rather than a guessed "main".
-function catalogUnverifiedSnapshot(entry) {
-  if (!entry || typeof entry.id !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(entry.id)
-      || entry.id.indexOf("..") >= 0 || entry.id.indexOf("omarchy.") === 0
-      || entry.sourceType !== "community" || entry.verificationStatus === "verified") return null
-  var repo = canonicalUpdateRepository(entry.repo)
-  var branch = listingBranch(entry.listingValidatedBranch)
-  return repo !== "" && branch !== "" ? { id: entry.id, repository: repo, branch: branch } : null
-}
-
 function pinnedRequest(row, entries) {
   if (!row || row.firstParty || !row.gitManaged || !/^[0-9a-fA-F]{40}$/.test(String(row.headSha || ""))) return null
   var found = null, count = 0
@@ -2460,48 +1495,6 @@ function pinnedRequest(row, entries) {
       || canonicalUpdateRepository(row.updateOrigin) !== found.repository) return null
   return { schemaVersion: 1, id: row.id, repository: found.repository,
     verifiedCommit: found.verifiedCommit, expectedLocalHead: row.headSha.toLowerCase() }
-}
-
-// The request a card's Install sends: the one commit the marketplace reviewed,
-// and the bar section the user picked ("" enables it without a placement,
-// which is what everything that is not a bar widget gets). It is
-// the verified update request minus the installed HEAD there is none of yet.
-// Cached catalog data chooses the request and never authorizes publication;
-// the helper rechecks the live catalog before the fetch and again before it
-// publishes, and refuses if anything about the listing moved.
-function installRequest(entry, section, allowUnverified) {
-  if (typeof section !== "string" || (section !== "" && BAR_SECTIONS.indexOf(section) < 0)) return null
-  // Re-derived from the entry, never read off its `installable` flag, and the
-  // opt-in is re-read rather than trusted from the stamp: the grid may have
-  // refetched and the setting may have been switched off while the question
-  // was on screen, exactly as canStartUpdate re-gates an update.
-  var installed = entry && entry.installed
-  if (catalogVerifiedInstallable(entry, installed)) {
-    var snapshot = entry.updateSnapshot
-    if (snapshot.id !== entry.id) return null
-    return { schemaVersion: 1, id: snapshot.id, repository: snapshot.repository,
-      verifiedCommit: snapshot.verifiedCommit, section: section }
-  }
-  if (!catalogUnverifiedInstallable(entry, installed, allowUnverified)) return null
-  // No commit to bind: the helper resolves the branch to one commit of its
-  // own accord and installs exactly that, so nothing here names a tip.
-  var tip = entry.unverifiedSnapshot
-  if (tip.id !== entry.id) return null
-  return { schemaVersion: 1, id: tip.id, repository: tip.repository,
-    branch: tip.branch, section: section }
-}
-
-// The question before a listing nobody reviewed is installed. Plain text
-// only; the label is the sanitized listing name, the repository is the
-// canonical one the request carries, and the branch has been validated.
-function installUnverifiedConfirmMessage(label, repository, branch, needsPlacement) {
-  return "Install " + label + " from an unreviewed listing?\n\n"
-    + repository + "\n\n"
-    + "The marketplace has not verified any snapshot of this listing. The current tip of branch "
-    + branch + " is fetched, validated and installed, pinned to that exact commit — nobody has "
-    + "reviewed what it runs. Plugins run unsandboxed inside omarchy-shell. Only add repositories "
-    + "whose code you are willing to run."
-    + catalogPlacementConfirmationNote(needsPlacement)
 }
 
 // The request for an upstream commit nobody has reviewed. It binds the exact
@@ -2644,7 +1637,7 @@ function updateReleaseCandidates(row) {
 
 // Click routing revalidates every URL even though the model constructed it.
 // This makes the Panel boundary explicit: only exact GitHub release probes and
-// locally-built release/tree/compare pages can reach curl or the browser.
+// locally-built release/tree/compare pages can reach curl or the web viewer.
 function trustedGithubTagUrl(url, expression, base, path) {
   var text = String(url || "")
   var match = text.match(expression)
@@ -3136,4 +2129,56 @@ function updateDataCommand(helperPath, cleanup) {
     "/usr/bin/timeout", "-k", "1", cleanup ? "20" : "6",
     "/usr/bin/python3", "-I", "-S", helperPath,
     cleanup ? "--cleanup-completed" : "--update-data-status"]
+}
+
+// ---- Look: density, font size, accent ---------------------------------------
+
+// Accent colours the picker offers, in this order, when the theme defines them.
+var ACCENT_NAMES = ["blue", "cyan", "green", "magenta", "yellow", "red", "orange"]
+
+// name -> "#rrggbb" for every quoted hex colour in a theme's colors.toml.
+function parsePalette(text) {
+  var palette = {}
+  var lines = String(text || "").split("\n")
+  for (var i = 0; i < lines.length; i++) {
+    var m = lines[i].match(/^\s*([a-z_]+)\s*=\s*"(#[0-9a-fA-F]{6})"/)
+    if (m) palette[m[1]] = m[2]
+  }
+  return palette
+}
+
+// "theme" followed by whichever accent colours the palette has.
+function accentChoices(palette) {
+  var list = ["theme"]
+  for (var i = 0; i < ACCENT_NAMES.length; i++)
+    if (palette && hasOwnKey(palette, ACCENT_NAMES[i])) list.push(ACCENT_NAMES[i])
+  return list
+}
+
+// The palette colour for a choice, or null when the theme's own accent applies
+// ("theme", or a colour this theme does not define).
+function paletteAccent(choice, palette) {
+  if (ACCENT_NAMES.indexOf(choice) >= 0 && palette && hasOwnKey(palette, choice)) return palette[choice]
+  return null
+}
+
+// Multiplier for the panel's spacing and widths. Normal is the stock look.
+function densityScale(name) {
+  if (name === "compact") return 0.82
+  if (name === "comfortable") return 1.15
+  return 1
+}
+
+// Text multiplier chosen in settings, on top of the density's own text scaling.
+function fontSizeScale(name) {
+  if (name === "small") return 0.88
+  if (name === "large") return 1.12
+  return 1
+}
+
+// A string setting restricted to a known set; anything else is the fallback.
+function choiceSetting(settings, key, allowed, fallback) {
+  if (!settings || !hasOwnKey(settings, key)) return fallback
+  var value = settings[key]
+  return typeof value === "string" && allowed.indexOf(value) >= 0 ? value : fallback
 }

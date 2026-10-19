@@ -6,6 +6,7 @@ import qs.Ui
 // leaves the question pending. Indices 0/1 retain the host confirmation API.
 Item {
   id: root
+  required property var look
 
   property bool opened: false
   property string message: ""
@@ -19,8 +20,8 @@ Item {
   property color foreground: Color.foreground
   property color scrim: Util.alpha(Color.background, 0.7)
   property color selectedBackground: Util.alpha(Color.foreground, 0.08)
-  property color selectedText: Color.accent
-  property string fontFamily: Style.font.family
+  property color selectedText: root.look.accent
+  property string fontFamily: root.look.font.family
   property int cornerRadius: Style.cornerRadius
 
   signal canceled()
@@ -70,11 +71,11 @@ Item {
     BorderSurface {
       id: card
       anchors.centerIn: parent
-      width: Math.min(parent.width - Style.space(32), Style.space(370))
+      width: Math.min(parent.width - root.look.sp(32), root.look.sp(370))
       height: content.implicitHeight + contentTopInset + contentBottomInset
       color: root.background
       borderSpec: Border.flat(root.selectedText, Style.normalBorderWidth)
-      padding: Style.space(18)
+      padding: root.look.sp(18)
       radius: root.cornerRadius
 
       // Card clicks must not bubble through to the dismissing scrim.
@@ -85,7 +86,7 @@ Item {
         x: card.contentLeftInset
         y: card.contentTopInset
         width: card.width - card.contentLeftInset - card.contentRightInset
-        spacing: Style.space(20)
+        spacing: root.look.sp(20)
 
         Flickable {
           id: messageScroll
@@ -93,7 +94,7 @@ Item {
           contentWidth: width
           contentHeight: messageText.implicitHeight
           // Reserve the answer/action rows before allocating message space.
-          height: Math.min(contentHeight, Math.max(0, root.height - Style.space(32)
+          height: Math.min(contentHeight, Math.max(0, root.height - root.look.sp(32)
             - card.contentTopInset - card.contentBottomInset - buttons.height - content.spacing))
           clip: true
           flickableDirection: Flickable.VerticalFlick
@@ -108,15 +109,15 @@ Item {
             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
             color: root.foreground
             font.family: root.fontFamily
-            font.pixelSize: Style.font.title
+            font.pixelSize: root.look.font.title
           }
         }
 
         Item {
           id: buttons
           width: parent.width
-          height: Style.space(root.actionVisible ? 78 : 34)
-          readonly property real answerWidth: Math.min(Style.space(88), (width - Style.space(10)) / 2)
+          height: root.look.sp(root.actionVisible ? 78 : 34)
+          readonly property real answerWidth: Math.min(root.look.sp(88), (width - root.look.sp(10)) / 2)
 
           Repeater {
             model: [root.cancelText, root.confirmText, root.actionText]
@@ -130,9 +131,9 @@ Item {
 
               // The action occupies its own bounded row above the two answers.
               visible: index !== 2 || root.actionVisible
-              width: index === 2 ? Math.min(buttons.width, Style.space(140)) : buttons.answerWidth
-              height: Style.space(34)
-              x: buttons.width - width - (index === 0 ? width + Style.space(10) : 0)
+              width: index === 2 ? Math.min(buttons.width, root.look.sp(140)) : buttons.answerWidth
+              height: root.look.sp(34)
+              x: buttons.width - width - (index === 0 ? width + root.look.sp(10) : 0)
               y: index === 2 ? 0 : buttons.height - height
               color: !selected ? "transparent"
                 : urgent ? Util.alpha(Color.urgent, 0.22) : root.selectedBackground
@@ -142,7 +143,7 @@ Item {
 
               Text {
                 anchors.fill: parent
-                anchors.margins: Style.space(6)
+                anchors.margins: root.look.sp(6)
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 text: modelData
@@ -150,7 +151,7 @@ Item {
                 elide: Text.ElideRight
                 color: selected ? highlight : root.foreground
                 font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
+                font.pixelSize: root.look.font.caption
               }
 
               MouseArea {

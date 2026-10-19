@@ -14,6 +14,7 @@ import qs.Ui
 // the same kind of interruption and should not look like a different one.
 Item {
   id: root
+  required property var look
 
   property bool opened: false
   property string message: ""
@@ -26,8 +27,8 @@ Item {
   property color foreground: Color.foreground
   property color scrim: Util.alpha(Color.background, 0.7)
   property color selectedBackground: Util.alpha(Color.foreground, 0.08)
-  property color selectedText: Color.accent
-  property string fontFamily: Style.font.family
+  property color selectedText: root.look.accent
+  property string fontFamily: root.look.font.family
   property int cornerRadius: Style.cornerRadius
 
   property int selectedIndex: 0
@@ -80,15 +81,15 @@ Item {
 
     BorderSurface {
       id: card
-      width: Math.min(parent.width - Style.space(32), Style.space(370))
+      width: Math.min(parent.width - root.look.sp(32), root.look.sp(370))
       // Grows with the wrapped message, so a long plugin name pushes the card
       // taller rather than crowding the buttons.
       height: card.contentTopInset + card.contentBottomInset
-        + messageText.implicitHeight + Style.space(20) + Style.space(34)
+        + messageText.implicitHeight + root.look.sp(20) + root.look.sp(34)
       anchors.centerIn: parent
       color: root.background
       borderSpec: Border.flat(root.selectedText, Style.normalBorderWidth)
-      padding: Style.space(18)
+      padding: root.look.sp(18)
       radius: root.cornerRadius
 
       // Swallows clicks that land on the card so they do not reach the scrim
@@ -112,14 +113,14 @@ Item {
           text: root.message
           color: root.foreground
           font.family: root.fontFamily
-          font.pixelSize: Style.font.title
+          font.pixelSize: root.look.font.title
           wrapMode: Text.WordWrap
         }
 
         Row {
           anchors.right: parent.right
           anchors.bottom: parent.bottom
-          spacing: Style.space(10)
+          spacing: root.look.sp(10)
 
           Repeater {
             // The answers, then Cancel. One Repeater rather than two rows
@@ -139,8 +140,8 @@ Item {
 
               // Four buttons where ConfirmDialog fits two, so they are sized
               // to their text with a floor rather than to a fixed width.
-              width: Math.max(Style.space(64), label.implicitWidth + Style.space(20))
-              height: Style.space(34)
+              width: Math.max(root.look.sp(64), label.implicitWidth + root.look.sp(20))
+              height: root.look.sp(34)
               color: selected ? root.selectedBackground : "transparent"
               borderSpec: Border.flat(
                 selected ? root.selectedText : Util.alpha(root.foreground, 0.38),
@@ -155,7 +156,7 @@ Item {
                 text: modelData
                 color: selected ? root.selectedText : root.foreground
                 font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
+                font.pixelSize: root.look.font.caption
               }
 
               MouseArea {

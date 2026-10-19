@@ -12,50 +12,31 @@ const source = readFileSync(new URL("../Model.js", import.meta.url), "utf8")
 const Model = new Function(
   source + `
   return {
-    splitSections, parseArray, parseGitMap, parseManifestMeta, mergePlugins, countRemovable,
-    rowsInGroup, groupLabel, sectionHeading,
-    kindLabel, kindsLabel, kindOptions, filterByKind, nextKind, filterKind, filterKindLabel,
-    statusOptions, filterByStatus,
-    matchesQuery, filterRows, isFiltering, emptyMessage, groupOptions, browseFilterHints, installedFilterHints, actionHints, nextOption, verifiedIdSet, isVerified, upToDate, catalogStarsById, rowStarLabel, catalogHeartsById, rowHeartLabel,
-    parseCatalog, catalogEntries, installedIdSet, installUrlFor, markInstalled,
-    restampCatalogInstallState, plainText, buildCatalog, idSetFromList,
-    catalogAssetUrl, catalogCount,
-    catalogCategories, catalogKindKey, catalogKindOptions, catalogAvailabilityOptions, catalogSortOptions,
-    filterCatalog, sortCatalog, matchesCatalogQuery, catalogIsFiltering,
-    clearedCatalogFilters, catalogEmptyMessage,
-    installState, installBlockedReason, installStateDiffers, catalogUnverifiedSnapshot,
-    installUnverifiedConfirmMessage, allowUnverifiedInstalls,
-    starLabel, accentColor, installedTint, catalogDetailFields, catalogMetaLine,
-    starSlugFor, starToggleCommand, parseStarResult,
-    bumpCount,
-    repoShortLabel, browsableUrl, repoWebUrl, rowRepoUrl, expandedTabFromPayload, expandedScreenFromPayload,
-    normalizedManifestVersion, normalizedReleaseVersion, releaseVersionLabel,
-    githubReleaseCandidates, versionReleaseCandidates, versionFallbackUrl,
-    catalogVersionLabel, catalogVersionReleaseCandidates, catalogVersionFallbackUrl,
-    repoPreviewUrl, previewCandidates, installedPreviewCandidates, rowInitials,
-    parseUpdateReport, applyUpdateReport, applyPinnedUpdates, pinnedRequest, installRequest, pinnedUpdateTooltip, updateStatus, updateCompareLabel,
-    unverifiedRequest, updateUnverifiedConfirmMessage, parseSelfSettings, parseSelfEntry, withSelfSetting, allowUnverifiedUpdates,
-    tiledExpandedPanel, openAs, withOpenAs, expandedModeFromPayload, selfEntryFromShellConfig,
-    updateBadge, updateCompareUrl,
-    updateReleaseCandidates, versionLabel, countBehind,
-    bulkUpdateCandidates, bulkUpdateConfirmMessage, bulkUpdateSummary,
+    splitSections, parseArray, parseGitMap, parseManifestMeta, mergePlugins, countRemovable, rowsInGroup,
+    groupLabel, sectionHeading, kindLabel, kindsLabel, kindOptions, filterByKind, nextKind, filterKind,
+    filterKindLabel, statusOptions, filterByStatus, matchesQuery, filterRows, isFiltering, emptyMessage,
+    groupOptions, installedFilterHints, actionHints, nextOption, verifiedIdSet, isVerified, upToDate,
+    catalogStarsById, rowStarLabel, parseCatalog, catalogEntries, plainText, buildCatalog, catalogCount,
+    starLabel, starSlugFor, starToggleCommand, parseStarResult, bumpCount, repoShortLabel, browsableUrl,
+    repoWebUrl, rowRepoUrl, normalizedManifestVersion, normalizedReleaseVersion, releaseVersionLabel,
+    githubReleaseCandidates, versionReleaseCandidates, versionFallbackUrl, parseUpdateReport,
+    applyUpdateReport, applyPinnedUpdates, pinnedRequest, pinnedUpdateTooltip, updateStatus,
+    updateCompareLabel, unverifiedRequest, updateUnverifiedConfirmMessage, parseSelfSettings, parseSelfEntry,
+    withSelfSetting, allowUnverifiedUpdates, updateBadge, updateCompareUrl, updateReleaseCandidates,
+    versionLabel, countBehind, bulkUpdateCandidates, bulkUpdateConfirmMessage, bulkUpdateSummary,
     trustedGithubReleaseApiUrl, trustedGithubReleaseUrl, trustedGithubRepoUrl, trustedGithubWebUrl,
-    githubNavigationRequest, releaseProbeCommand,
-    releaseNavigationInitialState, releaseNavigationRequestTransition,
-    releaseNavigationRevokeTransition, releaseNavigationDirectTransition,
+    githubNavigationRequest, releaseProbeCommand, releaseNavigationInitialState,
+    releaseNavigationRequestTransition, releaseNavigationRevokeTransition, releaseNavigationDirectTransition,
     releaseNavigationProbeExitedTransition, releaseNavigationProbeOutputTransition,
-    releaseNavigationStartQueuedTransition, releaseNavigationProbeStartFailedTransition,
-    metaLine, authorLabel, descriptionLine, hasDescription, sourceBadge,
-    normalizeGitUrl, isValidGitUrl, repoLabel, lastLine,
-    actionVerb, actionGerund, successMessage, failureMessage,
-    needsPlacement, canEnable, placementOptions, enableCommand, findRow,
-    parseLayoutSections, canMove, moveOptions, moveCommand, moveNote,
-    canDisable, disableCommand, enableNote, disableNote, restartShellCommand,
-    catalogNeedsPlacement, browseModalFocusOwner, catalogPlacementConfirmationNote
+    releaseNavigationStartQueuedTransition, releaseNavigationProbeStartFailedTransition, metaLine,
+    authorLabel, descriptionLine, hasDescription, sourceBadge, normalizeGitUrl, lastLine, actionVerb,
+    actionGerund, successMessage, failureMessage, needsPlacement, canEnable, placementOptions, enableCommand,
+    findRow, parseLayoutSections, canMove, moveOptions, moveCommand, moveNote, canDisable, disableCommand,
+    enableNote, disableNote, restartShellCommand
   }`
 )()
 
-test("Browse reads the canonical catalog endpoint from the helper alone", () => {
+test("The catalog is read from the canonical endpoint from the helper alone", () => {
   // The catalog is fetched, projected and cached by the pinned helper. No
   // QML or JavaScript names that endpoint, so nothing here can retarget the
   // catalog host. Python's subprocess contract pins the same URL and rejects
@@ -295,55 +276,6 @@ test("catalog, installed load and branch report converge in all arrival orders",
     api.applyLoad(rawLoad.replace(head, "d".repeat(40)))
     assert.equal(state.rows[0].updateChecked, false, "old HEAD report cannot attach to reload")
     assert.equal(state.rows[0].upstreamBehind, false)
-  }
-})
-
-test("row and detail presentation name upstream and verified comparisons independently", () => {
-  const presentation = Function(source + "; return { updateStatus, updateCompareLabel }")()
-  const { row, catalog, report, head, tip } = upstreamFixture("b".repeat(40))
-  const projected = Model.applyPinnedUpdates(Model.applyUpdateReport([row], report), catalog, true)[0]
-  assert.match(presentation.updateStatus(projected), /Upstream changes — not verified/)
-  assert.match(presentation.updateStatus(projected), /Verified snapshot bbbbbbb available/)
-  assert.equal(Model.pinnedRequest(projected, catalog).verifiedCommit, "b".repeat(40))
-  assert.equal(Model.updateCompareUrl(projected), `${row.remote}/compare/${head}...${tip}`)
-  assert.match(presentation.updateCompareLabel(projected), /upstream.*aaaaaaa.*ccccccc/i)
-  const onlyVerified = Model.applyPinnedUpdates(Model.applyUpdateReport([row], {}), catalog, true)[0]
-  assert.match(presentation.updateCompareLabel(onlyVerified), /verified.*aaaaaaa.*bbbbbbb/i)
-  const current = Model.applyPinnedUpdates(Model.applyUpdateReport([row], {
-    [row.sourceDir]: { ...report[row.sourceDir], remoteSha: head }
-  }), upstreamFixture().catalog, true)[0]
-  assert.equal(presentation.updateStatus(current), "No upstream changes")
-  assert.equal(Model.upToDate(current), true)
-  const reviewedTip = Model.applyPinnedUpdates([projected], upstreamFixture(tip).catalog, true)[0]
-  assert.doesNotMatch(presentation.updateStatus(reviewedTip), /not verified/)
-  for (const file of ["PluginRow.qml", "InstalledListRow.qml", "InstalledDetails.qml"]) {
-    const qml = readFileSync(new URL(`../${file}`, import.meta.url), "utf8")
-    assert.match(qml, /Model\.updateStatus\(/, file)
-    if (file !== "InstalledListRow.qml") {
-      assert.match(qml, /Model\.updateCompareLabel\(/, file)
-      assert.match(qml, /root\.row\.pinnedEligible === true/, file)
-      const gate = qml.match(/enabled: (root\.actionsEnabled && root\.updateEnabled[^\n]+)/)[1]
-      for (const candidate of [projected, Model.applyPinnedUpdates([projected], [], true)[0]]) {
-        const root = { row: candidate, actionsEnabled: true, updateEnabled: true,
-          upToDate: Model.upToDate(candidate) }
-        assert.equal(Function("root", `return ${gate}`)(root), candidate.pinnedEligible || candidate.unverifiedEligible, file)
-      }
-      if (file === "PluginRow.qml") {
-        let opened
-        Function("compareUrl", "githubNavigationRequested", `${qmlFunction(qml, "openComparison")}; openComparison()`)(
-          Model.updateCompareUrl(projected), (candidates, url) => { opened = { candidates, url } })
-        assert.deepEqual(opened, { candidates: [], url: Model.updateCompareUrl(projected) })
-      } else {
-        const fields = qml.replace("readonly property var fieldRows:", "function fieldRows()")
-        const state = { row: projected, versionText: "", repoLabel: "", updateText: presentation.updateStatus(projected) }
-        const values = Function("Model", "state", `with (state) {
-          ${qmlFunction(fields, "fieldRows")}; return fieldRows()
-        }`)({ ...Model, ...presentation }, state)
-        assert.deepEqual(values.find(field => field.label === "Changes"), {
-          label: "Changes", value: presentation.updateCompareLabel(projected), link: Model.updateCompareUrl(projected)
-        })
-      }
-    }
   }
 })
 
@@ -773,52 +705,8 @@ test("findRow looks a plugin up by id rather than by position", () => {
 // them. So anything that has to be asked about an install must be asked BEFORE
 // the install starts, which means reading the kind off the registry listing
 // rather than off the manifest that does not exist yet.
-test("catalogNeedsPlacement reads the registry's own words for the kind", () => {
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Bar widget" }), true)
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Service + Bar widget" }), true)
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Menu + Bar widget" }), true)
-})
-
 // "Bar" is a whole-bar replacement, and it is a prefix of "Bar widget" — so
 // this has to match the phrase, not the word.
-test("catalogNeedsPlacement does not place a plugin that IS the bar", () => {
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Bar" }), false)
-})
-
-test("catalogNeedsPlacement stays quiet about kinds it cannot vouch for", () => {
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Service" }), false)
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Overlay" }), false)
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Suite" }), false)
-  assert.equal(Model.catalogNeedsPlacement({ kind: "" }), false)
-  assert.equal(Model.catalogNeedsPlacement(null), false)
-})
-
-test("isValidGitUrl accepts the three shapes git actually clones", () => {
-  assert.ok(Model.isValidGitUrl("https://github.com/user/repo.git"))
-  assert.ok(Model.isValidGitUrl("ssh://git@github.com/user/repo.git"))
-  assert.ok(Model.isValidGitUrl("git@github.com:user/repo.git"))
-  assert.ok(Model.isValidGitUrl("  https://github.com/user/repo  "))
-})
-
-test("isValidGitUrl rejects anything that could reach the CLI as a flag or a mess", () => {
-  assert.equal(Model.isValidGitUrl(""), false)
-  assert.equal(Model.isValidGitUrl("   "), false)
-  assert.equal(Model.isValidGitUrl("--yes"), false)
-  assert.equal(Model.isValidGitUrl("-f"), false)
-  assert.equal(Model.isValidGitUrl("file:///etc/passwd"), false)
-  assert.equal(Model.isValidGitUrl("http://github.com/user/repo.git"), false)
-  assert.equal(Model.isValidGitUrl("https://github.com/user/repo .git"), false)
-  assert.equal(Model.isValidGitUrl("https://github.com"), false)
-  assert.equal(Model.isValidGitUrl("github.com/user/repo"), false)
-})
-
-test("repoLabel names the repository, not the whole url", () => {
-  assert.equal(Model.repoLabel("https://github.com/user/omarchy-clock.git"), "omarchy-clock")
-  assert.equal(Model.repoLabel("git@github.com:user/omarchy-clock.git"), "omarchy-clock")
-  assert.equal(Model.repoLabel("https://github.com/user/repo/"), "repo")
-  assert.equal(Model.repoLabel("nonsense"), "nonsense")
-})
-
 test("mergePlugins tags each row with the section it belongs to", () => {
   const rows = Model.mergePlugins(listEntries, catalogEntries, gitMap)
   assert.equal(rows.find(r => r.id === "omarchy.clock").group, "built-in")
@@ -963,14 +851,13 @@ test("failureMessage prefers the CLI's own words, and falls back to the exit cod
 test("actionGerund does not produce Updateing", () => {
   assert.equal(Model.actionGerund("update"), "Updating")
   assert.equal(Model.actionGerund("remove"), "Removing")
-  assert.equal(Model.actionGerund("install"), "Installing")
-  assert.equal(Model.actionVerb("install"), "Install")
+  assert.equal(Model.actionGerund("install"), "Working")
+  assert.equal(Model.actionVerb("install"), "Action")
 })
 
-// Installing does enable, so the message may say the plugin is running; what
-// it must not do is name a kind nothing sends any more.
-test("successMessage reports an install as installed", () => {
-  assert.equal(Model.successMessage("install", "omarchy-clock"), "Installed omarchy-clock")
+// No install kind is sent any more, so none keeps a message branch.
+test("successMessage names no install kind", () => {
+  assert.equal(Model.successMessage("install", "omarchy-clock"), "Done")
   assert.equal(Model.successMessage("add", "omarchy-clock"), "Done")
 })
 
@@ -1156,9 +1043,9 @@ test("catalogEntries defaults to explicit GitHub-star ordering", () => {
   assert.deepEqual(entries.map(e => e.stars), [120, 9])
 })
 
-test("catalogEntries keeps GitHub stars and Marketplace hearts distinct and honest", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  assert.deepEqual(entries.map(e => [e.stars, e.marketplaceHearts]), [[120, 7], [9, 0]])
+test("catalogEntries keeps GitHub stars honest", () => {
+  const entries = Model.catalogEntries(catalogDoc)
+  assert.deepEqual(entries.map(e => e.stars), [120, 9])
 
   for (const value of [undefined, null, "12", false, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
     assert.equal(Model.catalogCount(value), null)
@@ -1168,50 +1055,18 @@ test("catalogEntries keeps GitHub stars and Marketplace hearts distinct and hone
   assert.equal(Model.starLabel(0), "0")
 })
 
-test("catalogEntries keeps listing timestamps for Recently added sorting", () => {
-  const weather = Model.catalogEntries(catalogDoc, {}).find(entry => entry.id === "acme.weather")
-  assert.equal(weather.listedAt, "2026-08-19T14:30:00.000Z")
-  assert.equal(weather.addedAt, "2026-08-19")
-})
-
-test("catalogEntries derives the search text and the listing timestamp once, on the worker", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const weather = entries.find(entry => entry.id === "acme.weather")
-  const suite = entries.find(entry => entry.id === "acme.suite")
-  assert.equal(weather.searchText, "weather\nacme.weather\nacme\nforecast in the bar")
-  assert.equal(weather.listedTimestamp, Date.parse("2026-08-19T14:30:00.000Z"))
-  // No listing date at all is null, never undefined: the sort must not fall
-  // back to parsing the entry again.
-  assert.equal(suite.listedTimestamp, null)
-  assert.ok(Object.prototype.hasOwnProperty.call(suite, "listedTimestamp"))
-})
-
-test("matchesCatalogQuery uses the precomputed text and cannot match across field seams", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const weather = entries.find(entry => entry.id === "acme.weather")
-  assert.ok(Model.matchesCatalogQuery(weather, "FORECAST"))
-  assert.ok(Model.matchesCatalogQuery(weather, "acme.wea"))
-  // "weather" ends one field and "acme.weather" starts the next.
-  assert.equal(Model.matchesCatalogQuery(weather, "weatheracme"), false)
-  assert.equal(Model.matchesCatalogQuery(weather, "weather acme"), false)
-  // A hand-built entry without the derived field still matches the same way.
-  const bare = { name: "Weather", id: "acme.weather", author: "acme", description: "Forecast in the bar" }
-  assert.ok(Model.matchesCatalogQuery(bare, "forecast"))
-  assert.equal(Model.matchesCatalogQuery(bare, "weatheracme"), false)
-  // The stale-field case: a copy that lost its search text is recomputed.
-  assert.ok(Model.matchesCatalogQuery({ ...weather, searchText: undefined }, "forecast"))
-})
-
 test("catalogEntries keeps the marketplace's reviewed commit, normalized, and drops junk", () => {
+  const listing = extra => Object.assign({ verificationStatus: "verified", sourceType: "community",
+    repo: "https://github.com/acme/thing" }, extra)
   const doc = { plugins: [
-    { id: "a.one", verificationCommit: "2D9321902AA0176D47DCDB21D76884BCA6A34F73" },
-    { id: "a.two", verificationCommit: "not-a-sha" },
-    { id: "a.three" }
+    listing({ id: "a.one", verificationCommit: "2D9321902AA0176D47DCDB21D76884BCA6A34F73" }),
+    listing({ id: "a.two", verificationCommit: "not-a-sha" }),
+    listing({ id: "a.three" })
   ] }
-  const entries = Model.catalogEntries(doc, {})
-  assert.equal(entries.find(e => e.id === "a.one").verifiedCommit, "2d9321902aa0176d47dcdb21d76884bca6a34f73")
-  assert.equal(entries.find(e => e.id === "a.two").verifiedCommit, "")
-  assert.equal(entries.find(e => e.id === "a.three").verifiedCommit, "")
+  const entries = Model.catalogEntries(doc)
+  assert.equal(entries.find(e => e.id === "a.one").updateSnapshot.verifiedCommit, "2d9321902aa0176d47dcdb21d76884bca6a34f73")
+  assert.equal(entries.find(e => e.id === "a.two").updateSnapshot, null)
+  assert.equal(entries.find(e => e.id === "a.three").updateSnapshot, null)
 })
 
 // Same brace-balanced extraction idiom as update-producer.test.mjs; no QML runtime.
@@ -1250,219 +1105,6 @@ test("the unreviewed-update confirmation installs exactly the commit it named, o
   // The dialog offers the exact diff, and only for this kind of question.
   assert.match(store, /readonly property string confirmCompareUrl: pendingKind === "update"\s*\? Model\.updateCompareUrl\(Model\.findRow\(rows, pendingId\)\) : ""/)
   assert.match(store, /if \(pendingKind === "update"\)\s*return Model\.updateUnverifiedConfirmMessage\(pendingLabel, Model\.findRow\(rows, pendingId\)\)/)
-})
-
-test("bulk update confirms once and delegates every bound verified or unverified target", () => {
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  assert.match(store, /property var bulkQueue: \[\]/)
-  assert.match(store, /property var bulkResults: \[\]/)
-  assert.match(store, /property bool bulkActive: false/)
-  assert.match(store, /readonly property int bulkUpdatableCount: Model\.bulkUpdateCandidates\(rows\)\.length/)
-  assert.match(store, /if \(pendingKind === "bulk-update"\)\s*return Model\.bulkUpdateConfirmMessage\(bulkQueue\)/)
-  assert.match(store, /if \(!bulkActive\) bulkQueue = \[\]/)
-  for (const fn of ["bulkUpdatables()", "askBulkUpdate()", "startNextBulk()", "runBulkUpdates(requests)", "finishBulkProcess()", "finishBulk()"])
-    assert.match(store, new RegExp(`function ${fn.replace(/[()]/g, "\\$&").replace(/,/g, ",")} \\{`), fn)
-  // One bulk confirmation covers the unreviewed tips: no per-row dialog later.
-  assert.match(store, /if \(pendingKind === "bulk-update"\) \{[\s\S]*?var queue = bulkQueue\.slice\(\)/)
-  assert.match(store, /JSON\.stringify\(\{ schemaVersion: 1, bulkUpdates: requests \}\)/)
-  assert.match(store, /function finishBulkProcess\(\)[\s\S]*?outcomes\[update\.id\] = update/)
-  for (const [surface, expandId] of [["Panel.qml", "expandButton"], ["Expanded.qml", "collapseButton"]]) {
-    const source = readFileSync(new URL("../" + surface, import.meta.url), "utf8")
-    assert.match(source, /readonly property alias bulkUpdatableCount: store\.bulkUpdatableCount/, surface)
-    const button = source.slice(source.indexOf("id: updateAllButton"), source.indexOf("id: updateAllButton") + 700)
-    assert.match(button, /visible: !root\.browsing/, surface)
-    assert.match(button, /iconText: "󰑐"/, surface)
-    assert.match(button, /tooltipText: "Update all"/, surface)
-    assert.match(button, /enabled: root\.updateActionsEnabled/, surface)
-    assert.match(button, /opacity: root\.bulkUpdatableCount > 0 && enabled \? 1 : 0\.4/, surface)
-    assert.match(button, /onClicked: (root\.)?(askBulkUpdate\(\)|store\.askBulkUpdate\(\))/, surface)
-    assert.ok(source.indexOf(`id: ${expandId}`) < source.indexOf("id: updateAllButton"), surface)
-    assert.ok(source.indexOf("id: updateAllButton") < source.indexOf("id: refreshButton"), surface)
-    const expand = source.slice(source.indexOf(`id: ${expandId}`), source.indexOf(`id: ${expandId}`) + 500)
-    assert.match(expand, /anchors\.right: updateAllButton\.visible \? updateAllButton\.left : refreshButton\.left/, surface)
-  }
-
-  const model = Function(source + `; return { pinnedRequest, unverifiedRequest, findRow, shortSha,
-    bulkUpdateCandidates, bulkUpdateConfirmMessage, bulkUpdateSummary,
-    applyUpdateReport, applyPinnedUpdates }`)()
-  const target = "b".repeat(40), base = "a".repeat(40), tip = "c".repeat(40)
-  const origin = "https://github.com/acme/plugin"
-  const rows = () => ([
-    { id: "acme.verified", name: "Verified", headSha: base, remoteSha: base, verifiedTargetSha: target,
-      gitManaged: true, pinnedEligible: true, updateOrigin: origin },
-    { id: "acme.tip", name: "Tip", headSha: base, remoteSha: tip, verifiedTargetSha: "",
-      gitManaged: true, unverifiedEligible: true, updateOrigin: origin },
-  ])
-  const catalog = [{ id: "acme.verified",
-    updateSnapshot: { id: "acme.verified", repository: origin, verifiedCommit: target } }]
-  const begin = (overrides = {}) => {
-    const pinnedProc = { running: false }, actionProc = { running: false }, summaryProc = { running: false }
-    const state = { rows: rows(), catalog, catalogLoaded: true, busy: false,
-      busyKind: "", busyId: "", busyRowId: "", pinnedOutput: "", pinnedExited: false,
-      pinnedOverflow: false, pinnedHelperPath: "/helpers/pinned_update.py", allowUnverifiedUpdates: true,
-      pendingKind: "", pendingId: "", pendingLabel: "", pendingUrl: "", pendingUnverifiedSha: "",
-      pendingVerifiedCommit: "", pendingBranch: "", pendingSection: "", pendingPlacementNeeded: false,
-      pendingUpdateReport: "", bulkQueue: [], bulkResults: [], bulkPendingRequests: [], bulkActive: false, finished: [], detached: [],
-      summaryOutput: "", summaryOverflow: false, summaryDrainOnly: false, lastBulkSummaryNonce: "",
-      setStatus(text, isError) { this.status = { text, isError: isError === true } },
-      loadProcessSettled: () => true, updateProcessSettled: () => true,
-      requestFreshUpdateCycle() { this.freshCycle = true }, refreshUpdateData() { this.updateRefresh = true },
-      actionFinished(kind, label, code) { this.finished.push([kind, label, code]) },
-      ...overrides }
-    state.root = state
-    const names = ["updateRequest", "canStartUpdate", "bulkUpdatables", "askBulkUpdate",
-      "cancelPending", "confirmPending", "startNextBulk", "runBulkUpdates", "finishBulk",
-      "finishBulkProcess", "finishPinnedUpdate", "runUpdate", "consumeBulkSummary", "finishBulkSummary"]
-    Object.assign(state, Function("Model", "state", "pinnedProc", "actionProc", "summaryProc", "Quickshell", `with (state) {
-      ${names.map(name => qmlFunction(store, name)).join("\n")}; return {${names.join(",")}}
-    }`)(model, state, pinnedProc, actionProc, summaryProc, {
-      env: () => "", execDetached(command) { state.detached.push(command) }
-    }))
-    state.pinnedProc = pinnedProc
-    state.summaryProc = summaryProc
-    return state
-  }
-  const land = (state, result) => {
-    state.pinnedProc.running = false
-    state.pinnedOutput = JSON.stringify(result)
-    state.pinnedExited = true
-    state.finishPinnedUpdate()
-  }
-
-  const state = begin()
-  assert.equal(state.askBulkUpdate(), true)
-  assert.equal(state.pendingKind, "bulk-update")
-  assert.match(model.bulkUpdateConfirmMessage(state.bulkQueue), /Verified — verified snapshot bbbbbbb/)
-  assert.match(model.bulkUpdateConfirmMessage(state.bulkQueue), /Tip — unreviewed commit ccccccc/)
-  state.confirmPending()
-  assert.equal(state.bulkActive, true)
-  const batch = JSON.parse(state.pinnedProc.command.at(-1))
-  assert.deepEqual(batch.bulkUpdates.map(request => request.id), ["acme.verified", "acme.tip"])
-  assert.equal(batch.bulkUpdates[1].unverifiedCommit, tip,
-    "the setting allows the unverified target in the same confirmed batch")
-  assert.equal(state.busyKind, "bulk-update")
-  land(state, { status: "bulk complete", nonce: "1-1", updates: [
-    { id: "acme.verified", status: "updated", reason: "" },
-    { id: "acme.tip", status: "updated", reason: "" },
-  ] })
-  assert.equal(state.bulkActive, false)
-  assert.deepEqual(state.finished, [["bulk-update", "Update all", 0]])
-  assert.equal(state.status.text, "Updated 2, skipped 0")
-  assert.equal(state.status.isError, false)
-  assert.equal(state.detached.length, 0, "the detached helper owns the final shell rescan")
-  assert.equal(state.summaryProc.running, true, "the live panel consumes the updated summary")
-  assert.deepEqual(state.summaryProc.command.slice(-2), ["--drain-bulk-summary", "1-1"])
-  state.summaryOutput = JSON.stringify({ status: "bulk complete", nonce: "1-1",
-    updates: [{ id: "acme.verified", status: "updated" }], rescan: "complete" })
-  state.finishBulkSummary()
-  assert.equal(state.finished.length, 1, "the live result nonce suppresses summary replay")
-
-  const completedStatus = state.status
-  state.summaryOutput = JSON.stringify({ status: "bulk complete", nonce: "2-1",
-    updates: [{ id: "acme.verified", status: "unchanged; update refused",
-      reason: "Another pinned update is running" }], rescan: "not needed" })
-  state.finishBulkSummary()
-  assert.equal(state.status, completedStatus, "a live drain must not present another batch's report")
-  assert.equal(state.finished.length, 1)
-  assert.equal(state.lastBulkSummaryNonce, "1-1")
-  state.summaryProc.running = false
-  state.consumeBulkSummary()
-  assert.equal(state.summaryProc.command.at(-1), "--consume-bulk-summary")
-  state.summaryOutput = JSON.stringify({ status: "bulk complete", nonce: "3-1",
-    updates: [{ id: "acme.verified", status: "updated" }], rescan: "complete" })
-  state.finishBulkSummary()
-  assert.equal(state.finished.length, 2, "recovery still reports a legitimate unseen batch")
-  assert.equal(state.lastBulkSummaryNonce, "3-1")
-
-  // A moved tip skips with a reason instead of installing something else.
-  const moved = begin()
-  assert.equal(moved.askBulkUpdate(), true)
-  moved.rows[1].remoteSha = "d".repeat(40)
-  moved.confirmPending()
-  land(moved, { status: "bulk complete", updates: [
-    { id: "acme.verified", status: "updated", reason: "" },
-  ] })
-  assert.deepEqual(moved.bulkResults, [{ id: "acme.verified", name: "Verified", ok: true, reason: "" },
-    { id: "acme.tip", name: "Tip", ok: false, reason: "the upstream tip moved" }])
-  assert.equal(moved.status.text, "Updated 1, skipped 1 (Tip: the upstream tip moved)")
-  assert.equal(moved.detached.length, 0, "the helper owns the rescan even after local skips")
-
-  const uncertain = begin()
-  assert.equal(uncertain.askBulkUpdate(), true)
-  uncertain.rows[1].remoteSha = "d".repeat(40)
-  uncertain.confirmPending()
-  land(uncertain, { status: "outcome unknown; inspect retained transactions" })
-  assert.equal(uncertain.detached.length, 0)
-  assert.equal(uncertain.summaryProc.running, false, "an unknown outcome cannot claim another batch's summary")
-
-  const rescanFailure = begin()
-  assert.equal(rescanFailure.askBulkUpdate(), true)
-  rescanFailure.confirmPending()
-  land(rescanFailure, { status: "bulk complete", nonce: "1-2", rescan: "failed", updates: [
-    { id: "acme.verified", status: "updated", reason: "" },
-    { id: "acme.tip", status: "updated", reason: "" },
-  ] })
-  assert.equal(rescanFailure.status.text, "Updated 2, skipped 0; shell did not reload the updated plugins")
-  assert.equal(rescanFailure.status.isError, true)
-  assert.deepEqual(rescanFailure.finished, [["bulk-update", "Update all", 1]])
-  assert.equal(rescanFailure.rows[0].remoteSha, base, "a failed shell rescan keeps pending update evidence")
-  assert.equal(rescanFailure.freshCycle, undefined)
-  assert.equal(rescanFailure.updateRefresh, undefined)
-  assert.equal(rescanFailure.summaryProc.running, true, "a failed rescan still consumes the live summary")
-
-  const updateReloadFailure = begin()
-  updateReloadFailure.askBulkUpdate()
-  updateReloadFailure.confirmPending()
-  land(updateReloadFailure, { status: "bulk complete", updates: [
-    { id: "acme.verified", status: "updated; reload failed", reason: "Shell rescan refused" },
-    { id: "acme.tip", status: "updated", reason: "" },
-  ] })
-  assert.deepEqual(updateReloadFailure.bulkResults, [
-    { id: "acme.verified", name: "Verified", ok: true, reason: "" },
-    { id: "acme.tip", name: "Tip", ok: true, reason: "" },
-  ])
-  assert.equal(updateReloadFailure.status.text, "Updated 2, skipped 0")
-
-  const rejected = begin()
-  rejected.askBulkUpdate()
-  rejected.confirmPending()
-  land(rejected, { status: "unchanged; request refused", reason: "Invalid bulk update request" })
-  assert.equal(rejected.status.text,
-    "Updated 0, skipped 2 (Verified: Invalid bulk update request; Tip: Invalid bulk update request)")
-
-  const prototypeId = begin({ bulkQueue: [{ id: "toString", name: "Special", kind: "verified", targetSha: target }],
-    bulkPendingRequests: [{ id: "toString" }], bulkActive: true,
-    pinnedOutput: JSON.stringify({ status: "bulk complete", updates: [
-      { id: "toString", status: "updated", reason: "" },
-    ] }) })
-  prototypeId.finishBulkProcess()
-  assert.deepEqual(prototypeId.bulkResults, [{ id: "toString", name: "Special", ok: true, reason: "" }])
-
-  // A capacity refusal stops the run: the rest are skipped, not retried.
-  const limited = begin()
-  assert.equal(limited.askBulkUpdate(), true)
-  limited.confirmPending()
-  land(limited, { status: "bulk complete", nonce: "1-3", updates: [
-    { id: "acme.verified", status: "unchanged; update refused", reason: "Transaction limit: review x" },
-    { id: "acme.tip", status: "unchanged; update refused", reason: "Stopped: transaction limit" },
-  ] })
-  assert.equal(limited.bulkActive, false)
-  assert.equal(limited.status.text,
-    "Updated 0, skipped 2 (Verified: Transaction limit: review x; Tip: Stopped: transaction limit)")
-  assert.equal(limited.detached.length, 0, "a run with no successful changes does not rescan the shell")
-  assert.equal(limited.summaryProc.running, true, "an all-refused live batch consumes its summary")
-})
-
-test("bulk progress stays visible while either surface is busy", () => {
-  for (const surface of ["Panel.qml", "Expanded.qml"]) {
-    const qml = readFileSync(new URL("../" + surface, import.meta.url), "utf8")
-    const start = qml.lastIndexOf("text: {", qml.indexOf("if (root.settingsOpen) return root.statusSource"))
-    const end = qml.indexOf("\n", qml.indexOf("return root.status", qml.indexOf("if (root.busy)", start)))
-    const body = qml.slice(start + "text: {".length, end)
-    const status = "Updating 2 plugins; stopping finishes preparation; checked updates still apply; closing this window does not cancel it"
-    const root = { busy: true, busyKind: "bulk-update", busyId: "Update all", status }
-    assert.equal(Function("root", "Model", body)(root, Model), status, surface)
-  }
 })
 
 test("a reloaded store reports a recorded bulk summary once, then never again", () => {
@@ -1504,13 +1146,6 @@ test("a reloaded store reports a recorded bulk summary once, then never again", 
   state.busy = true
   state.finishBulkSummary()
   assert.equal(state.status, null, "a summary never retires an action still running")
-})
-
-test("the u key asks for a bulk update on the Installed tab of both surfaces", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  assert.match(panel, /else if \(\(t === "u" \|\| t === "U"\) && !root\.browsing\) root\.askBulkUpdate\(\)/)
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  assert.match(expanded, /else if \(\(text === "u" \|\| text === "U"\) && !root\.browsing\) \{ store\.askBulkUpdate\(\); event\.accepted = true \}/)
 })
 
 test("both update entry points require the displayed tuple and settled processes", () => {
@@ -1645,8 +1280,8 @@ test("action confirmation scrolls long messages while keeping both button layout
   assert.match(viewport[1], /wrapMode: Text\.WrapAtWordBoundaryOrAnywhere/)
   assert.doesNotMatch(viewport[1], /elide:|maximumLineCount:|\.slice\(|\.substring\(/)
   assert.match(dialog, /height: content\.implicitHeight \+ contentTopInset \+ contentBottomInset/)
-  assert.match(dialog, /spacing: Style\.space\(20\)/)
-  assert.match(dialog, /height: Style\.space\(root\.actionVisible \? 78 : 34\)/)
+  assert.match(dialog, /spacing: root\.look\.sp\(20\)/)
+  assert.match(dialog, /height: root\.look\.sp\(root\.actionVisible \? 78 : 34\)/)
   const expression = viewport[1].match(/height: (Math\.min[\s\S]*?)\n\s*clip:/)[1]
   const height = Function("root", "Style", "card", "buttons", "content", "contentHeight", `return (${expression})`)
   for (const scale of [1, 1.5]) for (const paneHeight of [300, 480, 900]) {
@@ -1657,32 +1292,13 @@ test("action confirmation scrolls long messages while keeping both button layout
       const content = { spacing: Style.space(20) }
       const reserved = card.contentTopInset + card.contentBottomInset + buttons.height + content.spacing
       const available = paneHeight - Style.space(32) - reserved
-      const actual = height({ height: paneHeight }, Style, card, buttons, content, textHeight)
+      const actual = height({ height: paneHeight, look: { sp: Style.space } }, Style, card, buttons, content, textHeight)
       assert.equal(actual, Math.min(textHeight, available))
       assert.ok(actual + reserved <= paneHeight - Style.space(32), "buttons fit inside the pane")
       assert.equal(textHeight > actual, textHeight === 20000, "only overflowing messages scroll")
-      assert.equal(height({ height: 50 }, Style, card, buttons, content, textHeight), 0,
+      assert.equal(height({ height: 50, look: { sp: Style.space } }, Style, card, buttons, content, textHeight), 0,
         "impossibly small panes never create a negative viewport")
     }
-  }
-})
-
-test("both confirmation panes route View changes without answering the question", () => {
-  for (const file of ["Panel.qml", "Expanded.qml"]) {
-    const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8")
-    const start = source.indexOf("ActionConfirmDialog {")
-    assert.notEqual(start, -1, file)
-    const dialog = source.slice(start, source.indexOf("ChoiceDialog {", start))
-    assert.match(dialog, /actionVisible: store\.confirmCompareUrl !== ""/)
-    assert.match(dialog, /actionText: "View changes"/)
-    const handler = dialog.match(/onActionRequested: ([^\n]+)/)[1]
-    const calls = []
-    const store = { confirmCompareUrl: `https://github.com/Acme/Thing/compare/${"a".repeat(40)}...${"b".repeat(40)}` }
-    Function("root", "store", handler)({ requestGithubNavigation: (...args) => calls.push(args) }, store)
-    assert.deepEqual(calls, [[[], store.confirmCompareUrl]])
-    assert.match(dialog, /z: 10/)
-    assert.match(dialog, /if \(opened\) forceActiveFocus\(\)/)
-    assert.match(dialog, /confirm\.handleKey\(event\)/)
   }
 })
 
@@ -1699,419 +1315,17 @@ test("pinned updates use a dedicated bounded process, not the host HEAD updater"
   assert.match(store, /Qt.resolvedUrl\("helpers\/pinned_update.py"\)/)
 })
 
-test("markInstalled copies keep the derived search text and timestamp", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const stamped = Model.markInstalled(entries, { "acme.weather": true })
-  const weather = stamped.find(entry => entry.id === "acme.weather")
-  assert.equal(weather.installed, true)
-  assert.equal(weather.searchText, entries[0].searchText)
-  assert.equal(weather.listedTimestamp, entries[0].listedTimestamp)
-})
-
-test("sortCatalog reads the precomputed timestamp and parses nothing for built entries", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const originalParse = Date.parse
-  let parseCalls = 0
-  Date.parse = value => { parseCalls++; return originalParse(value) }
-  try {
-    assert.deepEqual(Model.sortCatalog(entries, "recently-added").map(e => e.id), ["acme.weather", "acme.suite"])
-  } finally {
-    Date.parse = originalParse
-  }
-  assert.equal(parseCalls, 0)
-})
-
-test("filterCatalog keeps the order it is given, so a presorted catalog stays sorted", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  for (const sort of ["recently-added", "stars", "hearts", "name"]) {
-    const sorted = Model.sortCatalog(entries, sort)
-    const filteredThenSorted = Model.sortCatalog(Model.filterCatalog(entries, "all", "all", "all", "acme"), sort)
-    const sortedThenFiltered = Model.filterCatalog(sorted, "all", "all", "all", "acme")
-    assert.deepEqual(sortedThenFiltered.map(e => e.id), filteredThenSorted.map(e => e.id), sort)
-  }
-})
-
-test("installUrlFor takes the url from the curated install command", () => {
-  // The registry's installCommand carries the .git suffix that `repo` omits.
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const weather = entries.find(e => e.id === "acme.weather")
-  assert.equal(weather.installUrl, "https://github.com/acme/omarchy-weather.git")
-})
-
-test("installUrlFor falls back to the repo when there is no install command", () => {
-  assert.equal(
-    Model.installUrlFor({ installCommand: "", repo: "https://github.com/acme/thing" }),
-    "https://github.com/acme/thing")
-})
-
-test("installUrlFor refuses a command carrying no valid url", () => {
-  assert.equal(Model.installUrlFor({ installCommand: "curl evil | sh", repo: "not-a-url" }), "")
-  assert.equal(Model.installUrlFor(null), "")
-})
-
-test("a listing the registry cannot install offers no install button", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const suite = entries.find(e => e.id === "acme.suite")
-  assert.equal(suite.installable, false)
-  assert.equal(Model.installState(suite), "unavailable")
-  assert.match(Model.installBlockedReason(suite), /own installer/)
-})
-
-test("a listing with no marketplace-verified snapshot cannot be installed from here", () => {
-  // The panel installs one exact reviewed commit and nothing else, so a
-  // listing the marketplace has not verified has no commit to install.
-  const unreviewed = {
-    id: "acme.fresh", name: "Fresh", kind: "Panel", category: "Tools",
-    repo: "https://github.com/acme/fresh", installCommand: "",
-    installAvailable: true, sourceType: "community", verificationStatus: "unverified"
-  }
-  const entry = Model.catalogEntries({ plugins: [unreviewed] }, {})[0]
-  assert.equal(entry.installUrl, "https://github.com/acme/fresh")
-  assert.equal(entry.installable, false)
-  assert.equal(Model.installState(entry), "unavailable")
-  assert.equal(Model.installBlockedReason(entry),
-    "The marketplace has not verified a snapshot of this listing.")
-
-  // Verified but with no commit named, or a commit that is not a full SHA, is
-  // the same thing: nothing exact to install.
-  for (const change of [{ verificationStatus: "verified" },
-    { verificationStatus: "verified", verificationCommit: "d".repeat(39) },
-    { verificationStatus: "verified", verificationCommit: "d".repeat(40), sourceType: "builtin2" },
-    { verificationStatus: "verified", verificationCommit: "d".repeat(40), repo: "https://evil.test/a/b" }]) {
-    const projected = Model.catalogEntries({ plugins: [{ ...unreviewed, ...change }] }, {})[0]
-    assert.equal(projected.installable, false, JSON.stringify(change))
-  }
-  const verified = Model.catalogEntries({ plugins: [{ ...unreviewed,
-    verificationStatus: "verified", verificationCommit: "d".repeat(40) }] }, {})[0]
-  assert.equal(verified.installable, true)
-  assert.equal(Model.installState(verified), "installable")
-
-  // A duplicated id leaves no unambiguous snapshot, so it is not installable.
-  const duplicated = Model.catalogEntries({ plugins: [
-    { ...unreviewed, verificationStatus: "verified", verificationCommit: "d".repeat(40) },
-    { ...unreviewed, verificationStatus: "verified", verificationCommit: "e".repeat(40) }] }, {})
-  assert.ok(duplicated.every(entry => entry.installable === false))
-})
-
-test("the registry's generic note never hides why this panel refuses an install", () => {
-  // Every installable listing carries the same boilerplate note about how
-  // Omarchy installs. When the registry offers the listing and this panel is
-  // the one refusing, that sentence explains nothing; the panel's reason does.
-  const note = "Omarchy clones the current upstream repository, validates it locally, and only then installs and enables the plugin."
-  const unreviewed = {
-    id: "acme.fresh", name: "Fresh", kind: "Overlay", category: "Appearance",
-    repo: "https://github.com/acme/fresh", installCommand: "omarchy plugin add https://github.com/acme/fresh.git --enable",
-    installAvailable: true, installNote: note, sourceType: "community",
-    verificationStatus: "unverified", verificationCommit: "e".repeat(40)
-  }
-  const entry = Model.catalogEntries({ plugins: [unreviewed] }, {})[0]
-  assert.equal(entry.installable, false)
-  assert.equal(Model.installBlockedReason(entry),
-    "The marketplace has not verified a snapshot of this listing.")
-
-  const spoofed = Model.catalogEntries({ plugins: [{ ...unreviewed, verificationStatus: "verified",
-    installCommand: "omarchy plugin add https://github.com/attacker/evil.git" }] }, {})[0]
-  assert.equal(Model.installBlockedReason(spoofed),
-    "This listing's install command names a repository its verified snapshot does not.")
-
-  // A note the registry attaches while withholding installation is the reason.
-  const withheld = Model.catalogEntries({ plugins: [{ ...unreviewed, installAvailable: false,
-    installNote: "This plugin requires additional setup before it can be enabled." }] }, {})[0]
-  assert.equal(Model.installBlockedReason(withheld),
-    "This plugin requires additional setup before it can be enabled.")
-})
-
-// One unreviewed listing that names the branch the marketplace validated, so
-// the install opt-in has something to offer. Kept beside the tests that use it.
-const unreviewedListing = {
-  id: "acme.fresh", name: "Fresh", kind: "Panel", category: "Tools",
-  repo: "https://github.com/acme/fresh",
-  installCommand: "omarchy plugin add https://github.com/acme/fresh.git --enable",
-  installAvailable: true, sourceType: "community", verificationStatus: "unverified",
-  listingValidatedBranch: "main"
-}
-
-test("an unreviewed listing is installable only under the install opt-in", () => {
-  // The same shape as the update opt-in: off by default, a verified snapshot
-  // always wins, and the setting is a separate key from the update one.
-  const off = Model.catalogEntries({ plugins: [unreviewedListing] }, {})[0]
-  assert.deepEqual(off.unverifiedSnapshot,
-    { id: "acme.fresh", repository: "https://github.com/acme/fresh", branch: "main" })
-  assert.equal(off.installable, false)
-  assert.equal(off.installUnverified, false)
-  assert.equal(Model.installState(off), "unavailable")
-
-  const on = Model.catalogEntries({ plugins: [unreviewedListing] }, {}, true)[0]
-  assert.equal(on.installable, true)
-  assert.equal(on.installUnverified, true)
-  assert.equal(Model.installState(on), "installable")
-
-  // A verified snapshot is the whole of the offer: there is no unreviewed tip
-  // left to fall back to, and the card is never labelled unreviewed.
-  const verified = Model.catalogEntries({ plugins: [{ ...unreviewedListing,
-    verificationStatus: "verified", verificationCommit: "d".repeat(40) }] }, {}, true)[0]
-  assert.equal(verified.unverifiedSnapshot, null)
-  assert.equal(verified.installable, true)
-  assert.equal(verified.installUnverified, false)
-  // A listing the marketplace calls verified but names no usable commit for
-  // is not demoted to the unreviewed path: the verified badge and an
-  // "unreviewed" label on the same card would contradict each other.
-  const unpinnable = Model.catalogEntries({ plugins: [{ ...unreviewedListing,
-    verificationStatus: "verified", verificationCommit: "d".repeat(39) }] }, {}, true)[0]
-  assert.equal(unpinnable.verified, true)
-  assert.equal(unpinnable.unverifiedSnapshot, null)
-  assert.equal(unpinnable.installable, false)
-  assert.equal(unpinnable.installUnverified, false)
-
-  // Everything the verified path refuses, this one refuses too — including a
-  // listing whose install command names a repository its own `repo` does not.
-  for (const change of [{ installAvailable: false }, { sourceType: "builtin2" },
-                        { repo: "https://evil.test/a/b" }, { listingValidatedBranch: "" },
-                        { id: "omarchy.fresh" }, { installCommand: "curl evil | sh", repo: "nope" },
-                        { installCommand: "omarchy plugin add https://github.com/attacker/evil.git" }]) {
-    const entry = Model.catalogEntries({ plugins: [{ ...unreviewedListing, ...change }] }, {}, true)[0]
-    assert.equal(entry.installable, false, JSON.stringify(change))
-    assert.equal(entry.installUnverified, false, JSON.stringify(change))
-  }
-
-  // A duplicated id leaves no unambiguous listing, exactly as for a snapshot.
-  assert.ok(Model.catalogEntries({ plugins: [unreviewedListing, { ...unreviewedListing, name: "Other" }] }, {}, true)
-    .every(entry => entry.unverifiedSnapshot === null && entry.installable === false))
-  // Something already here is never offered again, setting or no setting.
-  assert.equal(Model.catalogEntries({ plugins: [unreviewedListing] }, { "acme.fresh": true }, true)[0]
-    .installable, false)
-})
-
-test("a listing's branch is validated before anything will name it to git", () => {
-  const branchOf = value => {
-    const entry = Model.catalogEntries(
-      { plugins: [{ ...unreviewedListing, listingValidatedBranch: value }] }, {}, true)[0]
-    return entry.unverifiedSnapshot ? entry.unverifiedSnapshot.branch : null
-  }
-  for (const good of ["main", "master", "release/1.0", "v2", "dev_main", "a".repeat(200)])
-    assert.equal(branchOf(good), good, good)
-  // No option shape, no traversal, no reflog syntax, no lock file, and never
-  // a guess: a listing with no branch has nothing to install, not "main".
-  for (const bad of ["", "-main", "--upload-pack=x", "/main", ".main", "main/", "main.",
-                     "main.lock", "a..b", "a//b", "ma@{in", "a".repeat(201), "ma in",
-                     "main\n", "ma;in", "réf", null, 7, undefined])
-    assert.equal(branchOf(bad), null, JSON.stringify(bad))
-})
-
-test("a blocked listing with a validated branch names the setting that would offer it", () => {
-  const off = Model.catalogEntries({ plugins: [unreviewedListing] }, {})[0]
-  assert.equal(Model.installBlockedReason(off),
-    "The marketplace has not verified a snapshot of this listing."
-    + " Settings can allow installing its unreviewed upstream tip.")
-
-  // Only when the setting would actually help. A listing whose install
-  // command names another repository stays refused under either setting, so
-  // pointing at the switch would be an offer nothing can honour.
-  const spoofed = Model.catalogEntries({ plugins: [{ ...unreviewedListing,
-    installCommand: "omarchy plugin add https://github.com/attacker/evil.git" }] }, {})[0]
-  assert.equal(Model.installBlockedReason(spoofed),
-    "The marketplace has not verified a snapshot of this listing.")
-})
-
-test("the install opt-in re-stamps the cards already on screen, without a refetch", () => {
-  const entries = Model.catalogEntries({ plugins: [unreviewedListing] }, {})
-  assert.equal(Model.installStateDiffers(entries, {}, false), false)
-  assert.equal(Model.installStateDiffers(entries, {}, true), true)
-
-  const on = Model.restampCatalogInstallState(entries, {}, entries[0], true)
-  assert.equal(on.changed, true)
-  assert.equal(on.entries[0].installable, true)
-  assert.equal(on.entries[0].installUnverified, true)
-  assert.equal(on.detailsEntry, on.entries[0])
-  assert.equal(entries[0].installable, false, "the original array is left alone")
-
-  const back = Model.restampCatalogInstallState(on.entries, {}, on.detailsEntry, false)
-  assert.equal(back.changed, true)
-  assert.equal(back.entries[0].installable, false)
-  assert.equal(back.entries[0].installUnverified, false)
-  // Nothing moved: the very same array returns, so the grid never resets.
-  assert.equal(Model.restampCatalogInstallState(entries, {}, null, false).changed, false)
-  assert.equal(Model.markInstalled(entries, {}, true)[0].installUnverified, true)
-})
-
-test("the unreviewed install confirmation names the branch, never a commit", () => {
-  assert.equal(
-    Model.installUnverifiedConfirmMessage("Fresh", "https://github.com/acme/fresh", "main", false),
-    "Install Fresh from an unreviewed listing?\n\n"
-    + "https://github.com/acme/fresh\n\n"
-    + "The marketplace has not verified any snapshot of this listing. The current tip of branch "
-    + "main is fetched, validated and installed, pinned to that exact commit — nobody has reviewed "
-    + "what it runs. Plugins run unsandboxed inside omarchy-shell. Only add repositories whose code "
-    + "you are willing to run.")
-  assert.ok(Model.installUnverifiedConfirmMessage("Fresh", "https://github.com/acme/fresh", "main", true)
-    .endsWith(Model.catalogPlacementConfirmationNote(true)))
-})
-
-test("a listing whose install command names another repository is not installable", () => {
-  // The card shows a url and the request fetches a repository; if those can
-  // disagree, a listing can display an official url and install someone
-  // else's code. `installCommand` is registry-supplied free text, `repo` is
-  // what the verified snapshot is bound to, so they must agree or the listing
-  // is not installable at all.
-  const spoofed = {
-    id: "acme.clock", name: "Clock", kind: "Panel", category: "Tools",
-    repo: "https://github.com/attacker/evil",
-    installCommand: "omarchy plugin add https://github.com/omarchy/official-clock.git --enable",
-    installAvailable: true, sourceType: "community",
-    verificationStatus: "verified", verificationCommit: "d".repeat(40)
-  }
-  const entry = Model.catalogEntries({ plugins: [spoofed] }, {})[0]
-  assert.equal(entry.installUrl, "https://github.com/omarchy/official-clock.git")
-  assert.equal(entry.updateSnapshot.repository, "https://github.com/attacker/evil")
-  assert.equal(entry.installable, false)
-  assert.equal(Model.installState(entry), "unavailable")
-  assert.equal(Model.installBlockedReason(entry),
-    "This listing's install command names a repository its verified snapshot does not.")
-  assert.equal(Model.installRequest(entry, "left"), null)
-  assert.equal(Model.markInstalled([entry], {})[0].installable, false)
-
-  // Agreement is canonical, not textual: a `.git` suffix, a trailing slash,
-  // an ssh form and a different case are the same repository.
-  for (const command of ["omarchy plugin add https://github.com/Attacker/Evil.git",
-                         "omarchy plugin add https://github.com/attacker/evil/",
-                         "omarchy plugin add git@github.com:attacker/evil.git", ""]) {
-    const agreed = Model.catalogEntries({ plugins: [{ ...spoofed, installCommand: command }] }, {})[0]
-    assert.equal(agreed.installable, true, command)
-    assert.equal(Model.installRequest(agreed, "left").repository, "https://github.com/attacker/evil")
-  }
-})
-
-test("installRequest binds the verified snapshot, never the repository tip", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const weather = entries.find(entry => entry.id === "acme.weather")
-  assert.deepEqual(Model.installRequest(weather, "right"), {
-    schemaVersion: 1, id: "acme.weather",
-    repository: "https://github.com/acme/omarchy-weather",
-    verifiedCommit: "d".repeat(40), section: "right"
-  })
-  // The clone url the card shows carries a .git suffix; the request carries
-  // the canonical repository the helper reauthorizes against instead.
-  assert.equal(weather.installUrl, "https://github.com/acme/omarchy-weather.git")
-  for (const section of ["", "left", "center"])
-    assert.equal(Model.installRequest(weather, section).section, section)
-  for (const section of ["Right", "bogus", "left right", null, undefined, 0, ["left"]])
-    assert.equal(Model.installRequest(weather, section), null, String(section))
-  assert.equal(Model.installRequest(null, "left"), null)
-  assert.equal(Model.installRequest(entries.find(entry => entry.id === "acme.suite"), "left"), null)
-  // Something already installed is never requested again.
-  assert.equal(Model.installRequest({ ...weather, installed: true }, "left"), null)
-  assert.equal(Model.installRequest({ ...weather, updateSnapshot: null }, "left"), null)
-  // Installability is re-derived, never read off the stale flag: a grid
-  // refetch that withdraws the listing while the dialog is open produces no
-  // request, exactly as canStartUpdate re-gates an update.
-  for (const change of [{ installAvailable: false }, { installUrl: "" },
-                        { installUrl: "https://github.com/acme/other" }])
-    assert.equal(Model.installRequest({ ...weather, ...change }, "left"), null, JSON.stringify(change))
-  assert.equal(Model.installRequest({ ...weather, installAvailable: false, installable: true }, "left"),
-    null, "the derived flag carries no authority of its own")
-  // A snapshot that does not describe this very entry carries no authority.
-  assert.equal(Model.installRequest(
-    { ...weather, updateSnapshot: { ...weather.updateSnapshot, id: "acme.other" } }, "left"), null)
-  // The install opt-in never touches a verified listing's request.
-  assert.deepEqual(Model.installRequest(weather, "right", true), Model.installRequest(weather, "right"))
-})
-
-test("installRequest binds the validated branch only while the install opt-in allows it", () => {
-  const entry = Model.catalogEntries({ plugins: [unreviewedListing] }, {}, true)[0]
-  assert.equal(entry.installable, true)
-  // The setting is re-read here, never taken from the entry's stale flag: it
-  // may have been switched off while the question was on screen.
-  assert.equal(Model.installRequest(entry, "right"), null)
-  assert.equal(Model.installRequest(entry, "right", "true"), null)
-  assert.deepEqual(Model.installRequest(entry, "right", true), {
-    schemaVersion: 1, id: "acme.fresh", repository: "https://github.com/acme/fresh",
-    branch: "main", section: "right"
-  })
-  for (const section of ["", "left", "center"])
-    assert.equal(Model.installRequest(entry, section, true).section, section)
-  for (const section of ["Right", "bogus", null, undefined, 0])
-    assert.equal(Model.installRequest(entry, section, true), null, String(section))
-  // The same re-derivation the verified path does, on the same evidence.
-  for (const change of [{ installAvailable: false }, { installUrl: "" }, { installed: true },
-                        { installUrl: "https://github.com/acme/other" }, { unverifiedSnapshot: null },
-                        { unverifiedSnapshot: { ...entry.unverifiedSnapshot, id: "acme.other" } }])
-    assert.equal(Model.installRequest({ ...entry, ...change }, "left", true), null, JSON.stringify(change))
-})
-
-test("an already-installed plugin is not offered again", () => {
-  const entries = Model.catalogEntries(catalogDoc, { "acme.weather": true })
-  const weather = entries.find(e => e.id === "acme.weather")
-  assert.equal(weather.installed, true)
-  assert.equal(weather.installable, false)
-  assert.equal(Model.installState(weather), "installed")
-})
-
-test("markInstalled re-stamps state without rebuilding or resorting", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const after = Model.markInstalled(entries, { "acme.weather": true })
-
-  assert.deepEqual(after.map(e => e.id), entries.map(e => e.id))
-  assert.equal(after[0].installed, true)
-  assert.equal(after[0].installable, false)
-  // The original array is left alone.
-  assert.equal(entries[0].installed, false)
-})
-
-test("catalog re-stamping refreshes an open details entry atomically", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const detailsEntry = entries.find(entry => entry.id === "acme.weather")
-  assert.equal(detailsEntry.installable, true)
-
-  const state = Model.restampCatalogInstallState(
-    entries, Model.installedIdSet([{ id: "acme.weather" }]), detailsEntry)
-  assert.notEqual(state.detailsEntry, detailsEntry)
-  assert.equal(state.detailsEntry.installed, true)
-  assert.equal(state.detailsEntry.installable, false)
-  assert.equal(Model.installState(state.detailsEntry), "installed")
-  assert.equal(state.detailsEntry, state.entries.find(entry => entry.id === "acme.weather"))
-})
-
-test("catalog re-stamping is a no-op when no install state changed", () => {
-  const installed = Model.installedIdSet([{ id: "acme.weather" }])
-  const entries = Model.catalogEntries(catalogDoc, installed)
-  const detailsEntry = entries.find(entry => entry.id === "acme.weather")
-
-  // Same installed set: the very same array and details object come back, so
-  // the panel can skip the assignment and the grid never resets its model
-  // (which tears down and rebuilds every visible card mid-animation).
-  const same = Model.restampCatalogInstallState(entries, installed, detailsEntry)
-  assert.equal(same.changed, false)
-  assert.equal(same.entries, entries)
-  assert.equal(same.detailsEntry, detailsEntry)
-
-  const changed = Model.restampCatalogInstallState(entries, Model.installedIdSet([]), detailsEntry)
-  assert.equal(changed.changed, true)
-  assert.notEqual(changed.entries, entries)
-  assert.equal(changed.detailsEntry.installed, false)
-})
-
-test("buildCatalog turns raw catalog text into stamped entries, or an error, in one pure call", () => {
-  // This is what the worker thread runs: everything the catalog needs from
-  // raw text to entries, with no QML object in reach.
+test("buildCatalog turns raw catalog text into slim entries, or an error, in one pure call", () => {
   const raw = JSON.stringify(catalogDoc)
-  const built = Model.buildCatalog(raw, ["acme.weather"])
+  const built = Model.buildCatalog(raw)
   assert.equal(built.error, "")
-  assert.equal(built.entries.length, Model.catalogEntries(catalogDoc, Model.installedIdSet([{ id: "acme.weather" }])).length)
-  assert.equal(built.entries.find(entry => entry.id === "acme.weather").installed, true)
-  assert.equal(built.entries.find(entry => entry.id !== "acme.weather").installed, false)
+  assert.deepEqual(built.entries.map(entry => entry.id), ["acme.weather", "acme.suite"])
 
   for (const bad of ["not json", "", "[]", '{"plugins": 3}', undefined]) {
-    const failed = Model.buildCatalog(bad, [])
+    const failed = Model.buildCatalog(bad)
     assert.equal(failed.entries, null, String(bad))
     assert.equal(failed.error, "Could not read the plugin catalog")
   }
-
-  // Ids cross the worker boundary as a plain list; hostile names stay data.
-  const set = Model.idSetFromList(["a.b", "__proto__", "constructor", 7, null])
-  assert.ok(Object.prototype.hasOwnProperty.call(set, "a.b"))
-  assert.ok(Object.prototype.hasOwnProperty.call(set, "__proto__"))
-  assert.ok(Object.prototype.hasOwnProperty.call(set, "constructor"))
-  assert.equal(Object.keys(set).length, 3)
 })
 
 // Catalog runtime, lifecycle, and Model.js parity are exercised in
@@ -2131,396 +1345,6 @@ test("catalogStarsById joins GitHub stars onto installed rows by id", () => {
   assert.equal(Model.rowStarLabel({ id: "acme.weather" }, null), "")
   assert.equal(Model.rowStarLabel({ id: "x" }, Model.catalogStarsById([{ id: "x", stars: null }])), "")
   assert.equal(Model.rowStarLabel({ id: "y" }, Model.catalogStarsById([{ id: "y", stars: 1966 }])), "2k")
-})
-
-test("catalogHeartsById joins Marketplace hearts onto installed rows by id", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const hearts = Model.catalogHeartsById(entries)
-  // Null prototype, like catalogStarsById: an id named `constructor` is data.
-  assert.equal(Object.getPrototypeOf(hearts), null)
-  assert.equal(hearts["acme.weather"], 7)
-  assert.equal(Model.rowHeartLabel({ id: "acme.weather" }, hearts), "7")
-  assert.equal(Model.rowHeartLabel({ id: "nobody.home" }, hearts), "")
-  assert.equal(Model.rowHeartLabel(null, hearts), "")
-  assert.equal(Model.rowHeartLabel({ id: "acme.weather" }, null), "")
-  assert.equal(Model.rowHeartLabel({ id: "constructor" }, hearts), "")
-  // Unknown stays unknown; a real zero is a count and may show.
-  assert.equal(Model.rowHeartLabel({ id: "x" }, Model.catalogHeartsById([{ id: "x", marketplaceHearts: null }])), "")
-  assert.equal(Model.rowHeartLabel({ id: "z" }, Model.catalogHeartsById([{ id: "z", marketplaceHearts: 0 }])), "0")
-  assert.equal(Model.rowHeartLabel({ id: "y" }, Model.catalogHeartsById([{ id: "y", marketplaceHearts: 1966 }])), "2k")
-  // Stars and hearts are separate maps.
-  assert.equal(Model.rowHeartLabel({ id: "s" }, Model.catalogHeartsById([{ id: "s", stars: 5 }])), "")
-})
-
-test("installedPreviewCandidates prefers the checkout's own preview, then the listing's", () => {
-  const row = { id: "acme.weather", name: "Weather", sourceDir: "/home/u/.config/omarchy/plugins/acme.weather", remote: "https://github.com/acme/omarchy-weather.git" }
-  const entry = { repoPreview: "https://raw.githubusercontent.com/acme/omarchy-weather/main/preview.png", thumbnail: "https://cdn.example/acme.webp" }
-  assert.deepEqual(Model.installedPreviewCandidates(row, entry, true), [
-    "file:///home/u/.config/omarchy/plugins/acme.weather/preview.png",
-    "https://raw.githubusercontent.com/acme/omarchy-weather/main/preview.png",
-    "https://cdn.example/acme.webp"
-  ])
-  // No WebP when the build cannot decode it; no listing means the repository
-  // guess from the remote; no checkout means no local file.
-  assert.deepEqual(Model.installedPreviewCandidates(row, entry, false).slice(-1), ["https://raw.githubusercontent.com/acme/omarchy-weather/main/preview.png"])
-  assert.deepEqual(Model.installedPreviewCandidates(row, null, true), [
-    "file:///home/u/.config/omarchy/plugins/acme.weather/preview.png",
-    "https://raw.githubusercontent.com/acme/omarchy-weather/main/preview.png"
-  ])
-  assert.deepEqual(Model.installedPreviewCandidates({ id: "x", name: "X", sourceDir: "", remote: "" }, null, true), [])
-  assert.deepEqual(Model.installedPreviewCandidates(null, entry, true), [])
-  // A hostile source directory cannot smuggle a query or a scheme in.
-  assert.deepEqual(Model.installedPreviewCandidates({ id: "y", name: "Y", sourceDir: "https://evil/x", remote: "" }, null, true), [])
-
-  assert.equal(Model.rowInitials({ name: "Alt+Tab" }), "AT")
-  assert.equal(Model.rowInitials({ name: "hyprmoncfg: Multi-Monitor Manager" }), "HM")
-  assert.equal(Model.rowInitials({ name: "Herdr" }), "H")
-  assert.equal(Model.rowInitials({ name: "" }), "")
-  assert.equal(Model.rowInitials(null), "")
-})
-
-test("catalogDetailFields lists a listing's facts in the details order, omitting the unknown", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const weather = entries.find(entry => entry.id === "acme.weather")
-  const rows = Model.catalogDetailFields(weather, "Available to install", true)
-  assert.deepEqual(rows.map(row => row.label), [
-    "Author", "Version", "Category", "Kind", "Marketplace review",
-    "GitHub stars", "Marketplace hearts", "Availability", "Placement"
-  ])
-  assert.equal(rows.find(row => row.label === "Version").value, "v1.2.3")
-  assert.equal(rows.find(row => row.label === "GitHub stars").value, "120")
-  assert.equal(rows.find(row => row.label === "Marketplace hearts").value, "7")
-  assert.equal(rows.find(row => row.label === "Availability").value, "Available to install")
-
-  // No version, no review, no placement: the rows simply are not there; an
-  // unknown count is omitted rather than shown as zero.
-  const suite = Model.catalogDetailFields(entries.find(entry => entry.id === "acme.suite"), "Not installable here", false)
-  assert.deepEqual(suite.map(row => row.label), ["Author", "Category", "Kind", "GitHub stars", "Marketplace hearts", "Availability"])
-  const unknown = Model.catalogDetailFields(Object.assign({}, weather, { stars: null, marketplaceHearts: undefined, license: "MIT" }), "Installed", false)
-  assert.deepEqual(unknown.map(row => row.label), ["Author", "Version", "Category", "Kind", "License", "Marketplace review", "Availability"])
-  assert.deepEqual(Model.catalogDetailFields(null, "", false), [])
-
-  assert.equal(Model.catalogMetaLine(weather), "acme  ·  Bar widget")
-  assert.equal(Model.catalogMetaLine({ author: "", kind: "Suite" }), "Suite")
-  assert.equal(Model.catalogMetaLine({ author: "acme", kind: "" }), "acme")
-  assert.equal(Model.catalogMetaLine(null), "")
-})
-
-test("installedIdSet indexes the installed rows by id", () => {
-  const set = Model.installedIdSet([{ id: "a.b" }, { id: "c.d" }, null])
-  assert.ok(Object.prototype.hasOwnProperty.call(set, "a.b"))
-  assert.ok(Object.prototype.hasOwnProperty.call(set, "c.d"))
-  assert.equal(Object.keys(set).length, 2)
-})
-
-test("installed membership is collision-safe for valid hostile property names", () => {
-  const hostileIds = ["hasOwnProperty", "constructor", "__proto__"]
-  const installed = Model.installedIdSet(hostileIds.map(id => ({ id })))
-  assert.equal(Object.getPrototypeOf(installed), null)
-  for (const id of hostileIds)
-    assert.equal(Object.prototype.hasOwnProperty.call(installed, id), true)
-
-  const doc = {
-    plugins: hostileIds.map((id, index) => ({
-      id, name: id, kind: "Panel", category: "Tools", sourceType: "community",
-      repo: `https://github.com/acme/plugin-${index}`,
-      installAvailable: true
-    }))
-  }
-  const entries = Model.catalogEntries(doc, installed)
-  assert.equal(entries.length, hostileIds.length)
-  assert.ok(entries.every(entry => entry.installed && !entry.installable))
-  assert.ok(Model.markInstalled(entries, installed).every(entry => entry.installed))
-
-  // Inherited Object properties are never membership evidence.
-  assert.ok(Model.catalogEntries(doc, {}).every(entry => !entry.installed))
-})
-
-test("catalog search covers author and description, unlike the installed search", () => {
-  // Browsing is how you find something you cannot already name.
-  const entry = { name: "Weather", id: "acme.weather", author: "acme", description: "Forecast in the bar" }
-  assert.equal(Model.matchesCatalogQuery(entry, "forecast"), true)
-  assert.equal(Model.matchesCatalogQuery(entry, "acme"), true)
-  assert.equal(Model.matchesCatalogQuery(entry, "zzz"), false)
-})
-
-test("filterCatalog composes query, category, kind, and availability", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const installed = Model.markInstalled(entries, { "acme.weather": true })
-
-  assert.equal(Model.filterCatalog(installed, "all", "all", "all", "").length, 2)
-  assert.deepEqual(
-    Model.filterCatalog(installed, "Widgets", "Bar widget", "installed", "forecast").map(e => e.id),
-    ["acme.weather"])
-  assert.equal(Model.filterCatalog(installed, "Widgets", "Suite", "installed", "").length, 0)
-  assert.deepEqual(
-    Model.filterCatalog(entries, "Desktop", "Suite", "all", "acme").map(e => e.id),
-    ["acme.suite"])
-  // Available follows the existing installability policy; blocked listings
-  // remain visible under All but are not presented as available to install.
-  assert.deepEqual(
-    Model.filterCatalog(entries, "all", "all", "available", "").map(e => e.id),
-    ["acme.weather"])
-})
-
-test("catalogCategories is derived from the catalog and led by All", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  assert.deepEqual(Model.catalogCategories(entries).map(o => o.value), ["all", "Desktop", "Widgets"])
-})
-
-test("missing category groups under Other without becoming details metadata", () => {
-  const entries = Model.catalogEntries({ plugins: [
-    { id: "missing", name: "Missing", kind: "Panel", sourceType: "community" },
-    { id: "present", name: "Present", category: "Other", kind: "Panel", sourceType: "community" }
-  ] }, {})
-  const missing = entries.find(entry => entry.id === "missing")
-  const present = entries.find(entry => entry.id === "present")
-  assert.equal(missing.category, "Other")
-  assert.equal(missing.categoryPresent, false)
-  assert.equal(present.category, "Other")
-  assert.equal(present.categoryPresent, true)
-  assert.deepEqual(Model.catalogCategories(entries).map(option => option.value), ["all", "Other"])
-})
-
-test("Browse options are derived from catalog kinds and keep fixed policy labels", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  assert.deepEqual(Model.catalogKindOptions(entries), [
-    { value: "all", label: "All" },
-    { value: "bar widget", label: "Bar widget" },
-    { value: "suite", label: "Suite" }
-  ])
-  assert.deepEqual(Model.catalogKindOptions([
-    { kind: "Panel" }, { kind: "panel" }, { kind: "" }, {}, null
-  ]), [
-    { value: "all", label: "All" },
-    { value: "panel", label: "Panel" }
-  ])
-  assert.deepEqual(Model.catalogAvailabilityOptions().map(o => o.label), ["All", "Available", "Installed"])
-})
-
-test("details name an unreviewed offer as unreviewed, in both windows", () => {
-  // The button still says Install — it is the same action — but Availability
-  // stops claiming the marketplace stands behind it.
-  for (const name of ["PluginDetails.qml", "CatalogDetailsPane.qml"]) {
-    const source = readFileSync(new URL("../" + name, import.meta.url), "utf8")
-    assert.match(source, /readonly property string stateText: !entry \? ""\s*: entry\.installed \? "Installed"\s*: entry\.installUnverified === true \? "Installable \(unreviewed\)"\s*: entry\.installable \? "Available to install"\s*: "Not installable here"/, name)
-  }
-  assert.equal(Model.catalogDetailFields({ author: "", version: "", kind: "", license: "", repo: "" },
-    "Installable (unreviewed)", false).find(row => row.label === "Availability").value,
-    "Installable (unreviewed)")
-})
-
-test("Browse sort options put Recently added first", () => {
-  assert.deepEqual(Model.catalogSortOptions(), [
-    { value: "recently-added", label: "Recently added" },
-    { value: "updated", label: "Recent activity" },
-    { value: "stars", label: "Most starred" },
-    { value: "views", label: "Most viewed" },
-    { value: "copies", label: "Most copied" },
-    { value: "hearts", label: "Most hearts" },
-    { value: "rank", label: "Top ranked" },
-    { value: "installRate", label: "Install rate" },
-    { value: "name", label: "A–Z" },
-    { value: "verified", label: "Verified" },
-    { value: "unverified", label: "Unverified" }
-  ])
-})
-
-test("Browse sort dropdown defaults to Recently added", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  assert.match(panel, /^  property string catalogSort: "recently-added"$/m)
-  assert.match(panel, /^                value: root\.catalogSort$/m)
-})
-
-test("catalog kind filtering uses the same case-insensitive key as its option", () => {
-  const entries = [
-    { id: "upper", kind: "Panel", name: "Upper", author: "", description: "", category: "Tools" },
-    { id: "lower", kind: "panel", name: "Lower", author: "", description: "", category: "Tools" }
-  ]
-  assert.equal(Model.catalogKindKey(" Panel "), "panel")
-  assert.deepEqual(Model.catalogKindOptions(entries), [
-    { value: "all", label: "All" },
-    { value: "panel", label: "Panel" }
-  ])
-  assert.deepEqual(
-    Model.filterCatalog(entries, "all", "panel", "all", "").map(entry => entry.id).sort(),
-    ["lower", "upper"])
-})
-
-test("modal focus ownership prioritizes successors and restores the list only when clear", () => {
-  assert.equal(Model.browseModalFocusOwner(false, false, false), "list")
-  assert.equal(Model.browseModalFocusOwner(true, false, false), "details")
-  assert.equal(Model.browseModalFocusOwner(true, true, false), "confirmation")
-  assert.equal(Model.browseModalFocusOwner(false, true, true), "placement")
-  assert.equal(Model.browseModalFocusOwner(true, true, true), "placement")
-})
-
-test("install confirmation describes placement before installing only when required", () => {
-  assert.equal(Model.catalogPlacementConfirmationNote(false), "")
-  assert.equal(
-    Model.catalogPlacementConfirmationNote(true),
-    "\n\nNext, choose its bar section. Installation starts only after that choice.")
-})
-
-test("Browse sorting keeps stars and hearts independent with deterministic tie-breakers", () => {
-  const entries = [
-    { id: "z.same", name: "Same", stars: 10, marketplaceHearts: 2 },
-    { id: "A.same", name: "same", stars: 10, marketplaceHearts: 5 },
-    { id: "b.beta", name: "Beta", stars: null, marketplaceHearts: 5 },
-    { id: "c.alpha", name: "alpha", stars: 1, marketplaceHearts: null }
-  ]
-
-  assert.deepEqual(Model.sortCatalog(entries, "stars").map(e => e.id),
-    ["A.same", "z.same", "c.alpha", "b.beta"])
-  assert.deepEqual(Model.sortCatalog(entries, "hearts").map(e => e.id),
-    ["b.beta", "A.same", "z.same", "c.alpha"])
-  assert.deepEqual(Model.sortCatalog(entries, "name").map(e => e.id),
-    ["c.alpha", "b.beta", "A.same", "z.same"])
-  assert.deepEqual(entries.map(e => e.id), ["z.same", "A.same", "b.beta", "c.alpha"])
-})
-
-test("Browse sort modes follow their listing data and put missing values last", () => {
-  const entries = [
-    { id: "missing", name: "A missing", verified: false },
-    { id: "old", name: "B old", stars: 1, marketplaceHearts: 1, marketplaceViews: 20,
-      marketplaceCopies: 1, listedAt: "2026-08-01T00:00:00Z", repositoryUpdatedAt: "2026-08-01T00:00:00Z",
-      installCommand: "install old", verified: true },
-    { id: "new", name: "C new", stars: 3, marketplaceHearts: 3, marketplaceViews: 100,
-      marketplaceCopies: 20, listedAt: "2026-08-03T00:00:00Z", versionUpdatedAt: "2026-08-03T00:00:00Z",
-      installCommand: "install new", verified: false },
-    { id: "middle", name: "D middle", stars: 2, marketplaceHearts: 2, marketplaceViews: 50,
-      marketplaceCopies: 10, listedAt: "2026-08-02T00:00:00Z", repositoryUpdatedAt: "2026-08-02T00:00:00Z",
-      installCommand: "install middle", verified: true }
-  ]
-
-  assert.deepEqual(Model.sortCatalog(entries, "updated").map(e => e.id), ["new", "middle", "old", "missing"])
-  assert.deepEqual(Model.sortCatalog(entries, "views").map(e => e.id), ["new", "middle", "old", "missing"])
-  assert.deepEqual(Model.sortCatalog(entries, "copies").map(e => e.id), ["new", "middle", "old", "missing"])
-  assert.deepEqual(Model.sortCatalog(entries, "installRate").map(e => e.id), ["new", "middle", "old", "missing"])
-  assert.deepEqual(Model.sortCatalog(entries, "rank").map(e => e.id), ["new", "middle", "old", "missing"])
-  assert.deepEqual(Model.sortCatalog(entries, "verified").map(e => e.id), ["old", "middle", "missing", "new"])
-  assert.deepEqual(Model.sortCatalog(entries, "unverified").map(e => e.id), ["missing", "new", "old", "middle"])
-})
-
-test("Browse install rate needs 20 views and top-ranked ties keep name order", () => {
-  const entries = [
-    { id: "few", name: "A few views", marketplaceViews: 19, marketplaceCopies: 19, installCommand: "install" },
-    { id: "tie-b", name: "B tied", stars: 10, marketplaceHearts: 10, marketplaceViews: 20, marketplaceCopies: 10 },
-    { id: "tie-a", name: "A tied", stars: 10, marketplaceHearts: 10, marketplaceViews: 20, marketplaceCopies: 10 },
-    { id: "rated", name: "Rated", marketplaceViews: 20, marketplaceCopies: 20, installCommand: "install" }
-  ]
-
-  assert.deepEqual(Model.sortCatalog(entries, "installRate").map(e => e.id), ["rated", "tie-a", "tie-b", "few"])
-  assert.deepEqual(Model.sortCatalog(entries, "rank").map(e => e.id), ["tie-a", "tie-b", "rated", "few"])
-})
-
-test("catalog engagement stats come only from marketplace-prefixed projection fields", () => {
-  const entry = Model.catalogEntries({ plugins: [{ id: "bare", hearts: 5, views: 30, copies: 4 }] }, {})[0]
-  assert.deepEqual([entry.marketplaceHearts, entry.marketplaceViews, entry.marketplaceCopies], [null, null, null])
-})
-
-test("Browse sorting is stable for exact missing-metadata ties", () => {
-  const entries = [
-    { id: "same", name: "Same", stars: null, marketplaceHearts: null, marker: 1 },
-    { id: "same", name: "Same", stars: null, marketplaceHearts: null, marker: 2 }
-  ]
-  assert.deepEqual(Model.sortCatalog(entries, "stars").map(e => e.marker), [1, 2])
-  assert.deepEqual(Model.sortCatalog(entries, "hearts").map(e => e.marker), [1, 2])
-})
-
-test("Recently added sorts precise listing timestamps newest first", () => {
-  const entries = [
-    { id: "old", name: "Old", listedAt: "2026-08-20T08:15:00.000Z" },
-    { id: "new", name: "New", listedAt: "2026-08-20T16:45:00.000Z" }
-  ]
-  assert.deepEqual(Model.sortCatalog(entries, "recently-added").map(e => e.id), ["new", "old"])
-})
-
-test("Recently added prefers listedAt and falls back to addedAt when needed", () => {
-  const entries = [
-    { id: "listed", name: "Listed", listedAt: "2026-08-02T10:00:00Z", addedAt: "2026-08-31" },
-    { id: "missing-listed", name: "Missing", listedAt: "", addedAt: "2026-08-03" },
-    { id: "invalid-listed", name: "Invalid", listedAt: "not-a-date", addedAt: "2026-08-01" }
-  ]
-  assert.deepEqual(Model.sortCatalog(entries, "recently-added").map(e => e.id),
-    ["missing-listed", "listed", "invalid-listed"])
-})
-
-test("Recently added puts invalid and missing timestamps after valid timestamps", () => {
-  const entries = [
-    { id: "invalid", name: "Zulu", listedAt: "not-a-date", addedAt: "also-not-a-date" },
-    { id: "valid", name: "Middle", listedAt: "2026-08-01T00:00:00Z" },
-    { id: "missing", name: "Alpha" }
-  ]
-  assert.deepEqual(Model.sortCatalog(entries, "recently-added").map(e => e.id),
-    ["valid", "missing", "invalid"])
-})
-
-test("Recently added uses the existing text tie-breaker for equal timestamps", () => {
-  const entries = [
-    { id: "z.same", name: "Same", listedAt: "2026-08-01T00:00:00Z" },
-    { id: "A.same", name: "same", listedAt: "2026-08-01T00:00:00Z" },
-    { id: "beta", name: "Beta", listedAt: "2026-08-01T00:00:00Z" }
-  ]
-  assert.deepEqual(Model.sortCatalog(entries, "recently-added").map(e => e.id),
-    ["beta", "A.same", "z.same"])
-})
-
-test("Recently added normalizes catalog-scale timestamps at most once per entry", () => {
-  const entries = []
-  for (let i = 0; i < 1203; i++) {
-    entries.push({
-      id: `listed-${i}`,
-      name: `Listed ${String(i).padStart(4, "0")}`,
-      listedAt: new Date(Date.UTC(2026, 0, 1, 0, i)).toISOString(),
-      addedAt: "2024-01-01"
-    })
-  }
-  for (let i = 0; i < 36; i++) {
-    entries.push({
-      id: `fallback-${i}`,
-      name: `Fallback ${String(i).padStart(2, "0")}`,
-      listedAt: i < 18 ? "   " : (i < 27 ? "not-a-date" : "2026-02-30T12:00:00Z"),
-      addedAt: new Date(Date.UTC(2025, 0, i + 1)).toISOString().slice(0, 10)
-    })
-  }
-  entries.reverse()
-
-  const originalParse = Date.parse
-  let parseCalls = 0
-  Date.parse = value => {
-    parseCalls++
-    return originalParse(value)
-  }
-  try {
-    const sorted = Model.sortCatalog(entries, "recently-added")
-    assert.equal(parseCalls, entries.length,
-      "normalization should parse at most once per entry")
-    assert.equal(sorted[0].id, "listed-1202")
-    assert.equal(sorted[1202].id, "listed-0")
-    assert.equal(sorted[1203].id, "fallback-35")
-    assert.equal(sorted[1238].id, "fallback-0")
-  } finally {
-    Date.parse = originalParse
-  }
-})
-
-test("Browse active-filter detection and clear state cover every narrowing control", () => {
-  assert.equal(Model.catalogIsFiltering("all", "all", "all", ""), false)
-  assert.equal(Model.catalogIsFiltering("Widgets", "all", "all", ""), true)
-  assert.equal(Model.catalogIsFiltering("all", "Panel", "all", ""), true)
-  assert.equal(Model.catalogIsFiltering("all", "all", "available", ""), true)
-  assert.equal(Model.catalogIsFiltering("all", "all", "installed", ""), true)
-  assert.equal(Model.catalogIsFiltering("all", "all", "all", " weather "), true)
-  assert.deepEqual(Model.clearedCatalogFilters(), {
-    category: "all", kind: "all", availability: "all", query: ""
-  })
-})
-
-test("catalogEmptyMessage names what excluded everything", () => {
-  assert.match(Model.catalogEmptyMessage("all", "all", "all", "zzz"), /No plugins match “zzz”/)
-  assert.match(Model.catalogEmptyMessage("Widgets", "all", "available", "zzz"), /selected filters/)
-  assert.match(Model.catalogEmptyMessage("Widgets", "all", "all", ""), /selected filters/)
 })
 
 test("starLabel keeps big counts short", () => {
@@ -2561,27 +1385,6 @@ test("bumpCount moves known counts and never invents unknown ones", () => {
 // Omarchy themes define foreground, background, accent, urgent and muted —
 // there is no success role to borrow, so the installed badge brings its own
 // green and only has to survive both ends of the theme range.
-test("installedTint darkens the green for a light theme background", () => {
-  assert.equal(Model.installedTint({ r: 0.06, g: 0.07, b: 0.08 }), "#5fb37a")
-  assert.equal(Model.installedTint({ r: 0.98, g: 0.98, b: 0.98 }), "#1f7a4d")
-})
-
-test("installedTint reads lightness, not any single channel", () => {
-  // Pure blue is dark despite a full channel; pure green is light despite two
-  // empty ones. A naive max() or average would get both of these backwards.
-  assert.equal(Model.installedTint({ r: 0, g: 0, b: 1 }), "#5fb37a")
-  assert.equal(Model.installedTint({ r: 0, g: 1, b: 0 }), "#1f7a4d")
-})
-
-test("installedTint assumes a dark panel when handed nothing", () => {
-  assert.equal(Model.installedTint(null), "#5fb37a")
-})
-
-test("accentColor falls back rather than returning nothing", () => {
-  assert.equal(Model.accentColor("cyan"), Model.accentColor("CYAN"))
-  assert.equal(Model.accentColor("not-a-colour"), Model.accentColor("violet"))
-})
-
 test("repoShortLabel drops the host, which is the same on every card", () => {
   assert.equal(Model.repoShortLabel("https://github.com/akitaonrails/ai-usagebar"), "akitaonrails/ai-usagebar")
   assert.equal(Model.repoShortLabel("https://github.com/acme/thing.git"), "acme/thing")
@@ -2668,30 +1471,6 @@ test("manifest versions become bounded encoded Release candidates in determinist
   ])
 })
 
-test("catalog versions link only through exact GitHub release candidates with repository fallback", () => {
-  const github = { repo: "https://github.com/acme/thing.git", version: "v1.2.3" }
-  assert.equal(Model.catalogVersionLabel(github), "v1.2.3")
-  assert.deepEqual(Model.catalogVersionReleaseCandidates(github),
-    Model.githubReleaseCandidates(github.repo, "1.2.3"))
-  assert.equal(Model.catalogVersionFallbackUrl(github), "https://github.com/acme/thing")
-
-  const nonGithub = { repo: "https://gitlab.com/acme/thing", version: "1.2.3" }
-  assert.equal(Model.catalogVersionLabel(nonGithub), "v1.2.3")
-  assert.deepEqual(Model.catalogVersionReleaseCandidates(nonGithub), [])
-  assert.equal(Model.catalogVersionFallbackUrl(nonGithub), "")
-
-  for (const entry of [
-    { repo: github.repo, version: "" },
-    { repo: github.repo, version: "v" },
-    { repo: github.repo, version: "x".repeat(101) },
-    null
-  ]) {
-    assert.equal(Model.catalogVersionLabel(entry), "")
-    assert.deepEqual(Model.catalogVersionReleaseCandidates(entry), [])
-    assert.equal(Model.catalogVersionFallbackUrl(entry), "")
-  }
-})
-
 test("installed version eligibility requires checkout, version, and hardened current GitHub origin, not exactTag", () => {
   const eligible = {
     gitManaged: true,
@@ -2755,31 +1534,6 @@ test("Release candidates preserve hardened GitHub owner and repository boundarie
     "https://github.com/" + "a".repeat(40) + "/repo",
     "https://github.com/owner/" + "r".repeat(101)
   ]) assert.deepEqual(Model.githubReleaseCandidates(remote, "1.0.0"), [], remote)
-})
-
-test("repoPreviewUrl points at the repo's own preview.png on the validated branch", () => {
-  assert.equal(
-    Model.repoPreviewUrl("https://github.com/acme/thing", "master"),
-    "https://raw.githubusercontent.com/acme/thing/master/preview.png")
-  assert.equal(
-    Model.repoPreviewUrl("https://github.com/acme/thing.git", ""),
-    "https://raw.githubusercontent.com/acme/thing/main/preview.png")
-})
-
-test("repoPreviewUrl only builds urls for github repos it can parse", () => {
-  assert.equal(Model.repoPreviewUrl("https://gitlab.com/acme/thing", "main"), "")
-  assert.equal(Model.repoPreviewUrl("https://github.com/acme", "main"), "")
-  assert.equal(Model.repoPreviewUrl("", "main"), "")
-})
-
-test("previewCandidates tries the repo png before the registry webp", () => {
-  const entry = { repoPreview: "https://raw.example/preview.png", thumbnail: "https://reg.example/x.webp" }
-  assert.deepEqual(Model.previewCandidates(entry, true),
-    ["https://raw.example/preview.png", "https://reg.example/x.webp"])
-  // Once WebP is known undecodable the panel drops it from the walk.
-  assert.deepEqual(Model.previewCandidates(entry, false), ["https://raw.example/preview.png"])
-  assert.deepEqual(Model.previewCandidates({ repoPreview: "", thumbnail: "" }, true), [])
-  assert.deepEqual(Model.previewCandidates(null, true), [])
 })
 
 // ---- Update checks ---------------------------------------------------------
@@ -3325,7 +2079,7 @@ test("repository and direct fallback navigation revoke A and open immediately", 
   }
 })
 
-test("Browse Marketplace root URL survives direct navigation validation", () => {
+test("Marketplace root URL survives direct navigation validation", () => {
   const url = "https://omarchyplugins.com/"
   const transition = Model.releaseNavigationDirectTransition(
     Model.releaseNavigationInitialState(), url)
@@ -3464,110 +2218,6 @@ test("release probe start failure clears busy state and uses the active fallback
   assert.equal(failed.openUrl, request.fallbackUrl)
 })
 
-test("Settings About links use the existing navigation owners and release helpers", () => {
-  const info = readFileSync(new URL("../SettingsInfo.qml", import.meta.url), "utf8")
-  assert.match(info, /readonly property string repositoryUrl: "https:\/\/github\.com\/juancasanueva\/omarchy-plugin-manager"/)
-  assert.match(info, /Model\.releaseVersionLabel\(installedVersion\)/)
-  assert.match(info, /Model\.githubReleaseCandidates\(root\.repositoryUrl, root\.installedVersion\)/)
-  assert.match(info, /root\.repositoryNavigationRequested\(root\.repositoryUrl\)/)
-  assert.match(info, /root\.githubNavigationRequested\([\s\S]*?root\.repositoryUrl\)/)
-  for (const file of ["Panel.qml", "Expanded.qml"]) {
-    const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8")
-    const info = source.match(/SettingsInfo \{([\s\S]*?)\n {10}\}/)
-    assert.ok(info, "complete SettingsInfo block exists")
-    const wiring = info[1]
-    assert.match(wiring, /onRepositoryNavigationRequested: function\(url\) \{ root\.navigateExternalUrl\(url\) \}/)
-    assert.match(wiring, /onGithubNavigationRequested: function\(candidates, fallbackUrl\) \{ root\.requestGithubNavigation\(candidates, fallbackUrl\) \}/)
-  }
-})
-
-test("repository and Release actions route browser ownership through Panel", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const pluginRow = readFileSync(new URL("../PluginRow.qml", import.meta.url), "utf8")
-  const catalogCard = readFileSync(new URL("../CatalogCard.qml", import.meta.url), "utf8")
-  const pluginDetails = readFileSync(new URL("../PluginDetails.qml", import.meta.url), "utf8")
-
-  for (const delegate of [pluginRow, pluginDetails]) {
-    assert.doesNotMatch(delegate, /Quickshell\.execDetached/)
-    assert.match(delegate, /signal repositoryNavigationRequested\(string url\)/)
-    assert.match(delegate, /repositoryNavigationRequested\(repoUrl\)/)
-  }
-  assert.doesNotMatch(catalogCard, /Quickshell\.execDetached|repositoryNavigationRequested/)
-  // The one browser-launching sink lives in the shared ReleaseNavigator;
-  // neither window launches a browser on its own.
-  const navigator = readFileSync(new URL("../ReleaseNavigator.qml", import.meta.url), "utf8")
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  assert.equal(navigator.split('Quickshell.execDetached(["omarchy-launch-browser", trusted])').length - 1, 1)
-  assert.doesNotMatch(panel, /omarchy-launch-browser/)
-  assert.doesNotMatch(expanded, /omarchy-launch-browser/)
-  assert.equal(panel.split("onRepositoryNavigationRequested:").length - 1, 4)
-  assert.equal(panel.split("onGithubNavigationRequested:").length - 1, 3)
-  assert.match(pluginDetails, /signal githubNavigationRequested\(var candidates, string fallbackUrl\)/)
-  assert.match(pluginDetails, /githubNavigationRequested\(versionReleaseCandidates, versionFallbackUrl\)/)
-  assert.match(panel,
-    /onGithubNavigationRequested: function\(candidates, fallbackUrl\) \{\s+root\.requestGithubNavigation\(candidates, fallbackUrl\)\s+\}/)
-  assert.match(panel, /onClicked: root\.navigateExternalUrl\("https:\/\/omarchyplugins\.com\/"\)/)
-  assert.match(panel, /onCloseRequested: \{ root\.closeArrange\(\); root\.revokeReleaseNavigation\(\); root\.close\(\) \}/)
-  assert.match(panel, /onTabRequested: function\(direction\) \{ root\.closeArrange\(\); root\.revokeReleaseNavigation\(\); root\.switchPanel\(direction\) \}/)
-
-  for (const name of [
-    "switchTab", "reload", "loadCatalog", "askInstall",
-    "askRemove", "askEnable", "askDisable", "startUpdate"
-  ]) {
-    const start = panel.indexOf(`function ${name}(`)
-    const end = panel.indexOf("\n  }", start)
-    assert.notEqual(start, -1, name)
-    assert.match(panel.slice(start, end), /revokeReleaseNavigation\(\)/, name)
-  }
-})
-
-test("GitHub star counts are controls and Marketplace hearts stay read-only", () => {
-  const card = readFileSync(new URL("../CatalogCard.qml", import.meta.url), "utf8")
-  const pane = readFileSync(new URL("../CatalogDetailsPane.qml", import.meta.url), "utf8")
-  const details = readFileSync(new URL("../PluginDetails.qml", import.meta.url), "utf8")
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-
-  for (const surface of [card, pane, details]) {
-    assert.match(surface, /signal starRequested\(\)/)
-    assert.doesNotMatch(surface, /signal heartRequested\(\)/)
-    assert.doesNotMatch(surface, /Quickshell\.execDetached/)
-  }
-  assert.match(card, /onClicked: root\.starRequested\(\)/)
-  assert.match(pane, /onClicked: root\.starRequested\(\)/)
-  assert.match(details, /action: "star"/)
-  assert.match(details, /label: "Marketplace hearts", value: Model\.starLabel\(entry\.marketplaceHearts\) \}/)
-  assert.match(details, /onClicked: if \(field\.modelData\.action === "star"\) root\.starRequested\(\)/)
-  // The delegate owns the id the action bindings read: without it every
-  // value's color binding fails and falls back to black text.
-  assert.match(details, /Item \{\s*id: field\s*required property var modelData/)
-  // A star without an exact GitHub slug stays inert.
-  assert.match(card, /enabled: root\.starActionable/)
-
-  // The store owns the CLIs; surfaces only forward the entry.
-  assert.match(store, /signal browseUrlRequested\(string url\)/)
-  assert.match(store, /function toggleStar\(entry\)/)
-  assert.match(store, /function bumpCatalogCount\(id, delta\)/)
-  assert.match(store, /id: starProc/)
-  assert.doesNotMatch(store, /heartProc|heartSaveProc|heartsFile|heartsPath|onLoaded: root\.unionHearts/)
-
-  for (const file of ["Panel.qml", "Expanded.qml"]) {
-    const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8")
-    assert.match(source, /store\.toggleStar\(modelData\)/)
-    assert.match(source, /store\.toggleStar\(root\.detailsEntry\)/)
-    assert.match(source, /function onBrowseUrlRequested\(url\) \{ root\.navigateExternalUrl\(url\) \}/)
-    // A star must not lose the scroll offset or focus when the grid rebuilds.
-    assert.match(source, /property real pendingBrowseY: -1/)
-    assert.match(source, /root\.pendingBrowseY = catalogGrid\.contentY/)
-    assert.match(source, /catalogGrid\.contentY = Math\.min\(restoreY/)
-    assert.match(source, /if \(restoreFocus\) catalogGrid\.forceActiveFocus\(\)/)
-    assert.match(source, /function onStarToggleFinished\(\) \{\s*root\.pendingBrowseY = -1\s*root\.pendingBrowseFocus = false\s*\}/)
-  }
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  const loadEverythingStart = expanded.indexOf("function loadEverything()")
-  const loadEverything = expanded.slice(loadEverythingStart, expanded.indexOf("\n  }", loadEverythingStart))
-  assert.doesNotMatch(loadEverything, /loadCatalog\(true\)/)
-})
-
 test("compact panel height uses full available geometry independent of content", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
   const surface = panel.match(/KeyboardPanel \{\s*id: panel\b([\s\S]*?)PanelKeyCatcher \{/)
@@ -3579,25 +2229,20 @@ test("compact panel keeps its existing fitted width", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
   const surface = panel.match(/KeyboardPanel \{\s*id: panel\b([\s\S]*?)PanelKeyCatcher \{/)
   assert.ok(surface, "compact KeyboardPanel surface must exist")
-  assert.match(surface[1], /^\s*contentWidth: panel\.fittedContentWidth\(Style\.space\(620\)\)\s*$/m)
+  assert.match(surface[1], /^\s*contentWidth: panel\.fittedContentWidth\(root\.look\.sp\(620\)\)\s*$/m)
 })
 
-test("the Installed tab has no url field: plugins are added from Browse only", () => {
+test("the Installed list has no url field and no install entry point", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
 
   assert.doesNotMatch(panel, /urlField|addButton/)
   assert.doesNotMatch(panel, /function askAdd\(|function focusUrlField\(/)
   assert.doesNotMatch(panel, /https:\/\/github\.com\/user\/omarchy-plugin\.git/)
   assert.doesNotMatch(panel, /\ba add\b/)
-  // The install-and-place path survives: Browse still installs through it,
-  // the panel handing its pending answer to the store's request builder.
-  assert.match(panel, /function startAdd\(section\) \{\s*store\.startAdd\(section\)\s*\}/)
-  const storeSource = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  assert.match(storeSource, /function startAdd\(section\) \{[\s\S]*?Model\.installRequest\(entry, section, allowUnverifiedInstalls\)/)
-  assert.match(storeSource, /function launchInstall\(request, label\) \{[\s\S]*?pinnedProc\.running = true/)
+  assert.doesNotMatch(panel, /startAdd|askInstall/)
 })
 
-test("Installed filters share the Browse shape: labels on top, Search on its own row", () => {
+test("Installed filters: labels on top, Search on its own row", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
 
   assert.match(panel, /property string groupFilter: "all"/)
@@ -3608,13 +2253,13 @@ test("Installed filters share the Browse shape: labels on top, Search on its own
   assert.match(panel, /function setGroupFilter\(group\)/)
 
   // The Installed row is one labelled block, Source · Kind · Status, sized in
-  // equal columns exactly like the Browse row.
+  // equal columns.
   const start = panel.indexOf("id: installedFilters")
-  const end = panel.indexOf("id: browseFilters", start)
+  const end = panel.indexOf("id: searchFieldLoader", start)
   assert.notEqual(start, -1)
   assert.notEqual(end, -1)
   const block = panel.slice(start, end)
-  assert.match(block, /visible: !root\.browsing/)
+  assert.doesNotMatch(panel, /browsing/)
   assert.match(block, /readonly property real optionWidth: Math\.floor\(\(width - gap \* 2\) \/ 3\)/)
   for (const label of ["Source", "Kind", "Status"]) {
     assert.match(block, new RegExp(`anchors\\.top: parent\\.top\\s+text: "${label}"`), label)
@@ -3623,65 +2268,11 @@ test("Installed filters share the Browse shape: labels on top, Search on its own
     assert.match(block, new RegExp(`id: ${id}\\s+anchors\\.left: parent\\.left\\s+anchors\\.right: parent\\.right\\s+anchors\\.bottom: parent\\.bottom`), id)
   }
 
-  // Search sits below the filter row on both tabs, and the key catcher
+  // Search sits below the filter row, and the key catcher
   // yields to the new dropdown's popup like the others.
   assert.doesNotMatch(panel, /anchors\.left: root\.browsing \? parent\.left : statusFilterControl\.right/)
   assert.doesNotMatch(panel, /function dropdownWidth\(/)
   assert.match(panel, /groupDropdown\.popupOpen/)
-})
-
-test("the tab buttons sit in the same place on both tabs; Marketplace goes to their left", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-
-  const tabs = panel.slice(panel.indexOf("id: tabs"), panel.indexOf("id: marketplaceLink"))
-  assert.match(tabs, /anchors\.right: arrangeButton\.left/)
-  assert.doesNotMatch(tabs, /root\.browsing/)
-
-  const marketplace = panel.slice(panel.indexOf("id: marketplaceLink"), panel.indexOf("id: refreshButton"))
-  assert.match(marketplace, /anchors\.right: tabs\.left/)
-  assert.match(marketplace, /visible: root\.browsing/)
-})
-
-test("Marketplace is drawn as a link, in the same idiom as the repository links", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const link = panel.slice(panel.indexOf("id: marketplaceLink"), panel.indexOf("id: refreshButton"))
-
-  assert.doesNotMatch(link, /^\s*Button \{/m)
-  assert.doesNotMatch(link, /bordered: true/)
-  assert.match(link, /textFormat: Text\.PlainText/)
-  assert.match(link, /text: "󰖟  Marketplace"/)
-  assert.match(link, /color: marketplaceMouse\.containsMouse \? Color\.accent : root\.secondaryForeground/)
-  assert.match(link, /font\.underline: marketplaceMouse\.containsMouse/)
-  assert.match(link, /cursorShape: Qt\.PointingHandCursor/)
-  assert.match(link, /PanelToolTip \{\s+visible: marketplaceMouse\.containsMouse/)
-  assert.match(link, /onClicked: root\.navigateExternalUrl\("https:\/\/omarchyplugins\.com\/"\)/)
-  assert.doesNotMatch(panel, /marketplaceButton/)
-})
-
-test("browseFilterHints names the filter when neutral and its value when narrowing", () => {
-  const options = {
-    category: [{ value: "all", label: "All" }, { value: "Games", label: "Games" }],
-    kind: [{ value: "all", label: "All" }, { value: "bar-widget", label: "bar-widget" }],
-    availability: Model.catalogAvailabilityOptions(),
-    sort: Model.catalogSortOptions()
-  }
-
-  assert.deepEqual(Model.browseFilterHints(
-    { category: "all", kind: "all", availability: "all", sort: "recently-added" }, options), [
-    { key: "c", text: "CATEGORY", active: false },
-    { key: "f", text: "KIND", active: false },
-    { key: "a", text: "AVAILABILITY", active: false },
-    { key: "s", text: "RECENTLY ADDED", active: false }
-  ])
-  assert.deepEqual(Model.browseFilterHints(
-    { category: "Games", kind: "bar-widget", availability: "installed", sort: "stars" }, options), [
-    { key: "c", text: "GAMES", active: true },
-    { key: "f", text: "BAR-WIDGET", active: true },
-    { key: "a", text: "INSTALLED", active: true },
-    { key: "s", text: "MOST STARRED", active: true }
-  ])
-  // A value the options no longer carry still reads as itself, never blank.
-  assert.equal(Model.browseFilterHints({ category: "gone" }, options)[0].text, "GONE")
 })
 
 test("installedFilterHints mirrors the Browse row for Source, Kind, and Status", () => {
@@ -3702,30 +2293,6 @@ test("installedFilterHints mirrors the Browse row for Source, Kind, and Status",
     { key: "t", text: "UPDATE", active: true }
   ])
   assert.equal(Model.installedFilterHints({}, options)[0].text, "SOURCE")
-})
-
-test("actionHints puts Update All first and lights it only when a bulk update is available", () => {
-  assert.deepEqual(Model.actionHints(true), [
-    { key: "↵", text: "DETAILS", active: false },
-    { key: "/", text: "SEARCH", active: false }
-  ])
-  assert.deepEqual(Model.actionHints(false, false), [
-    { key: "u", text: "UPDATE ALL", active: false },
-    { key: "↵", text: "UPDATE", active: false },
-    { key: "⌦", text: "REMOVE", active: false },
-    { key: "/", text: "SEARCH", active: false }
-  ])
-  assert.deepEqual(Model.actionHints(false, true), [
-    { key: "u", text: "UPDATE ALL", active: true },
-    { key: "↵", text: "UPDATE", active: false },
-    { key: "⌦", text: "REMOVE", active: false },
-    { key: "/", text: "SEARCH", active: false }
-  ])
-
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  assert.match(panel, /model: Model\.actionHints\(root\.browsing, root\.bulkUpdatableCount > 0\)/)
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  assert.match(expanded, /Model\.actionHints\(root\.browsing, root\.bulkUpdatableCount > 0\)/)
 })
 
 test("verifiedIdSet joins installed rows to the marketplace's verified listings by id", () => {
@@ -3765,7 +2332,7 @@ test("Installed rows wear the marketplace's verified pill beside the name", () =
   const pill = row.slice(row.indexOf("id: verifiedPill"), row.indexOf("id: verifiedPill") + 900)
   assert.match(pill, /visible: root\.verified/)
   assert.match(pill, /text: "󰄬 verified"/)
-  assert.match(pill, /color: Color\.accent/)
+  assert.match(pill, /color: root\.look\.accent/)
   assert.match(pill, /textFormat: Text\.PlainText/)
   // The name yields to the pill instead of eliding it off the row.
   assert.match(row, /id: name[\s\S]*?width: Math\.max\(0, Math\.min\(implicitWidth,[\s\S]*?verifiedPill\.visible \? verifiedPill\.width \+ nameLine\.spacing : 0/)
@@ -3773,10 +2340,10 @@ test("Installed rows wear the marketplace's verified pill beside the name", () =
 
 test("the header refresh button is display-sized and spins instead of greying while refreshing", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  assert.match(panel, /readonly property bool refreshing: browsing \? catalogLoading : \(loading \|\| checkingUpdates\)/)
+  assert.match(panel, /readonly property bool refreshing: loading \|\| checkingUpdates/)
 
   const button = panel.slice(panel.indexOf("id: refreshButton"), panel.indexOf("id: refreshSpinner"))
-  assert.match(button, /fontSize: Style\.font\.display/)
+  assert.match(button, /fontSize: root\.look\.font\.display/)
   // The button's own glyph steps aside while refreshing; the spinner takes its place.
   assert.match(button, /iconText: root\.refreshing \? "" : "󰉹"/)
   assert.doesNotMatch(button, /opacity: enabled \? 1 : 0\.4/)
@@ -3822,59 +2389,19 @@ test("the title puzzle piece snaps into place when the panel opens", () => {
   assert.match(settle, /property: "rotation"[\s\S]*?to: 8[\s\S]*?property: "rotation"[\s\S]*?to: -5[\s\S]*?property: "rotation"[\s\S]*?to: 0/)
 })
 
-test("switching tabs flips the content area like a card", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-
-  // The switch is deferred to the edge-on midpoint of the flip; the tab bar
-  // highlights the destination immediately so the click feels acknowledged.
-  assert.match(panel, /property string pendingTab: ""/)
-  assert.match(panel, /property real contentFlipAngle: 0/)
-  assert.match(panel, /readonly property bool contentFlipping: contentFlip\.running/)
-  assert.match(panel, /readonly property real contentFlipScale: 1 - 0\.06 \* Math\.sin\(Math\.abs\(contentFlipAngle\) \* Math\.PI \/ 180\)/)
-  assert.match(panel, /value: root\.pendingTab !== "" \? root\.pendingTab : root\.activeTab/)
-
-  const switchTab = panel.slice(panel.indexOf("function switchTab(tab) {"), panel.indexOf("function applyPendingTab() {"))
-  // A click during a flip finishes that flip first instead of being dropped.
-  assert.match(switchTab, /if \(contentFlip\.running\) \{\s*contentFlip\.stop\(\)\s*if \(pendingTab !== ""\) applyPendingTab\(\)\s*contentFlipAngle = 0\s*\}/)
-  assert.match(switchTab, /if \(activeTab === tab\) return/)
-  assert.match(switchTab, /pendingTab = tab\s*contentFlip\.direction = tab === "browse" \? 1 : -1\s*contentFlip\.restart\(\)/)
-  assert.doesNotMatch(switchTab, /activeTab = tab/)
-
-  const apply = panel.slice(panel.indexOf("function applyPendingTab() {"), panel.indexOf("onSearchQueryChanged"))
-  assert.match(apply, /pendingTab = ""(?:\s*\/\/[^\n]*)*\s*clearSearch\(\)\s*activeTab = tab\s*resetSelection\(\)/)
-  assert.match(apply, /if \(tab === "browse" && !catalogLoaded && !catalogLoading\) loadCatalog\(false\)/)
-
-  // Turn to edge-on, swap, turn back in from the other side — same rotational
-  // direction throughout, mirrored for the way back.
-  const flip = panel.slice(panel.indexOf("id: contentFlip\n"), panel.indexOf("id: contentFlip\n") + 1400)
-  assert.match(flip, /property int direction: 1/)
-  assert.match(flip, /property: "contentFlipAngle"[\s\S]*?from: 0[\s\S]*?to: -90 \* contentFlip\.direction[\s\S]*?easing\.type: Easing\.InCubic/)
-  assert.match(flip, /ScriptAction \{ script: root\.applyPendingTab\(\) \}/)
-  assert.match(flip, /property: "contentFlipAngle"[\s\S]*?from: 90 \* contentFlip\.direction[\s\S]*?to: 0[\s\S]*?easing\.type: Easing\.OutCubic/)
-
-  // Both faces of the card carry the same transform; the layer only exists
-  // while turning so the idle panel pays nothing.
-  for (const id of ["id: listScroll", "id: catalogGrid"]) {
-    const face = panel.slice(panel.indexOf(id), panel.indexOf(id) + 1200)
-    assert.match(face, /transform: Rotation \{[\s\S]*?axis \{ x: 0; y: 1; z: 0 \}[\s\S]*?angle: root\.contentFlipAngle/, id)
-    assert.match(face, /scale: root\.contentFlipScale/, id)
-    assert.match(face, /layer\.enabled: root\.contentFlipping/, id)
-  }
-})
-
 test("the row state bar is a 5px rule", () => {
   const row = readFileSync(new URL("../PluginRow.qml", import.meta.url), "utf8")
   const bar = row.slice(row.indexOf("id: stateBar"), row.indexOf("id: stateBar") + 500)
-  assert.match(bar, /width: Style\.space\(5\)/)
+  assert.match(bar, /width: root\.look\.sp\(5\)/)
 })
 
 test("the row's update and remove buttons use the large icon size", () => {
   const row = readFileSync(new URL("../PluginRow.qml", import.meta.url), "utf8")
   const update = row.slice(row.indexOf("id: updateButton"), row.indexOf("PanelActionButton {", row.indexOf("id: updateButton")))
-  assert.match(update, /fontSize: Style\.font\.iconLarge/)
+  assert.match(update, /fontSize: root\.look\.font\.iconLarge/)
   const remove = row.slice(row.indexOf("PanelActionButton {", row.indexOf("id: updateButton")))
   assert.match(remove, /iconText: "󰩹"/)
-  assert.match(remove, /fontSize: Style\.font\.iconLarge/)
+  assert.match(remove, /fontSize: root\.look\.font\.iconLarge/)
 })
 
 test("a row's update button spins while that row is being updated", () => {
@@ -3929,9 +2456,7 @@ test("every keyboard-cycled filter replays its value into its dropdown", () => {
   // A mouse pick assigns Dropdown.value and breaks the binding; a later key
   // cycle must push the filter back in or the dropdown shows a stale choice.
   for (const [filter, dropdown] of [
-    ["kindFilter", "kindDropdown"], ["groupFilter", "groupDropdown"], ["statusFilter", "statusDropdown"],
-    ["categoryFilter", "categoryDropdown"], ["catalogKindFilter", "catalogKindDropdown"],
-    ["availabilityFilter", "availabilityDropdown"], ["catalogSort", "sortDropdown"]
+    ["kindFilter", "kindDropdown"], ["groupFilter", "groupDropdown"], ["statusFilter", "statusDropdown"]
   ]) {
     const handler = "on" + filter[0].toUpperCase() + filter.slice(1) + "Changed"
     assert.match(panel, new RegExp(`${handler}: if \\(${dropdown} && ${dropdown}\\.value !== ${filter}\\)\\s+${dropdown}\\.value = ${filter}`), handler)
@@ -3939,29 +2464,25 @@ test("every keyboard-cycled filter replays its value into its dropdown", () => {
 })
 
 test("nextOption cycles any option list and nextKind is that same walk", () => {
-  const options = Model.catalogSortOptions()
-  assert.equal(Model.nextOption(options, "recently-added"), "updated")
-  assert.equal(Model.nextOption(options, "name"), "verified")
-  assert.equal(Model.nextOption(options, "unverified"), "recently-added")
-  assert.equal(Model.nextOption(options, "gone"), "recently-added")
-  assert.equal(Model.nextKind(options, "hearts"), Model.nextOption(options, "hearts"))
+  const options = [{ value: "a" }, { value: "b" }, { value: "c" }]
+  assert.equal(Model.nextOption(options, "a"), "b")
+  assert.equal(Model.nextOption(options, "c"), "a")
+  assert.equal(Model.nextOption(options, "gone"), "a")
+  assert.equal(Model.nextKind(options, "b"), Model.nextOption(options, "b"))
 })
 
-test("one hint bar on both tabs: filter hints left, action hints right, keys cycle the dropdowns", () => {
+test("one hint bar: filter hints left, action hints right, keys cycle the dropdowns", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
 
-  assert.match(panel, /readonly property var browseFilterHints: Model\.browseFilterHints\(/)
   assert.match(panel, /readonly property var installedFilterHints: Model\.installedFilterHints\(/)
-  for (const name of ["cycleCategoryFilter", "cycleCatalogKindFilter", "cycleAvailabilityFilter", "cycleCatalogSort",
-                      "cycleGroupFilter", "cycleKindFilter", "cycleStatusFilter"])
+  for (const name of ["cycleGroupFilter", "cycleKindFilter", "cycleStatusFilter"])
     assert.match(panel, new RegExp(`function ${name}\\(\\) \\{\\s+(?:closeArrange\\(\\)\\s+)?set\\w+\\(Model\\.nextOption\\(`), name)
 
   const keys = panel.slice(panel.indexOf("onTextKey:"), panel.indexOf("// ---- Fixed chrome"))
-  assert.match(keys, /t === "f" \|\| t === "F"\) root\.browsing \? root\.cycleCatalogKindFilter\(\) : root\.cycleKindFilter\(\)/)
-  assert.match(keys, /t === "s" \|\| t === "S"\) root\.browsing \? root\.cycleCatalogSort\(\) : root\.cycleGroupFilter\(\)/)
-  assert.match(keys, /\(t === "c" \|\| t === "C"\) && root\.browsing\) root\.cycleCategoryFilter\(\)/)
-  assert.match(keys, /\(t === "a" \|\| t === "A"\) && root\.browsing\) root\.cycleAvailabilityFilter\(\)/)
-  assert.match(keys, /\(t === "t" \|\| t === "T"\) && !root\.browsing\) root\.cycleStatusFilter\(\)/)
+  assert.match(keys, /t === "f" \|\| t === "F"\) root\.cycleKindFilter\(\)/)
+  assert.match(keys, /t === "s" \|\| t === "S"\) root\.cycleGroupFilter\(\)/)
+  assert.match(keys, /t === "t" \|\| t === "T"\) root\.cycleStatusFilter\(\)/)
+  assert.doesNotMatch(keys, /browsing|switchTab/)
 
   // The old centred hints line is gone; one bar carries both groups.
   assert.doesNotMatch(panel, /id: hints\b/)
@@ -3971,191 +2492,18 @@ test("one hint bar on both tabs: filter hints left, action hints right, keys cyc
   assert.match(bar, /PanelSeparator \{/)
   assert.match(bar, /id: filterHints\s+anchors\.left: parent\.left/)
   assert.match(bar, /id: actionHints\s+anchors\.right: parent\.right/)
-  assert.match(bar, /model: root\.browsing \? root\.browseFilterHints : root\.installedFilterHints/)
-  assert.match(bar, /model: Model\.actionHints\(root\.browsing, root\.bulkUpdatableCount > 0\)/)
+  assert.match(bar, /model: root\.installedFilterHints/)
+  assert.match(bar, /model: Model\.actionHints\(root\.bulkUpdatableCount > 0\)/)
   // One delegate for both groups, keys shown uppercase in the accent.
   assert.equal(bar.split("delegate: hintDelegate").length - 1, 2)
-  assert.match(bar, /text: "\[" \+ hint\.modelData\.key\.toUpperCase\(\) \+ "\]"\s+color: Color\.accent/)
+  assert.match(bar, /text: "\[" \+ hint\.modelData\.key\.toUpperCase\(\) \+ "\]"\s+color: root\.look\.accent/)
   assert.match(bar, /color: hint\.modelData\.active \? root\.contentForeground : root\.secondaryForeground/)
   assert.doesNotMatch(bar, /Text\.RichText|Text\.AutoText|StyledText/)
 
-  // Both scroll regions stop above the bar.
-  const grid = panel.slice(panel.indexOf("id: catalogGrid"), panel.indexOf("id: catalogGrid") + 600)
-  assert.match(grid, /anchors\.bottom: hintBar\.top/)
+  // The scroll region stops above the bar.
   const list = panel.slice(panel.indexOf("id: listScroll"), panel.indexOf("id: listScroll") + 600)
   assert.match(list, /anchors\.bottom: hintBar\.top/)
   assert.doesNotMatch(panel, /hints\.implicitHeight|hints\.top/)
-})
-
-test("plugin details lead with the same preview walk the Browse card uses", () => {
-  const details = readFileSync(new URL("../PluginDetails.qml", import.meta.url), "utf8")
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-
-  assert.match(details, /property bool previewsEnabled: true/)
-  assert.match(details, /signal previewUndecodable\(\)/)
-  assert.match(details, /readonly property var previewSources: Model\.previewCandidates\(entry, previewsEnabled\)/)
-  assert.match(details, /onEntryChanged: previewIndex = 0/)
-
-  // The preview leads the scrolling body: it is the first child of the
-  // details column, above the description.
-  const bodyStart = details.indexOf("id: detailsContent")
-  const previewStart = details.indexOf("id: detailsPreview", bodyStart)
-  const descriptionStart = details.indexOf("root.entry.description", bodyStart)
-  assert.notEqual(previewStart, -1)
-  assert.ok(previewStart < descriptionStart)
-
-  assert.match(details, /id: detailsThumbnail[\s\S]*source: root\.previewSource/)
-  assert.match(details,
-    /root\.previewSource === \(root\.entry \? root\.entry\.thumbnail : ""\)\) root\.previewUndecodable\(\)/)
-  // Never cropped: the frame takes the picture's own aspect once it has
-  // loaded (16:9 only as the placeholder tile), and the image fits inside it.
-  assert.match(details, /id: detailsThumbnail[\s\S]*fillMode: Image\.PreserveAspectFit/)
-  assert.doesNotMatch(details, /id: detailsThumbnail[\s\S]*PreserveAspectCrop/)
-  assert.match(details, /id: detailsPreview[\s\S]*height: detailsThumbnail\.status === Image\.Ready && detailsThumbnail\.implicitWidth > 0\s+\? Math\.min\(width, Math\.round\(width \* detailsThumbnail\.implicitHeight \/ detailsThumbnail\.implicitWidth\)\)\s+: Math\.round\(width \* 9 \/ 16\)/)
-  assert.match(details, /visible: detailsThumbnail\.status !== Image\.Ready/)
-  // The accent tile is only the placeholder: once the picture is up, the
-  // gutters around a fitted image are the panel background, not a tint.
-  assert.match(details, /id: detailsPreview[\s\S]*color: root\.background/)
-  assert.match(details, /gradient: detailsThumbnail\.status === Image\.Ready \? null : previewTileGradient/)
-  assert.match(details, /Gradient \{\s+id: previewTileGradient/)
-
-  // One WebP verdict for the whole panel: details report undecodable sources
-  // to the same flag the grid does.
-  const detailsSection = panel.slice(panel.indexOf("PluginDetails {"), panel.indexOf("ActionConfirmDialog {"))
-  assert.match(detailsSection, /previewsEnabled: root\.previewsSupported/)
-  assert.match(detailsSection, /onPreviewUndecodable: root\.previewsSupported = false/)
-})
-
-test("catalog cards stay compact while details own complete metadata and actions", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const card = readFileSync(new URL("../CatalogCard.qml", import.meta.url), "utf8")
-  const details = readFileSync(new URL("../PluginDetails.qml", import.meta.url), "utf8")
-
-  // Three lines beside author and version; five when those lines are off
-  // and the footer gave the room back.
-  assert.match(card, /readonly property int descriptionLines: showMeta \? 3 : 5/)
-  assert.match(card, /signal detailsRequested\(\)/)
-  assert.match(card, /Model\.installBlockedReason\(entry\)/)
-  assert.match(card, /id: creator[\s\S]*visible: root\.hasCreator[\s\S]*elide: Text\.ElideRight/)
-  assert.match(card, /id: versionAndMetrics[\s\S]*visible: root\.hasVersionOrMetrics/)
-  assert.match(card, /readonly property string starCountText: entry \? Model\.starLabel\(entry\.stars\) : ""/)
-  assert.match(card, /readonly property string heartCountText: entry \? Model\.starLabel\(entry\.marketplaceHearts\) : ""/)
-  assert.doesNotMatch(card, /GH ★|MP ♥/)
-  assert.match(card, /id: metricsLabel[\s\S]*anchors\.right: parent\.right/)
-  // The glyphs are their own Text so each can carry its own colour and size:
-  // a yellow star and a red heart, larger than the caption counts beside them.
-  const starIcon = card.slice(card.indexOf("id: starIcon"), card.indexOf("id: starCount"))
-  // Nerd Font glyphs, not ★/♥: the mono font lacks ★ (so it fell back to a
-  // colour emoji) and its ♥ is hollow. These are filled and stay in-family.
-  assert.match(starIcon, /text: "󰓎"/)
-  assert.doesNotMatch(starIcon, /anchors\.verticalCenter/)
-  assert.match(starIcon, /color: starMouse\.containsMouse \? "#ffd257" : root\.starColor/)
-  assert.match(starIcon, /font\.pixelSize: Style\.font\.title/)
-  assert.match(starIcon, /textFormat: Text\.PlainText/)
-  const heartIcon = card.slice(card.indexOf("id: heartIcon"), card.indexOf("id: heartCount"))
-  assert.match(heartIcon, /text: "󰋑"/)
-  assert.doesNotMatch(heartIcon, /anchors\.verticalCenter/)
-  assert.match(heartIcon, /color: root\.heartColor/)
-  assert.match(heartIcon, /font\.pixelSize: Style\.font\.title/)
-  assert.match(heartIcon, /textFormat: Text\.PlainText/)
-  assert.match(card, /readonly property color starColor: "#f5c518"/)
-  assert.match(card, /readonly property color heartColor: "#e5484d"/)
-  // Counts sit on the glyph baseline so a 14px icon and a 10px number line up.
-  assert.match(card, /id: starCount[\s\S]*?anchors\.baseline: starIcon\.baseline[\s\S]*?text: root\.starCountText[\s\S]*?font\.pixelSize: Style\.font\.caption/)
-  assert.match(card, /id: heartCount[\s\S]*?anchors\.baseline: heartIcon\.baseline[\s\S]*?text: root\.heartCountText[\s\S]*?font\.pixelSize: Style\.font\.caption/)
-  assert.match(card, /id: versionLabel[\s\S]*width: Math\.max\(0, Math\.min\(implicitWidth, availableWidth\)\)[\s\S]*elide: Text\.ElideRight/)
-  assert.match(card, /creator\.height \+ versionAndMetrics\.height[\s\S]*creator\.visible && versionAndMetrics\.visible \? spacing : 0/)
-  for (const label of [
-    "Author", "Version", "Category", "Kind", "License", "GitHub stars",
-    "Marketplace hearts", "Marketplace review", "Availability", "Placement"
-  ]) assert.match(details, new RegExp(`label: "${label}"`), label)
-  assert.match(details, /entry\.description/)
-  assert.match(details, /entry\.categoryPresent === true && entry\.category !== ""/)
-  assert.match(details, /Model\.installBlockedReason\(entry\)/)
-  assert.match(details, /plugins run unsandboxed inside omarchy-shell/)
-  assert.match(details, /kind: "repository"/)
-  assert.match(details, /kind: "release"/)
-  assert.match(details, /kind: "install"/)
-  assert.match(panel, /readonly property real compactContentWidth: cellWidth\s+- compactDelegateMargin \* 2 - compactCardPadding \* 2/)
-  assert.match(panel, /readonly property real compactActionHeight: Math\.max\(\s+Style\.space\(22\), Style\.font\.icon \+ Style\.spacing\.sm \* 2\)/)
-  assert.match(card, /readonly property real footerHeight: Math\.max\(footerMetadataHeight, actionRow\.visible \? actionRow\.implicitHeight : 0\)/)
-  // The action buttons line up with the version/metrics line, not the middle
-  // of the two-line metadata block, so they no longer float between the lines.
-  const actionRow = card.slice(card.indexOf("id: actionRow"), card.indexOf("PanelActionButton {", card.indexOf("id: actionRow")))
-  assert.doesNotMatch(actionRow, /anchors\.verticalCenter/)
-  assert.match(actionRow, /y: metadata\.visible\s*\? metadata\.y \+ versionAndMetrics\.y \+ \(versionAndMetrics\.height - height\) \/ 2\s*: \(parent\.height - height\) \/ 2/)
-  assert.match(card, /readonly property real requiredHeight: topContent\.implicitHeight \+ contentFooterGap\s+\+ footerHeight \+ contentPadding \* 2/)
-  assert.match(panel, /readonly property real compactFooterHeight: Math\.max\(/)
-  assert.match(panel, /Math\.ceil\(cardTextMetrics\.lineSpacing \* 4\)/)
-  assert.match(panel, /\+ compactFooterHeight\s+\+ compactContentSpacing \* 4\s+\+ compactCardPadding \* 2\s+\+ compactDelegateMargin \* 2/)
-  assert.match(card, /id: topContent[\s\S]*anchors\.top: parent\.top/)
-  assert.match(card,
-    /id: flexibleFooterGap[\s\S]*anchors\.top: topContent\.bottom[\s\S]*anchors\.topMargin: root\.contentFooterGap[\s\S]*anchors\.bottom: footer\.top/)
-  assert.match(card,
-    /id: footer[\s\S]*anchors\.bottom: parent\.bottom[\s\S]*height: root\.footerHeight/)
-  const delegateStart = panel.indexOf("delegate: Item {", panel.indexOf("id: catalogGrid"))
-  const delegateEnd = panel.indexOf("// Empty and loading", delegateStart)
-  const delegate = panel.slice(delegateStart, delegateEnd)
-  assert.match(delegate, /width: catalogGrid\.cellWidth\s+height: catalogGrid\.cellHeight/)
-  assert.match(delegate, /CatalogCard \{[\s\S]*anchors\.fill: parent[\s\S]*anchors\.margins: Style\.space\(4\)/)
-  assert.doesNotMatch(delegate, /height: catalogCard\.requiredHeight/)
-})
-
-test("Browse details and filters wire keyboard interaction through guarded modal ownership", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const details = readFileSync(new URL("../PluginDetails.qml", import.meta.url), "utf8")
-  const choice = readFileSync(new URL("../ChoiceDialog.qml", import.meta.url), "utf8")
-
-  assert.match(panel, /onActivateRequested: root\.browsing \? root\.openDetails\(root\.selectedEntry\)/)
-  assert.match(panel, /onDetailsRequested:[\s\S]*root\.openDetails\(modelData\)/)
-  assert.match(panel, /text: "Clear filters"[\s\S]*onClicked: root\.clearCatalogFilters\(\)/)
-  assert.match(panel, /readonly property var sortedCatalog: Model\.sortCatalog\(catalog, catalogSort\)/)
-  assert.match(panel, /Model\.filterCatalog\(\s*sortedCatalog, categoryFilter, catalogKindFilter, availabilityFilter, searchQuery\)/)
-  assert.match(details, /Qt\.Key_Escape/)
-  assert.match(details, /Qt\.Key_Tab/)
-  assert.match(details, /Qt\.Key_Return \|\| event\.key === Qt\.Key_Enter/)
-  assert.match(details, /selected \? Color\.accent/)
-  assert.match(choice, /Qt\.Key_Escape/)
-  assert.match(choice, /Qt\.Key_Return \|\| event\.key === Qt\.Key_Enter/)
-
-  const restoreStart = panel.indexOf("function returnFocusToList()")
-  const restoreEnd = panel.indexOf("\n  }", restoreStart)
-  const restore = panel.slice(restoreStart, restoreEnd)
-  assert.match(restore, /root\.opened/)
-  assert.match(restore, /Model\.browseModalFocusOwner\(root\.detailsOpen, root\.confirming, root\.placing\) === "list"/)
-  assert.match(restore, /keyCatcher\.forceActiveFocus\(\)/)
-  const modalSections = [
-    panel.slice(panel.indexOf("PluginDetails {"), panel.indexOf("ActionConfirmDialog {")),
-    panel.slice(panel.indexOf("ActionConfirmDialog {"), panel.indexOf("ChoiceDialog {")),
-    panel.slice(panel.indexOf("ChoiceDialog {"))
-  ]
-  for (const section of modalSections)
-    assert.match(section, /onOpenedChanged:[\s\S]*else root\.returnFocusToList\(\)/)
-  assert.doesNotMatch(panel, /else Qt\.callLater\(function\(\) \{ if \(keyCatcher\)/)
-  assert.match(panel, /id: confirm[\s\S]*confirm\.handleKey\(event\)/)
-  assert.match(panel, /id: placement[\s\S]*placement\.handleKey\(event\)/)
-  // These source checks prove the QML wiring only. The ownership truth table
-  // above is the executable behavior seam; a live focus runtime remains a
-  // separate integration boundary.
-})
-
-test("Panel keeps open details synchronized with catalog install state", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  // The store re-stamps install state without knowing about any open details;
-  // it only publishes a new catalog when something actually changed.
-  assert.match(store,
-    /var stampedState = Model\.restampCatalogInstallState\(\s*catalog, Model\.installedIdSet\(rows\), null, allowUnverifiedInstalls\)/)
-  assert.match(store, /if \(!stampedState\.changed\) return\s*catalog = stampedState\.entries/)
-  assert.match(store, /onRowsChanged: restampCatalog\(\)/)
-  // A fresh fetch is built on the worker thread and published from its reply.
-  assert.match(store, /catalog = message\.entries/)
-  // Every published catalog — re-stamp or fresh fetch — refreshes the open
-  // details entry from the same list the cards are drawn from. A snapshot
-  // click also restores the scroll offset the rebuild dropped.
-  assert.match(panel, /onCatalogChanged: \{\s*if \(detailsEntry\) detailsEntry = Model\.findRow\(catalog, detailsEntry\.id\)/)
-  assert.match(panel, /catalogGrid\.contentY = Math\.min\(restoreY/)
-  assert.doesNotMatch(panel, /restampCatalogInstallState|Model\.catalogEntries\(/)
 })
 
 test("Panel delegates data, processes and actions to PluginStore", () => {
@@ -4170,7 +2518,7 @@ test("Panel delegates data, processes and actions to PluginStore", () => {
     assert.doesNotMatch(panel, new RegExp(`id: ${id}\\b`), id)
   }
   // The probe and its state machine glue live in ReleaseNavigator.qml,
-  // shared by the popup and the expanded panel.
+  // used by the popup.
   assert.doesNotMatch(panel, /Process \{\s*id: releaseProbe/)
   assert.match(panel, /ReleaseNavigator \{ id: releaseNavigator \}/)
   for (const script of ["updateScript", "noticeScript"]) {
@@ -4183,8 +2531,7 @@ test("Panel delegates data, processes and actions to PluginStore", () => {
   // State the surface binds to is aliased, so existing bindings read the
   // store without naming it.
   for (const name of [
-    "rows", "loading", "loadError", "checkingUpdates", "catalog", "catalogLoading",
-    "catalogLoaded", "catalogError", "previewsSupported", "busyKind", "busyRowId",
+    "rows", "loading", "loadError", "checkingUpdates", "busyKind", "busyRowId",
     "busyId", "status", "statusIsError"
   ]) assert.match(panel, new RegExp(`property alias ${name}: store\\.${name}\\b`), name)
   for (const name of ["busy", "verifiedIds", "behindCount", "installedTotal", "updateActionsEnabled"])
@@ -4193,7 +2540,6 @@ test("Panel delegates data, processes and actions to PluginStore", () => {
   // release navigation — a panel concern — revoked where it always was.
   assert.match(panel, /function reload\(\) \{\s*revokeReleaseNavigation\(\)\s*return store\.reload\(\)\s*\}/)
   assert.match(panel, /function checkUpdates\(\) \{\s*return store\.checkUpdates\(\)\s*\}/)
-  assert.match(panel, /function loadCatalog\(force\) \{\s*revokeReleaseNavigation\(\)\s*store\.loadCatalog\(force\)\s*\}/)
   assert.match(panel, /function setStatus\(text, isError, source\) \{\s*store\.setStatus\(text, isError, source\)\s*\}/)
   // The store announces what the panel used to do inline.
   assert.match(store, /signal reloadStarted\(\)/)
@@ -4204,115 +2550,6 @@ test("Panel delegates data, processes and actions to PluginStore", () => {
   // The store never touches the browser or the dialogs.
   assert.doesNotMatch(store, /omarchy-launch-browser|detailsEntry|releaseNavigation/)
   assert.doesNotMatch(panel, /Quickshell\.execDetached\(\["bash"/)
-})
-
-test("add confirmation never promises placement after cloning", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  assert.match(store, /Model\.catalogPlacementConfirmationNote\(pendingPlacementNeeded\)/)
-  assert.doesNotMatch(store, /asked where to put it once it is cloned|where to put it once it is cloned/)
-  assert.doesNotMatch(panel, /asked where to put it once it is cloned|where to put it once it is cloned/)
-})
-
-test("installing runs the pinned helper on the verified commit, never the host add", () => {
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-
-  // No QML or JS may reach the host command that clones a mutable branch tip.
-  for (const [name, source] of [["PluginStore.qml", store],
-    ["Model.js", readFileSync(new URL("../Model.js", import.meta.url), "utf8")],
-    ["Panel.qml", readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")],
-    ["Expanded.qml", readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")],
-    ["CatalogCard.qml", readFileSync(new URL("../CatalogCard.qml", import.meta.url), "utf8")],
-    ["CatalogDetailsPane.qml", readFileSync(new URL("../CatalogDetailsPane.qml", import.meta.url), "utf8")]])
-    assert.doesNotMatch(source, /plugin add|launchAdd/, name)
-
-  // The install goes through the same independent worker an update does.
-  assert.match(store, /function launchInstall\(request, label\) \{[\s\S]*?busyKind = "install"[\s\S]*?pinnedProc\.command = \["\/usr\/bin\/env", "-i", "--", "PATH=\/usr\/bin:\/bin"/)
-  assert.match(store, /"Installing the verified snapshot of " \+ label\s*\+ "; closing this window does not cancel it"/)
-  // The confirmation names the exact commit rather than the repository tip,
-  // and the url it shows is the repository the request actually fetches —
-  // never the registry's free-text install command.
-  assert.match(store, /Model\.shortSha\(pendingVerifiedCommit\)/)
-  assert.match(store, /pendingVerifiedCommit = unreviewed \? "" : String\(snapshot\.verifiedCommit\)/)
-  assert.match(store, /pendingUrl = String\(snapshot\.repository\)/)
-  assert.doesNotMatch(store, /pendingUrl = entry\.installUrl/)
-  // The opt-in path names the branch instead, and says so in the status line.
-  assert.match(store, /pendingBranch = unreviewed \? String\(snapshot\.branch\) : ""/)
-  assert.match(store, /"Installing the unreviewed tip of " \+ label\s*\+ "; closing this window does not cancel it"/)
-  assert.match(store, /Model\.installUnverifiedConfirmMessage\(pendingLabel, pendingUrl, pendingBranch, pendingPlacementNeeded\)/)
-  // Every status the helper can emit for an install is accepted, and only
-  // those; nothing else may be reported as a change on disk.
-  for (const status of ["installed", "installed; reload failed", "installed; enable failed",
-    "installed; finalization failed", "unchanged; install refused", "unchanged; request refused"])
-    assert.ok(store.includes(`"${status}"`), status)
-  assert.match(store, /if \(!pinnedExited\) return\s+if \(busyKind === "bulk-update"\) \{\s*var nonce = finishBulkProcess\(\)/)
-  // A re-derived request is what actually runs: the dialog's answer is bound
-  // to the snapshot the live catalog still names.
-  assert.match(store, /function startAdd\(section\) \{[\s\S]*?String\(request\.verifiedCommit \|\| ""\) !== commit[\s\S]*?launchInstall\(request, label\)/)
-  assert.match(store, /String\(request\.branch \|\| ""\) !== branch/)
-})
-
-test("an unreviewed install is confirmed and re-gated on the branch the dialog named", () => {
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  const catalog = Model.catalogEntries({ plugins: [unreviewedListing] }, {}, true)
-  const base = () => ({ busy: false, pendingKind: "", pendingId: "", pendingLabel: "", pendingUrl: "",
-    pendingBranch: "", pendingVerifiedCommit: "", pendingSection: "", pendingPlacement: "",
-    pendingPlacementNeeded: false, pendingUnverifiedSha: "", allowUnverifiedInstalls: true,
-    bulkActive: false, bulkQueue: [],
-    catalog: catalog, launched: [], statuses: [],
-    launchInstall(request, label) { this.launched.push([request, label]) },
-    setStatus(text, error) { this.statuses.push([text, error]) } })
-  const call = (state, name, args) => Function("Model", "state", "args", `with (state) {
-    ${qmlFunction(store, "cancelPending")}
-    ${qmlFunction(store, "askInstall")}
-    ${qmlFunction(store, "startAdd")}
-    return ${name}.apply(null, args) }`)(Model, state, args)
-
-  const asked = base()
-  assert.equal(call(asked, "askInstall", [catalog[0]]), true)
-  assert.equal(asked.pendingKind, "install")
-  assert.equal(asked.pendingUrl, "https://github.com/acme/fresh")
-  assert.equal(asked.pendingBranch, "main")
-  assert.equal(asked.pendingVerifiedCommit, "", "there is no reviewed commit to name")
-
-  // The setting went off while the question was on screen: nothing installs.
-  asked.allowUnverifiedInstalls = false
-  call(asked, "startAdd", [""])
-  assert.deepEqual(asked.launched, [])
-  assert.match(asked.statuses.pop()[0], /^Could not install Fresh: /)
-
-  // The listing named another branch under the open dialog: also nothing.
-  const moved = base()
-  call(moved, "askInstall", [catalog[0]])
-  moved.catalog = Model.catalogEntries(
-    { plugins: [{ ...unreviewedListing, listingValidatedBranch: "attacker" }] }, {}, true)
-  call(moved, "startAdd", [""])
-  assert.deepEqual(moved.launched, [])
-
-  // Unchanged: exactly the branch the dialog named is what the helper is asked for.
-  const ok = base()
-  call(ok, "askInstall", [catalog[0]])
-  call(ok, "startAdd", ["right"])
-  assert.deepEqual(ok.launched, [[{ schemaVersion: 1, id: "acme.fresh",
-    repository: "https://github.com/acme/fresh", branch: "main", section: "right" }, "Fresh"]])
-  assert.equal(ok.pendingKind, "", "the pending state is cleared before anything launches")
-
-  // A verified listing still takes the verified shape through the same path,
-  // and never gains a branch.
-  const verifiedEntries = Model.catalogEntries(catalogDoc, {}, true)
-  const weather = base()
-  weather.catalog = verifiedEntries
-  call(weather, "askInstall", [verifiedEntries.find(entry => entry.id === "acme.weather")])
-  assert.equal(weather.pendingBranch, "")
-  call(weather, "startAdd", [""])
-  assert.deepEqual(weather.launched[0][0], { schemaVersion: 1, id: "acme.weather",
-    repository: "https://github.com/acme/omarchy-weather", verifiedCommit: "d".repeat(40), section: "" })
-
-  // With the opt-in off the question is never even asked.
-  const refused = base()
-  refused.allowUnverifiedInstalls = false
-  assert.equal(call(refused, "askInstall", [catalog[0]]), false)
-  assert.equal(refused.pendingKind, "")
 })
 
 test("catalog refresh failures retain displayed entries in every process callback order", () => {
@@ -4333,21 +2570,21 @@ test("catalog refresh failures retain displayed entries in every process callbac
       const state = { catalog: displayed, catalogLoaded: true, catalogLoading: false, catalogError: "",
         catalogGeneration: 4, catalogExitCode: 0, catalogOutputFinished: true, catalogErrorFinished: true,
         pinnedHelperPath: "/plugin/helpers/pinned_update.py", rows: [],
-        catalogBuildPending: null, catalogBuildExit: 0 }
+        catalogBuildPending: null }
       state.root = state
       const catalogProc = { running: false }
       const catalogOutput = { text: "" }, catalogErrors = { text: error }
-      const messages = []
-      const startCatalogBuild = () => messages.push(state.catalogBuildPending)
-      let restamps = 0
+      const queue = []
+      const Qt = { callLater: fn => queue.push(fn) }
       const functions = ["loadCatalog", "finishCatalogFetch", "applyCatalog", "applyCatalogResult"]
       const handlers = ["outputFinished", "errorFinished", "exited"]
-      const api = Function("state", "Model", "catalogProc", "catalogOutput", "catalogErrors", "startCatalogBuild", "restampCatalog",
+      const api = Function("state", "Model", "catalogProc", "catalogOutput", "catalogErrors", "Qt",
         `with (state) { ${functions.map(name => qmlFunction(store, name)).join("\n")}
           ${handlers.map(name => qmlFunction(callbacks, name)).join("\n")}
           return { ${[...functions, ...handlers].join(",")} }
-        }`)(state, Model, catalogProc, catalogOutput, catalogErrors, startCatalogBuild, () => restamps++)
+        }`)(state, Model, catalogProc, catalogOutput, catalogErrors, Qt)
       state.finishCatalogFetch = api.finishCatalogFetch
+      state.applyCatalogResult = api.applyCatalogResult
       api.loadCatalog(true)
       api.applyCatalogResult({ generation: 4, entries: [{ id: "obsolete" }] })
       assert.equal(state.catalog, displayed, "an earlier worker cannot overwrite a new refresh")
@@ -4357,7 +2594,7 @@ test("catalog refresh failures retain displayed entries in every process callbac
       }
       assert.equal(state.catalog, displayed)
       assert.equal(state.catalogLoaded, true)
-      assert.equal(messages.length, 0, "failed stdout never reaches the catalog worker")
+      assert.equal(queue.length, 0, "failed stdout is never built")
       assert.match(state.catalogError, /Catalog refresh failed\./)
       assert.match(state.catalogError, /Try Refresh again\./)
       if (error.startsWith("Could not")) assert.match(state.catalogError, /Command failed: curl/)
@@ -4369,48 +2606,12 @@ test("catalog refresh failures retain displayed entries in every process callbac
       catalogErrors.text = ""
       api.loadCatalog(true)
       for (const name of order) api[name](0)
-      assert.equal(messages.length, 1)
-      assert.equal(messages[0].raw, catalogOutput.text)
-      assert.equal(state.catalogLoading, true, "success waits for worker projection")
-      const entries = [{ id: "new" }]
-      api.applyCatalogResult({ generation: messages[0].generation, entries })
-      assert.equal(state.catalog, entries)
+      assert.equal(queue.length, 1)
+      assert.equal(state.catalogLoading, true, "success waits for the build turn")
+      queue.shift()()
+      assert.deepEqual(state.catalog.map(entry => entry.id), ["new"])
       assert.equal(state.catalogLoading, false)
       assert.equal(state.catalogError, "")
-      assert.equal(restamps, 1)
-    }
-  }
-})
-
-test("catalog build completion waits for all callbacks and rejects stale generations", () => {
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  const flags = ["catalogBuildExit", "catalogBuildOutputDone", "catalogBuildErrorDone"]
-  for (const first of flags) for (const second of flags.filter(flag => flag !== first)) {
-    const order = [first, second, flags.find(flag => flag !== first && flag !== second)]
-    for (const generation of [6, 7]) for (const exit of [0, 1]) {
-      const calls = []
-      const state = { catalogGeneration: 7, catalogBuildGeneration: generation,
-        catalogBuildExit: -1, catalogBuildStarted: true,
-        catalogBuildOutputDone: false, catalogBuildErrorDone: false,
-        catalogBuilder: {running: false},
-        catalogBuilt: {text: "bounded frames"}, startCatalogBuild() {},
-        publishCatalogBuild(text, gen) { calls.push([text, gen]) },
-        applyCatalogResult(result) { calls.push(result) } }
-      const api = Function("state", `with (state) {
-        ${qmlFunction(store, "finishCatalogBuild")}
-        ${qmlFunction(store, "catalogBuildRunningChanged")}
-        return { finishCatalogBuild, catalogBuildRunningChanged }
-      }`)(state)
-      for (const [i, flag] of order.entries()) {
-        state[flag] = flag === "catalogBuildExit" ? exit : true
-        // The process pointer may already be null while streams settle.
-        // That does not make a successfully started build a failed launch.
-        api.catalogBuildRunningChanged()
-        api.finishCatalogBuild()
-        assert.equal(calls.length, i === 2 && generation === 7 ? 1 : 0)
-      }
-      if (generation === 7 && exit === 0) assert.deepEqual(calls[0], ["bounded frames", 7])
-      if (generation === 7 && exit === 1) assert.match(calls[0].error, /Try Refresh again/)
     }
   }
 })
@@ -4466,33 +2667,6 @@ test("the catalog is served by the pinned helper through an owner-checked cache,
   assert.equal(refused.status, 1)
   assert.equal(refused.stdout, "")
   assert.match(refused.stderr, /Invalid catalog request/)
-})
-
-test("secondary text uses one panel-derived foreground without brightening disabled chrome", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const pluginRow = readFileSync(new URL("../PluginRow.qml", import.meta.url), "utf8")
-  const catalogCard = readFileSync(new URL("../CatalogCard.qml", import.meta.url), "utf8")
-  const pluginDetails = readFileSync(new URL("../PluginDetails.qml", import.meta.url), "utf8")
-
-  assert.match(panel,
-    /readonly property color secondaryForeground: Util\.alpha\(contentForeground, 0\.54\)/)
-  assert.equal(panel.split("placeholderTextColor: root.secondaryForeground").length - 1, 1)
-  assert.equal(panel.split("secondaryForeground: root.secondaryForeground").length - 1, 5)
-  assert.ok(panel.split("color: root.secondaryForeground").length - 1 >= 8)
-
-  assert.match(pluginRow, /required property color secondaryForeground/)
-  assert.match(pluginRow,
-    /color: versionMouse\.containsMouse \? Color\.accent : root\.secondaryForeground/)
-  assert.match(pluginRow,
-    /color: repoMouse\.containsMouse \? Color\.accent : root\.secondaryForeground/)
-  assert.match(pluginRow,
-    /color: Model\.hasDescription\(root\.row\) \? root\.foreground : root\.secondaryForeground/)
-  assert.match(pluginRow, /color: Color\.muted\s+opacity: 0\.35/)
-  assert.match(pluginRow, /opacity: root\.canToggle \? 1 : 0\.4/)
-
-  assert.match(catalogCard, /required property color secondaryForeground/)
-  assert.match(catalogCard, /opacity: enabled \? 1 : 0\.45/)
-  assert.match(pluginDetails, /required property color secondaryForeground/)
 })
 
 test("release probe uses fixed bounded curl argv and returns only the HTTP status", () => {
@@ -4581,105 +2755,12 @@ test("bar update dot projects the panel's confirmed count without changing butto
     /if \(b === Qt\.MiddleButton\) root\.refresh\(\)\s+else root\.openFromBar\(\)/)
 })
 
-// ---- Expanded panel --------------------------------------------------------
-
-test("expanded page admits only Arrange and otherwise defaults to the list", () => {
-  const page = new Function(source + "\nreturn expandedPageFromPayload")()
-  assert.equal(page('{"page":"arrange"}'), "arrange")
-  for (const value of [undefined, "", "broken", "null", "[]", '"arrange"', '{}',
-    '{"page":"settings"}', '{"page":"<img>"}', '{"page":true}'])
-    assert.equal(page(value), "")
-})
-
-test("expandedTabFromPayload never trusts the summon payload", () => {
-  assert.equal(Model.expandedTabFromPayload('{"tab":"browse"}'), "browse")
-  assert.equal(Model.expandedTabFromPayload('{"tab":"installed"}'), "installed")
-  assert.equal(Model.expandedTabFromPayload('{"tab":"<script>"}'), "installed")
-  assert.equal(Model.expandedTabFromPayload("not json"), "installed")
-  assert.equal(Model.expandedTabFromPayload('"browse"'), "installed")
-  assert.equal(Model.expandedTabFromPayload("[]"), "installed")
-  assert.equal(Model.expandedTabFromPayload(""), "installed")
-  assert.equal(Model.expandedTabFromPayload(undefined), "installed")
-})
-
-test("expandedScreenFromPayload keeps only a plausible output name", () => {
-  assert.equal(Model.expandedScreenFromPayload('{"screen":"eDP-1"}'), "eDP-1")
-  assert.equal(Model.expandedScreenFromPayload('{"screen":"HDMI-A-2"}'), "HDMI-A-2")
-  assert.equal(Model.expandedScreenFromPayload('{"screen":"../x"}'), "")
-  assert.equal(Model.expandedScreenFromPayload('{"screen":" eDP-1"}'), "")
-  assert.equal(Model.expandedScreenFromPayload('{"screen":"' + "a".repeat(65) + '"}'), "")
-  assert.equal(Model.expandedScreenFromPayload('{"screen":7}'), "")
-  assert.equal(Model.expandedScreenFromPayload("not json"), "")
-  assert.equal(Model.expandedScreenFromPayload(""), "")
-})
-
-test("the expanded panel opens on the monitor the popup was on", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  // The popup names its own output in the payload; the overlay resolves that
-  // name against the live screens and falls back to the shell's default.
-  assert.match(panel, /var payload = \{ tab: tab, screen: screenName, page: page === "arrange" \? "arrange" : "" \}/)
-  assert.match(panel, /bar\.shell\.summon\(pluginId, JSON\.stringify\(payload\)\)/)
-  assert.match(panel, /var screenName = panel\.screen \? String\(panel\.screen\.name \|\| ""\) : ""/)
-  assert.match(expanded, /property string targetScreenName: ""/)
-  assert.match(expanded, /targetScreenName = Model\.expandedScreenFromPayload\(payloadJson\)/)
-  assert.match(expanded, /readonly property var targetScreen: \{[\s\S]*?Quickshell\.screens[\s\S]*?\.name === targetScreenName[\s\S]*?return null/)
-  const window = expanded.slice(expanded.indexOf("PanelWindow {"), expanded.indexOf("PanelWindow {") + 400)
-  assert.match(window, /screen: root\.targetScreen/)
-})
-
-test("the expanded panel carries the Installed filters, their keys, and the hint bar", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-
-  // Same filter state and the same Dropdown replay handlers as the popup:
-  // Ui/Dropdown assigns its own value on a pick, which breaks the binding.
-  assert.match(expanded, /property string groupFilter: "all"/)
-  assert.match(expanded, /property string kindFilter: "all"/)
-  assert.match(expanded, /property string statusFilter: "all"/)
-  assert.match(expanded, /readonly property var groupOptions: Model\.groupOptions\(\)/)
-  assert.match(expanded, /readonly property var kindOptions: Model\.kindOptions\(rows\)/)
-  assert.match(expanded, /readonly property var statusOptions: Model\.statusOptions\(\)/)
-  assert.match(expanded, /readonly property var visibleRows: Model\.filterRows\(rows, kindFilter, statusFilter, searchQuery, groupFilter\)/)
-  assert.match(expanded, /readonly property bool filtered: Model\.isFiltering\(kindFilter, statusFilter, searchQuery, groupFilter\)/)
-  for (const [prop, dropdown] of [["groupFilter", "groupDropdown"], ["kindFilter", "kindDropdown"], ["statusFilter", "statusDropdown"]])
-    assert.match(expanded, new RegExp(`on${prop[0].toUpperCase()}${prop.slice(1)}Changed: if \\(${dropdown} && ${dropdown}\\.value !== ${prop}\\)\\s*${dropdown}\\.value = ${prop}`), prop)
-  for (const fn of ["cycleGroupFilter", "cycleKindFilter", "cycleStatusFilter", "cycleCategoryFilter", "cycleCatalogKindFilter", "cycleAvailabilityFilter", "cycleCatalogSort"])
-    assert.match(expanded, new RegExp(`function ${fn}\\(\\)`), fn)
-  assert.match(expanded, /readonly property var installedFilterHints: Model\.installedFilterHints\(/)
-  assert.match(expanded, /readonly property var browseFilterHints: Model\.browseFilterHints\(/)
-
-  // The three dropdowns sit in the controls row, Installed only.
-  const filters = expanded.slice(expanded.indexOf("id: installedFilters"), expanded.indexOf("id: browseFilters"))
-  assert.match(filters, /visible: !root\.browsing/)
-  assert.match(filters, /id: groupDropdown[\s\S]*?label: "Source"[\s\S]*?options: root\.groupOptions/)
-  assert.match(filters, /id: kindDropdown[\s\S]*?label: "Kind"[\s\S]*?options: root\.kindOptions/)
-  assert.match(filters, /id: statusDropdown[\s\S]*?label: "Status"[\s\S]*?options: root\.statusOptions/)
-  assert.match(expanded, /anchors\.right: root\.browsing \? browseFilters\.left : installedFilters\.left/)
-
-  // Same key map as the popup: f kind, s source/sort, t status, c category,
-  // a availability; Enter and Delete act on the selected Installed row.
-  const keys = expanded.slice(expanded.indexOf("Keys.onPressed: function(event) {"), expanded.indexOf("// ---- Header"))
-  assert.match(keys, /\(text === "f" \|\| text === "F"\)\) root\.browsing \? root\.cycleCatalogKindFilter\(\) : root\.cycleKindFilter\(\)/)
-  assert.match(keys, /\(text === "s" \|\| text === "S"\)\) root\.browsing \? root\.cycleCatalogSort\(\) : root\.cycleGroupFilter\(\)/)
-  assert.match(keys, /\(text === "t" \|\| text === "T"\) && !root\.browsing\) root\.cycleStatusFilter\(\)/)
-  assert.match(keys, /\(text === "c" \|\| text === "C"\) && root\.browsing\) root\.cycleCategoryFilter\(\)/)
-  assert.match(keys, /\(text === "a" \|\| text === "A"\) && root\.browsing\) root\.cycleAvailabilityFilter\(\)/)
-  assert.match(keys, /if \(root\.browsing\) root\.openDetails\(root\.selectedEntry\)\s*else if \(root\.selectedRow\) root\.startUpdate\(root\.selectedRow\)/)
-  assert.match(keys, /event\.key === Qt\.Key_Delete[\s\S]*?store\.askRemove\(root\.selectedRow\)/)
-
-  // Hint bar: filter keys on the left, row actions and close on the right.
-  const hints = expanded.slice(expanded.indexOf("id: hintBar"), expanded.indexOf("id: installedPane"))
-  assert.match(hints, /id: filterHints[\s\S]*?model: root\.browsing && root\.detailsOpen \? \[\] : \(root\.browsing \? root\.browseFilterHints : root\.installedFilterHints\)/)
-  // The tab keys lead the right-hand group, with the current tab lit, so
-  // the bar also says where you are.
-  assert.match(hints, /id: actionHints[\s\S]*?model: \[\s*\{ key: "1", text: "INSTALLED", active: !root\.browsing \},\s*\{ key: "2", text: "BROWSE", active: root\.browsing \}\s*\]\.concat\(root\.browsing && root\.detailsOpen\s*\? \[\{ key: "backspace", text: "BACK", active: false \}\]\s*: Model\.actionHints\(root\.browsing, root\.bulkUpdatableCount > 0\)\.concat\(\[\{ key: "esc", text: "CLOSE", active: false \}\]\)\)/)
-  assert.match(hints, /color: hint\.modelData\.active \? root\.foreground : root\.secondaryForeground/)
-})
+// ---- Store loading ---------------------------------------------------------
 
 test("a plugin-list read that comes back empty is retried once before it is an error", () => {
   const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
   // `omarchy plugin list` asks the shell over IPC; while the shell is busy
-  // (right after a restart, or while it builds the expanded overlay) that
+  // (right after a restart) that
   // answer is empty. One bounded retry turns a spurious "could not read" into
   // a slightly later success; a second failure is reported as before.
   assert.match(store, /property bool loadRetried: false/)
@@ -4703,131 +2784,6 @@ test("opening loads the list first and only then the catalog and update check", 
   assert.equal(apply.split("finishOpenLoad()").length - 1, 2)
 })
 
-test("the expanded panel starts its loads a beat after it opens", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  // Spawning the list read while the overlay is still being built stalls the
-  // shell's IPC reply to that very read; a short deferral lets the window
-  // settle first.
-  // Long enough for the puzzle piece to land: the list read makes the shell
-  // serve an IPC call on its main thread, and that stalls whatever is
-  // animating at the time.
-  assert.match(expanded, /Timer \{\s*id: initialLoad\s*interval: 1300[\s\S]*?onTriggered: root\.loadEverything\(\)/)
-  assert.match(expanded, /function loadEverything\(\) \{\s*if \(!opened \|\| barMovePending\) return\s*store\.loadOnOpen\(\)\s*\}/)
-  const open = expanded.slice(expanded.indexOf("function open(payloadJson) {"), expanded.indexOf("function loadEverything() {"))
-  assert.match(open, /initialLoad\.restart\(\)/)
-  assert.doesNotMatch(open, /store\.reload\(\)/)
-  const close = expanded.slice(expanded.indexOf("function close() {"), expanded.indexOf("function close() {") + 300)
-  assert.match(close, /initialLoad\.stop\(\)/)
-})
-
-test("the expanded search box is captioned and sized like the filter dropdowns", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  const control = expanded.slice(expanded.indexOf("id: searchControl"), expanded.indexOf("id: installedFilters"))
-  // Same caption above, same control height below, same body text size —
-  // so the search reads as the first control in the row, not an odd one out.
-  assert.match(control, /id: searchLabel[\s\S]*?text: "Search"[\s\S]*?font\.pixelSize: Style\.font\.caption[\s\S]*?font\.bold: true/)
-  assert.match(control, /id: searchFieldLoader[^}]*?anchors\.bottom: parent\.bottom\s*height: Style\.spacing\.controlHeight/)
-  assert.match(control, /id: searchField[\s\S]*?font\.pixelSize: Style\.font\.body/)
-  assert.doesNotMatch(control, /verticalPadding: Style\.spacing\.xs/)
-  assert.match(expanded, /id: searchControl\s*anchors\.left: parent\.left\s*anchors\.top: parent\.top\s*anchors\.bottom: parent\.bottom\s*anchors\.right: root\.browsing \? browseFilters\.left : installedFilters\.left/)
-})
-
-test("switching tabs clears the search on both panels", () => {
-  // The two tabs search different things (Installed: name and id; Browse:
-  // also author and description), so a term carried across is a different
-  // query that silently shrinks the other list. The dropdown filters are
-  // already per tab; the search follows suit.
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  assert.match(panel, /function applyPendingTab\(\) \{[\s\S]*?pendingTab = ""(?:\s*\/\/[^\n]*)*\s*clearSearch\(\)\s*activeTab = tab/)
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  // Installed's cursor is remembered before the clear, so the restored row
-  // is the one you left, not the first row of an unfiltered list.
-  assert.match(expanded, /function switchTab\(tab\) \{[\s\S]*?rememberedInstalledIndex = Math\.max\(0, selectedIndex\)(?:\s*\/\/[^\n]*)*\s*clearSearch\(\)\s*activeTab = tab/)
-})
-
-test("the expanded search box grows the popup's clear (x) button once a term is typed", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  const control = expanded.slice(expanded.indexOf("id: searchControl"), expanded.indexOf("id: installedFilters"))
-  // Same glyph, same trigger as the popup: the button exists only while
-  // there is something to clear, and the field gives it room only then.
-  assert.match(control, /PanelActionButton \{\s*id: clearSearchButton[\s\S]*?visible: root\.searchText !== ""[\s\S]*?iconText: "󰅙"[\s\S]*?tooltipText: "Clear the search"/)
-  assert.match(control, /id: clearSearchButton[\s\S]*?onClicked: \{\s*root\.clearSearch\(\)\s*root\.returnFocusToList\(\)\s*\}/)
-  assert.match(control, /id: searchFieldLoader[\s\S]*?anchors\.right: clearSearchButton\.visible \? clearSearchButton\.left : parent\.right\s*anchors\.rightMargin: clearSearchButton\.visible \? Style\.space\(4\) : 0/)
-  // One clearing path for the button, Escape, and "Clear filters" alike.
-  assert.match(expanded, /function clearSearch\(\) \{\s*searchText = ""\s*\}/)
-  assert.match(control, /if \(root\.searchText !== ""\) root\.clearSearch\(\)/)
-  assert.match(expanded, /function clearCatalogFilters\(\) \{[\s\S]*?clearSearch\(\)[\s\S]*?selectedIndex = -1/)
-})
-
-test("the expanded list row carries no actions or metadata lines", () => {
-  const row = readFileSync(new URL("../InstalledListRow.qml", import.meta.url), "utf8")
-  assert.match(row, /property var row: null/)
-  assert.match(row, /property bool selected: false/)
-  assert.match(row, /property bool verified: false/)
-  assert.match(row, /signal clicked\(\)/)
-  // Nothing actionable and no metadata: no toggle, icons, author line or link.
-  for (const gone of ["ToggleSwitch", "PanelActionButton", "metaLine", "repoShortLabel", "updateBadge", "󰩹", "󰑐"])
-    assert.doesNotMatch(row, new RegExp(gone), gone)
-  assert.match(row, /id: stateBar[\s\S]*?color: root\.row && root\.row\.enabled \? Color\.accent : Color\.muted/)
-  assert.match(row, /id: verifiedPill[\s\S]*?visible: root\.verified[\s\S]*?text: "󰄬 verified"/)
-  // The state bar already says on or off; a pill saying it again is noise.
-  assert.doesNotMatch(row, /id: statePill|"On"|"Off"/)
-  assert.match(row, /readonly property real pillsWidth: \(stateMark\.visible \? stateMark\.width \+ marks\.spacing : 0\)/)
-  assert.match(row, /text: Model\.descriptionLine\(root\.row\)[\s\S]*?wrapMode: Text\.WordWrap[\s\S]*?maximumLineCount: 2[\s\S]*?elide: Text\.ElideRight/)
-  // The name yields to both pills instead of pushing them off the row.
-  assert.match(row, /id: name[\s\S]*?width: Math\.min\(implicitWidth, nameLine\.width - nameLine\.pillsWidth - nameLine\.countsWidth\)/)
-})
-
-test("the expanded panel plays the same puzzle-piece intro as the popup", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  const icon = expanded.slice(expanded.indexOf("id: titleIcon"), expanded.indexOf("id: title\n"))
-  assert.match(icon, /transformOrigin: Item\.Center/)
-  assert.match(icon, /SequentialAnimation \{\s*id: titleIconIntro/)
-  const intro = icon.slice(icon.indexOf("id: titleIconIntro"))
-  assert.match(intro, /property: "scale"[\s\S]*?from: 3[\s\S]*?to: 1[\s\S]*?duration: 700[\s\S]*?easing\.type: Easing\.InOutCubic/)
-  assert.match(intro, /id: titleIconSettle/)
-  assert.match(expanded, /property bool titleIconIntroArmed: false/)
-  const arm = expanded.slice(expanded.indexOf("id: titleIconIntroTrigger"), expanded.indexOf("id: titleIconIntroTrigger") + 500)
-  assert.match(arm, /target: titleIcon\.Window\.window/)
-  assert.match(arm, /enabled: root\.titleIconIntroArmed/)
-  assert.match(arm, /function onFrameSwapped\(\) \{\s*root\.titleIconIntroArmed = false\s*titleIconIntro\.restart\(\)\s*\}/)
-  const open = expanded.slice(expanded.indexOf("function open(payloadJson) {"), expanded.indexOf("function loadEverything() {"))
-  assert.match(open, /titleIconIntro\.stop\(\)\s*titleIcon\.opacity = 0\s*titleIconIntroArmed = true/)
-})
-
-test("the expanded panel flips its content like a card when switching tabs", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  assert.match(expanded, /property string pendingTab: ""/)
-  assert.match(expanded, /property real contentFlipAngle: 0/)
-  assert.match(expanded, /readonly property bool contentFlipping: contentFlip\.running/)
-  assert.match(expanded, /readonly property real contentFlipScale: 1 - 0\.06 \* Math\.sin\(Math\.abs\(contentFlipAngle\) \* Math\.PI \/ 180\)/)
-  assert.match(expanded, /value: root\.pendingTab !== "" \? root\.pendingTab : root\.activeTab/)
-  assert.match(expanded, /onChanged: function\(value\) \{ root\.switchTab\(value\) \}/)
-  assert.match(expanded, /text === "1"\) \{ root\.switchTab\("installed"\)/)
-  assert.match(expanded, /text === "2"\) \{ root\.switchTab\("browse"\)/)
-  // The flip is general: whatever changes the face is a closure run at the
-  // edge-on midpoint, so tabs and the Browse details share one animation.
-  assert.match(expanded, /property var pendingFlip: null/)
-  const flipTo = expanded.slice(expanded.indexOf("function flipTo(direction, apply) {"), expanded.indexOf("function applyPendingFlip() {"))
-  assert.match(flipTo, /if \(contentFlip\.running\) \{\s*contentFlip\.stop\(\)\s*applyPendingFlip\(\)\s*contentFlipAngle = 0\s*\}/)
-  assert.match(flipTo, /pendingFlip = apply\s*contentFlip\.direction = direction\s*contentFlip\.restart\(\)/)
-  const applyFlip = expanded.slice(expanded.indexOf("function applyPendingFlip() {"), expanded.indexOf("function applyPendingFlip() {") + 200)
-  assert.match(applyFlip, /var apply = pendingFlip\s*pendingFlip = null\s*if \(apply && !barMovePending\) apply\(\)/)
-  const switchTab = expanded.slice(expanded.indexOf("function switchTab(tab) {"), expanded.indexOf("readonly property var tabOptions"))
-  assert.match(switchTab, /if \(activeTab === tab\) return/)
-  assert.match(switchTab, /pendingTab = tab\s*flipTo\(tab === "browse" \? 1 : -1, function\(\) \{[\s\S]*?pendingTab = ""[\s\S]*?activeTab = tab\s*\}\)/)
-  const flip = expanded.slice(expanded.indexOf("id: contentFlip\n"), expanded.indexOf("id: contentFlip\n") + 1400)
-  assert.match(flip, /property: "contentFlipAngle"[\s\S]*?from: 0[\s\S]*?to: -90 \* contentFlip\.direction[\s\S]*?easing\.type: Easing\.InCubic/)
-  assert.match(flip, /ScriptAction \{ script: root\.applyPendingFlip\(\) \}/)
-  assert.match(flip, /property: "contentFlipAngle"[\s\S]*?from: 90 \* contentFlip\.direction[\s\S]*?to: 0[\s\S]*?easing\.type: Easing\.OutCubic/)
-  for (const id of ["id: installedPane", "id: catalogGrid", "id: browseDetailsPane"]) {
-    const face = expanded.slice(expanded.indexOf(id), expanded.indexOf(id) + 1200)
-    assert.match(face, /transform: Rotation \{[\s\S]*?axis \{ x: 0; y: 1; z: 0 \}[\s\S]*?angle: root\.contentFlipAngle/, id)
-    assert.match(face, /scale: root\.contentFlipScale/, id)
-    assert.match(face, /layer\.enabled: root\.contentFlipping/, id)
-  }
-})
-
 test("the small panel row marks updatable plugins and leaves unknown states unmarked", () => {
   const row = readFileSync(new URL("../PluginRow.qml", import.meta.url), "utf8")
   const start = row.indexOf("id: stateMark")
@@ -4849,7 +2805,7 @@ test("the small panel row marks updatable plugins and leaves unknown states unma
   assert.doesNotMatch(row, /root\.installable \? root\.updateMarkColor : root\.foreground/)
   assert.match(mark, /textFormat: Text\.PlainText/)
   assert.match(mark, /font\.family: root\.fontFamily/)
-  assert.match(mark, /font\.pixelSize: Style\.font\.title/)
+  assert.match(mark, /font\.pixelSize: root\.look\.font\.title/)
   assert.match(mark, /font\.bold: true/)
 
   // Exercise the shipped visibility binding, not an unchecked => current guess.
@@ -4897,8 +2853,8 @@ test("the popup comparison chip follows verification on the title line, not the 
   assert.match(chip, /anchors\.verticalCenter: parent\.verticalCenter/)
   assert.match(chip, /text: "󰚰 " \+ Model\.updateBadge\(root\.row\)/)
   assert.match(chip, /textFormat: Text\.PlainText/)
-  assert.match(chip, /color: root\.installable\s*\? Qt\.rgba\(Color\.accent\.r, Color\.accent\.g, Color\.accent\.b, 0\.16\)\s*: Qt\.rgba\(Color\.muted\.r, Color\.muted\.g, Color\.muted\.b, 0\.16\)/)
-  assert.match(chip, /color: root\.installable \? Color\.accent : root\.secondaryForeground/)
+  assert.match(chip, /color: root\.installable\s*\? Qt\.rgba\(root\.look\.accent\.r, root\.look\.accent\.g, root\.look\.accent\.b, 0\.16\)\s*: Qt\.rgba\(Color\.muted\.r, Color\.muted\.g, Color\.muted\.b, 0\.16\)/)
+  assert.match(chip, /color: root\.installable \? root\.look\.accent : root\.secondaryForeground/)
   assert.match(chip, /font\.underline: updateBadgeMouse\.containsMouse/)
   assert.match(chip, /enabled: root\.compareUrl !== ""/)
   assert.match(chip, /onClicked: root\.openComparison\(\)/)
@@ -4914,162 +2870,8 @@ test("the popup comparison chip follows verification on the title line, not the 
   assert.doesNotMatch(actions, /id: updatePill|id: updateBadge|openComparison\(\)/)
   assert.doesNotMatch(actions, /Item\s*\{\s*visible: root\.hasUpdate/)
   // The title's available width ends before the action controls, not at the row edge.
-  assert.match(row, /id: details[\s\S]*?anchors\.right: actions\.left\s*anchors\.rightMargin: Style\.space\(10\)/)
+  assert.match(row, /id: details[\s\S]*?anchors\.right: actions\.left\s*anchors\.rightMargin: root\.look\.sp\(10\)/)
   assert.match(title, /id: nameLine\s*width: parent\.width/)
-})
-
-test("the expanded list row marks updatable plugins and shows their stars", () => {
-  const row = readFileSync(new URL("../InstalledListRow.qml", import.meta.url), "utf8")
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  assert.match(store, /readonly property var starsById: Model\.catalogStarsById\(catalog\)/)
-  assert.match(expanded, /readonly property alias starsById: store\.starsById/)
-  assert.equal(expanded.split("stars: Model.rowStarLabel(modelData, root.starsById)").length - 1, 2)
-  assert.match(store, /readonly property var heartsById: Model\.catalogHeartsById\(catalog\)/)
-  assert.match(expanded, /readonly property alias heartsById: store\.heartsById/)
-  assert.equal(expanded.split("hearts: Model.rowHeartLabel(modelData, root.heartsById)").length - 1, 2)
-
-  assert.match(row, /property string stars: ""/)
-  assert.match(row, /property string hearts: ""/)
-  // A state mark leads the name, as in a package list: a bold arrow when an
-  // update is waiting (green for a verified snapshot, orange for an
-  // unreviewed upstream change), a green check when the checkout is
-  // confirmed current, nothing when unchecked or not updatable.
-  assert.ok(row.indexOf("id: stateMark") < row.indexOf("id: name\n"), "the mark comes before the name")
-  const mark = row.slice(row.indexOf("id: stateMark"), row.indexOf("id: stateMark") + 900)
-  assert.match(mark, /readonly property bool behind: root\.row \? root\.row\.behind === true : false/)
-  assert.match(mark, /readonly property bool current: Model\.upToDate\(root\.row\)/)
-  assert.match(mark, /visible: behind \|\| current/)
-  // The bold check from the same Material set as the arrow, so the two
-  // marks share a weight.
-  assert.match(mark, /text: behind \? "󰜷" : "󰸞"/)
-  assert.match(mark, /readonly property bool installable: root\.row \? root\.row\.pinnedEligible === true : false/)
-  assert.match(mark, /color: behind \? \(installable \? "#5fb865" : "#f28c28"\) : "#5fb865"/)
-  // The status line under the name takes the arrow's colour in both cases.
-  assert.match(row, /readonly property color markColor: installable \? "#5fb865" : "#f28c28"/)
-  assert.match(row, /text: Model\.updateStatus\(root\.row\)\s+color: parent\.markColor/)
-  assert.doesNotMatch(row, /parent\.installable \? parent\.markColor : root\.foreground/)
-  assert.match(mark, /font\.pixelSize: Style\.font\.title/)
-  assert.match(mark, /textFormat: Text\.PlainText/)
-  assert.doesNotMatch(row, /id: updateArrow/)
-  // Stars, then hearts, sit at the row's right edge: the same gold star and
-  // red heart the cards use, each shown only when its count is known.
-  const counts = row.slice(row.indexOf("id: countsRow"), row.indexOf("id: countsRow") + 300)
-  assert.match(counts, /anchors\.right: parent\.right/)
-  // The container keys off the counts, never its children's visibility: a
-  // child's `visible` reads false while its parent is hidden, so a container
-  // that starts hidden (catalog not loaded yet) would never come back.
-  assert.match(counts, /visible: root\.stars !== "" \|\| root\.hearts !== ""/)
-  assert.doesNotMatch(counts, /visible: [^\n]*(starsRow|heartsRow)\.visible/)
-  assert.ok(row.indexOf("id: countsRow") < row.indexOf("id: starsRow"), "the stars sit inside the counts row")
-  assert.ok(row.indexOf("id: starsRow") < row.indexOf("id: heartsRow"), "the heart comes after the star")
-  const stars = row.slice(row.indexOf("id: starsRow"), row.indexOf("id: heartsRow"))
-  assert.match(stars, /visible: root\.stars !== ""/)
-  assert.match(stars, /text: "󰓎"[\s\S]*?color: "#f5c518"/)
-  assert.match(stars, /text: root\.stars/)
-  const hearts = row.slice(row.indexOf("id: heartsRow"), row.indexOf("id: heartsRow") + 900)
-  assert.match(hearts, /visible: root\.hearts !== ""/)
-  assert.match(hearts, /text: "󰋑"[\s\S]*?color: "#e5484d"/)
-  assert.match(hearts, /text: root\.hearts/)
-  assert.match(hearts, /textFormat: Text\.PlainText/)
-  // The name yields to whichever counts are showing.
-  assert.match(row, /readonly property real countsWidth: countsRow\.visible \? countsRow\.width \+ marks\.spacing : 0/)
-  assert.match(row, /id: nameLine[\s\S]*?height: Math\.max\(marks\.implicitHeight, countsRow\.implicitHeight\)/)
-  // The name yields to everything else on its line.
-  assert.match(row, /id: name[\s\S]*?width: Math\.min\(implicitWidth, nameLine\.width - nameLine\.pillsWidth - nameLine\.countsWidth\)/)
-})
-
-test("release navigation is one shared component and the details version is a release link", () => {
-  const navigator = readFileSync(new URL("../ReleaseNavigator.qml", import.meta.url), "utf8")
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  const details = readFileSync(new URL("../InstalledDetails.qml", import.meta.url), "utf8")
-
-  // The component owns the state, the probe process and the browser sink.
-  assert.match(navigator, /property var state: Model\.releaseNavigationInitialState\(\)/)
-  assert.match(navigator, /readonly property bool busy: state\.activeGeneration !== 0/)
-  for (const fn of ["function request(candidates, fallbackUrl)", "function navigate(url)", "function revoke()", "function apply(transition)", "function startProbe(entry)", "function openBrowserUrl(url)"])
-    assert.ok(navigator.includes(fn), fn)
-  assert.match(navigator, /Process \{\s*id: releaseProbe/)
-  assert.match(navigator, /Quickshell\.execDetached\(\["omarchy-launch-browser", trusted\]\)/)
-
-  // The popup keeps its wrapper names and delegates.
-  assert.match(panel, /function requestGithubNavigation\(candidates, fallbackUrl\) \{\s*releaseNavigator\.request\(candidates, fallbackUrl\)\s*\}/)
-  assert.match(panel, /function navigateExternalUrl\(url\) \{\s*releaseNavigator\.navigate\(url\)\s*\}/)
-  assert.match(panel, /function revokeReleaseNavigation\(\) \{\s*releaseNavigator\.revoke\(\)\s*\}/)
-  assert.match(panel, /readonly property alias releaseProbeBusy: releaseNavigator\.busy/)
-  assert.doesNotMatch(panel, /function startReleaseProbe|function applyReleaseNavigationTransition|property var releaseNavigationState/)
-
-  // The expanded panel now probes releases too, instead of opening fallbacks.
-  assert.match(expanded, /ReleaseNavigator \{ id: releaseNavigator \}/)
-  assert.match(expanded, /function requestGithubNavigation\(candidates, fallbackUrl\) \{\s*releaseNavigator\.request\(candidates, fallbackUrl\)\s*\}/)
-  assert.match(expanded, /function navigateExternalUrl\(url\) \{\s*releaseNavigator\.navigate\(url\)\s*\}/)
-  assert.doesNotMatch(expanded, /onGithubNavigationRequested: function\(candidates, fallbackUrl\) \{ root\.navigateExternalUrl\(fallbackUrl\) \}/)
-  assert.equal(expanded.split("onGithubNavigationRequested: function(candidates, fallbackUrl) { root.requestGithubNavigation(candidates, fallbackUrl) }").length - 1, 3)
-  assert.match(expanded, /function close\(\) \{[\s\S]*?releaseNavigator\.revoke\(\)/)
-
-  // The Version field is a link that resolves the Release for that tag.
-  assert.match(details, /signal githubNavigationRequested\(var candidates, string fallbackUrl\)/)
-  assert.match(details, /readonly property var versionReleaseCandidates: Model\.versionReleaseCandidates\(row\)/)
-  assert.match(details, /readonly property string versionFallbackUrl: Model\.versionFallbackUrl\(row\)/)
-  assert.match(details, /rows\.push\(\{ label: "Version", value: versionText, link: versionFallbackUrl, release: true \}\)/)
-  assert.match(details, /onClicked: field\.modelData\.release === true\s*\? root\.githubNavigationRequested\(root\.versionReleaseCandidates, root\.versionFallbackUrl\)\s*: root\.repositoryNavigationRequested\(field\.modelData\.link\)/)
-})
-
-test("the Installed details pane shows the plugin's screenshot above its description", () => {
-  const details = readFileSync(new URL("../InstalledDetails.qml", import.meta.url), "utf8")
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  assert.match(details, /property var catalogEntry: null/)
-  assert.match(details, /property bool previewsEnabled: true/)
-  assert.match(details, /signal previewUndecodable\(\)/)
-  assert.match(details, /property int previewIndex: 0/)
-  assert.match(details, /onRowChanged: previewIndex = 0/)
-  assert.match(details, /readonly property var previewSources: Model\.installedPreviewCandidates\(row, catalogEntry, previewsEnabled\)/)
-  assert.match(details, /readonly property string previewSource: previewIndex < previewSources\.length\s*\? previewSources\[previewIndex\] : ""/)
-  // The frame leads the body, like the Browse details: fitted, never
-  // cropped, capped at square, accent tile with initials while nothing loads.
-  assert.ok(details.indexOf("id: detailsPreview") < details.indexOf("text: Model.descriptionLine(root.row)"), "preview before description")
-  const preview = details.slice(details.indexOf("id: detailsPreview"), details.indexOf("id: detailsPreview") + 2600)
-  assert.match(preview, /fillMode: Image\.PreserveAspectFit/)
-  assert.match(preview, /text: root\.catalogEntry && root\.catalogEntry\.initials !== "" \? root\.catalogEntry\.initials : Model\.rowInitials\(root\.row\)/)
-  assert.match(preview, /if \(root\.previewSource === \(root\.catalogEntry \? root\.catalogEntry\.thumbnail : ""\)\) root\.previewUndecodable\(\)\s*root\.previewIndex\+\+/)
-  assert.match(preview, /textFormat: Text\.PlainText/)
-  // The expanded panel hands it the listing and the WebP verdict.
-  const wiring = expanded.slice(expanded.indexOf("InstalledDetails {"), expanded.indexOf("InstalledDetails {") + 1800)
-  assert.match(wiring, /catalogEntry: Model\.findRow\(root\.catalog, root\.selectedRow \? root\.selectedRow\.id : ""\)/)
-  assert.match(wiring, /previewsEnabled: root\.previewsSupported/)
-  assert.match(wiring, /onPreviewUndecodable: root\.previewsSupported = false/)
-})
-
-test("the expanded panel restores the Installed selection when you come back to the tab", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  // Decide from the tab's own new value, never from the `browsing` binding,
-  // which may not have re-evaluated when this handler runs; remember the
-  // Installed selection on the way out and restore it (clamped) on the way
-  // back, falling back to the first row.
-  assert.match(expanded, /property int rememberedInstalledIndex: 0/)
-  const handler = expanded.slice(expanded.indexOf("onActiveTabChanged: {"), expanded.indexOf("onActiveTabChanged: {") + 700)
-  assert.match(handler, /if \(activeTab === "installed"\) \{\s*selectedIndex = visibleRows\.length > 0\s*\? Math\.max\(0, Math\.min\(rememberedInstalledIndex, visibleRows\.length - 1\)\)\s*: -1\s*\} else \{\s*selectedIndex = -1\s*\}/)
-  assert.doesNotMatch(handler, /!browsing/)
-  const apply = expanded.slice(expanded.indexOf("function switchTab(tab) {"), expanded.indexOf("readonly property var tabOptions"))
-  assert.match(apply, /if \(activeTab === "installed"\) rememberedInstalledIndex = Math\.max\(0, selectedIndex\)(?:\s*\/\/[^\n]*)*\s*clearSearch\(\)\s*activeTab = tab/)
-})
-
-test("the store reloads when shell.json changes under it", () => {
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  // Enable and disable are detached commands that rewrite shell.json. The bar
-  // rebuilds the popup with its new state; the expanded panel is not a bar
-  // widget and would keep showing the old rows, so the store watches the
-  // file and reloads once the write has settled.
-  // Opt-in: the popup is rebuilt by the bar on a real layout change, and
-  // three per-monitor popups reloading at once would be pure waste.
-  assert.match(store, /property bool watchConfig: false/)
-  assert.match(store, /FileView \{\s*id: shellConfig\s*path: root\.watchConfig \? Quickshell\.env\("HOME"\) \+ "\/\.config\/omarchy\/shell\.json" : ""\s*preload: false\s*blockAllReads: true\s*watchChanges: root\.watchConfig\s*printErrors: false\s*onFileChanged: if \(root\.watchConfig\) configReload\.restart\(\)/)
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  assert.match(expanded, /PluginStore \{[\s\S]{0,120}?watchConfig: root\.opened/)
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  assert.doesNotMatch(panel, /watchConfig: true/)
-  assert.match(store, /Timer \{\s*id: configReload\s*interval: 1000\s*repeat: false\s*onTriggered: if \(root\.watchConfig\) root\.reload\(\)/)
 })
 
 function expandedKeyHarness(state = {}) {
@@ -5084,247 +2886,6 @@ function expandedKeyHarness(state = {}) {
     `${qmlFunction(source, "expandedKey")}; return expandedKey`)(root, Qt)
   return { calls, root, press }
 }
-
-test("expanded Browse details Backspace returns only outside search and modals", () => {
-  for (const browsing of [true, false]) for (const detailsOpen of [true, false]) {
-    for (const activeFocus of [false, true]) for (const modal of [null, "confirming", "placing"]) {
-      const { calls, press } = expandedKeyHarness({ browsing, detailsOpen,
-        confirming: modal === "confirming", placing: modal === "placing", searchFieldFocused: activeFocus })
-      const event = { key: "Backspace", text: "\b", accepted: false }
-      press(event)
-      const backs = browsing && detailsOpen && !activeFocus && !modal
-      const context = JSON.stringify({ browsing, detailsOpen, activeFocus, modal })
-      assert.deepEqual(calls, backs ? ["back"] : [], context)
-      assert.equal(event.accepted, Boolean(backs), context)
-    }
-  }
-})
-
-test("expanded Escape dismisses listings and Browse details without backing out", () => {
-  for (const browsing of [true, false]) for (const detailsOpen of [true, false]) {
-    for (const modal of [null, "confirming", "placing"]) {
-      const { calls, press } = expandedKeyHarness({ browsing, detailsOpen,
-        confirming: modal === "confirming", placing: modal === "placing" })
-      const event = { key: "Escape", text: "", accepted: false }
-      press(event)
-      assert.deepEqual(calls, modal ? [] : ["dismiss"])
-      assert.equal(event.accepted, !modal)
-    }
-  }
-})
-
-test("expanded tab shortcuts remain available in Browse details except under modals", () => {
-  for (const detailsOpen of [true, false]) for (const modal of [null, "confirming", "placing"]) {
-    for (const [text, tab] of [["1", "installed"], ["2", "browse"]]) {
-      const { calls, press } = expandedKeyHarness({ detailsOpen,
-        confirming: modal === "confirming", placing: modal === "placing" })
-      const event = { key: text, text, accepted: false }
-      press(event)
-      assert.deepEqual(calls, modal ? [] : [tab])
-      assert.equal(event.accepted, !modal)
-    }
-  }
-})
-
-test("Browse details are a third face of the flip, not a dialog", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  // Opening turns toward the page, closing turns back; the grid and the page
-  // are the two faces, and nothing else moves.
-  assert.match(expanded, /function openDetails\(entry\) \{\s*if \(!entry \|\| detailsEntry === entry\) return\s*flipTo\(1, function\(\) \{\s*settingsOpen = false\s*arrangeOpen = false\s*detailsEntry = entry\s*\}\)\s*\}/)
-  assert.match(expanded, /function closeDetails\(\) \{\s*if \(!detailsOpen\) return\s*flipTo\(-1, function\(\) \{ detailsEntry = null \}\)\s*\}/)
-  const grid = expanded.slice(expanded.indexOf("id: catalogGrid"), expanded.indexOf("id: catalogGrid") + 200)
-  assert.match(grid, /visible: root\.browsing && !root\.detailsOpen/)
-  const pane = expanded.slice(expanded.indexOf("id: browseDetailsPane"), expanded.indexOf("id: browseDetailsPane") + 2200)
-  assert.match(pane, /visible: root\.browsing && root\.detailsOpen/)
-  assert.match(pane, /anchors\.top: statusLine\.bottom[\s\S]*?anchors\.bottom: hintBar\.top/)
-  assert.match(pane, /entry: root\.detailsEntry/)
-  assert.match(pane, /previewsEnabled: root\.previewsSupported/)
-  assert.match(pane, /onBackRequested: root\.closeDetails\(\)/)
-  assert.match(pane, /onInstallRequested: root\.askInstall\(root\.detailsEntry\)/)
-  assert.match(pane, /onGithubNavigationRequested: function\(candidates, fallbackUrl\) \{ root\.requestGithubNavigation\(candidates, fallbackUrl\) \}/)
-  assert.match(pane, /onRepositoryNavigationRequested: function\(url\) \{ root\.navigateExternalUrl\(url\) \}/)
-  assert.match(pane, /onPreviewUndecodable: root\.previewsSupported = false/)
-  // Tabs still answer while the page is up; the grid's cursor keys do not.
-  const keys = expanded.slice(expanded.indexOf("Keys.onPressed: function(event) {"), expanded.indexOf("// ---- Header"))
-  assert.ok(keys.indexOf('text === "1"') < keys.indexOf("else if (root.detailsOpen || root.settingsOpen || root.arrangeOpen) return"), "tab keys before the details guard")
-  // The hint bar says the one way out.
-  const hints = expanded.slice(expanded.indexOf("id: hintBar"), expanded.indexOf("id: installedPane"))
-  assert.match(hints, /id: filterHints[\s\S]*?model: root\.browsing && root\.detailsOpen \? \[\] : \(root\.browsing \? root\.browseFilterHints : root\.installedFilterHints\)/)
-  assert.match(hints, /id: actionHints[\s\S]*?root\.browsing && root\.detailsOpen\s*\? \[\{ key: "backspace", text: "BACK", active: false \}\]/)
-})
-
-test("CatalogDetailsPane shows the cover on the left and the listing on the right", () => {
-  const pane = readFileSync(new URL("../CatalogDetailsPane.qml", import.meta.url), "utf8")
-  for (const decl of [
-    "property var entry: null", "property bool previewsEnabled: true", "property bool actionsEnabled: true",
-    "property color background: Color.menu.background", "required property color secondaryForeground",
-    "signal backRequested()", "signal installRequested()", "signal previewUndecodable()",
-    "signal githubNavigationRequested(var candidates, string fallbackUrl)", "signal repositoryNavigationRequested(string url)"
-  ]) assert.ok(pane.includes(decl), decl)
-  assert.match(pane, /readonly property var fieldRows: Model\.catalogDetailFields\(entry, stateText, needsPlacement\)/)
-  assert.match(pane, /readonly property var previewSources: Model\.previewCandidates\(entry, previewsEnabled\)/)
-  assert.match(pane, /onEntryChanged: \{\s*previewIndex = 0/)
-
-  const back = pane.slice(pane.indexOf("id: backButton"), pane.indexOf("id: backButton") + 400)
-  assert.match(back, /anchors\.left: parent\.left\s*anchors\.top: parent\.top/)
-  assert.match(back, /iconText: "󰁍"/)
-  assert.match(back, /text: "Back"/)
-  assert.match(back, /onClicked: root\.backRequested\(\)/)
-
-  // The cover takes the left two fifths and is fitted, never cropped, capped
-  // to the height it has rather than to a square.
-  const cover = pane.slice(pane.indexOf("id: coverColumn"), pane.indexOf("id: detailsScroll"))
-  assert.match(cover, /width: Math\.round\(parent\.width \* 0\.4\)/)
-  assert.match(cover, /fillMode: Image\.PreserveAspectFit/)
-  assert.match(cover, /Math\.min\(coverColumn\.height, Math\.round\(width \* detailsThumbnail\.implicitHeight \/ detailsThumbnail\.implicitWidth\)\)/)
-  assert.match(cover, /text: root\.entry \? root\.entry\.initials : ""/)
-  assert.match(cover, /if \(root\.previewSource === \(root\.entry \? root\.entry\.thumbnail : ""\)\) root\.previewUndecodable\(\)\s*root\.previewIndex\+\+/)
-
-  const right = pane.slice(pane.indexOf("id: detailsScroll"))
-  assert.match(right, /id: nameLabel[\s\S]*?font\.pixelSize: Style\.font\.display[\s\S]*?font\.bold: true/)
-  assert.match(right, /text: Model\.catalogMetaLine\(root\.entry\)/)
-  assert.match(right, /id: verifiedPill[\s\S]*?visible: root\.verified[\s\S]*?text: "󰄬 verified"/)
-  assert.match(right, /model: root\.fieldRows/)
-  assert.match(right, /text: root\.blockedReason[\s\S]*?color: Color\.urgent/)
-  const actions = right.slice(right.indexOf("id: actionRow"))
-  assert.match(right, /Flow \{\s*id: actionRow/)
-  assert.match(actions, /id: installButton[\s\S]*?visible: root\.entry \? root\.entry\.installable === true : false[\s\S]*?iconText: "󰐕"[\s\S]*?enabled: root\.actionsEnabled[\s\S]*?onClicked: root\.installRequested\(\)/)
-  assert.match(actions, /id: repositoryButton[\s\S]*?visible: root\.repoUrl !== ""[\s\S]*?iconText: "󰊤"[\s\S]*?onClicked: root\.repositoryNavigationRequested\(root\.repoUrl\)/)
-  assert.match(actions, /id: releaseButton[\s\S]*?visible: root\.versionFallbackUrl !== ""[\s\S]*?text: "Open " \+ root\.versionText \+ " on GitHub"[\s\S]*?onClicked: root\.githubNavigationRequested\(root\.versionReleaseCandidates, root\.versionFallbackUrl\)/)
-})
-
-test("the catalog details page puts stars and hearts at the right of the title line", () => {
-  const pane = readFileSync(new URL("../CatalogDetailsPane.qml", import.meta.url), "utf8")
-  const line = pane.slice(pane.indexOf("id: titleLine"), pane.indexOf("id: titleLine") + 5600)
-  // The name keeps the left and yields to the metrics; the metrics keep the
-  // right edge, the same gold star and red heart the cards wear, each shown
-  // only when the listing has a count.
-  assert.match(line, /id: nameLabel[\s\S]*?anchors\.left: parent\.left[\s\S]*?anchors\.right: metricsRow\.left/)
-  assert.match(line, /Row \{\s*id: metricsRow\s*anchors\.right: parent\.right/)
-  assert.match(line, /readonly property string starText: Model\.starLabel\(root\.entry \? root\.entry\.stars : null\)/)
-  assert.match(line, /readonly property string heartText: Model\.starLabel\(root\.entry \? root\.entry\.marketplaceHearts : null\)/)
-  assert.match(line, /id: starIcon[\s\S]*?text: "󰓎"[\s\S]*?color: starMouse\.containsMouse \? "#ffd257" : "#f5c518"/)
-  assert.match(line, /id: heartIcon[\s\S]*?text: "󰋑"[\s\S]*?color: "#e5484d"/)
-  assert.match(line, /id: starCount[\s\S]*?anchors\.baseline: starIcon\.baseline[\s\S]*?text: metricsRow\.starText/)
-  assert.match(line, /id: heartCount[\s\S]*?anchors\.baseline: heartIcon\.baseline[\s\S]*?text: metricsRow\.heartText/)
-  // Display-size glyphs with title-size counts: the two numbers should read
-  // at the same glance as the name they sit beside.
-  assert.equal((line.match(/font\.pixelSize: Style\.font\.display\n/g) || []).length, 3)
-  assert.equal((line.match(/font\.pixelSize: Style\.font\.title\n/g) || []).length, 2)
-  assert.match(line, /visible: metricsRow\.starText !== ""/)
-  assert.match(line, /visible: metricsRow\.heartText !== ""/)
-})
-
-test("the expanded grid's cards carry no buttons: click or Enter opens the page", () => {
-  const card = readFileSync(new URL("../CatalogCard.qml", import.meta.url), "utf8")
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  // The popup keeps its info and install buttons; the expanded panel turns
-  // them off and the metadata takes the whole footer width.
-  assert.match(card, /property bool showActions: true/)
-  assert.match(card, /id: actionRow\s*visible: root\.showActions/)
-  assert.match(card, /anchors\.right: actionRow\.visible \? actionRow\.left : parent\.right/)
-  assert.match(card, /anchors\.rightMargin: actionRow\.visible \? Style\.space\(6\) : 0/)
-  const delegate = expanded.slice(expanded.indexOf("CatalogCard {"), expanded.indexOf("CatalogCard {") + 600)
-  assert.match(delegate, /showActions: false/)
-  assert.doesNotMatch(panel, /showActions/)
-})
-
-test("the expanded grid's cards drop the author and version lines too", () => {
-  const card = readFileSync(new URL("../CatalogCard.qml", import.meta.url), "utf8")
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  // Name, description and the two counts are the card; everything else is
-  // one Enter away on the page. The footer shrinks to one line with them.
-  assert.match(card, /property bool showMeta: true/)
-  assert.match(card, /readonly property bool hasCreator: showMeta && creatorText !== ""/)
-  assert.match(card, /readonly property bool hasVersionOrMetrics: \(showMeta && versionText !== ""\) \|\| hasMetrics/)
-  assert.match(card, /id: versionLabel[\s\S]*?visible: root\.showMeta && root\.versionText !== ""/)
-  assert.match(card, /readonly property real footerMetadataHeight: Math\.ceil\(descriptionMetrics\.lineSpacing \* \(showMeta \? 2 : 1\)\)\s*\+ \(showMeta \? Style\.space\(3\) : 0\)/)
-  // The "requires additional setup" note is metadata too: the page says it.
-  assert.match(card, /readonly property string blockedText: showMeta && state_ === "unavailable"\s*\? Model\.installBlockedReason\(entry\) : ""/)
-  const delegate = expanded.slice(expanded.indexOf("CatalogCard {"), expanded.indexOf("CatalogCard {") + 600)
-  assert.match(delegate, /showMeta: false/)
-  assert.doesNotMatch(panel, /showMeta/)
-})
-
-test("the catalog details page wears an installed pill beside the verified one", () => {
-  const pane = readFileSync(new URL("../CatalogDetailsPane.qml", import.meta.url), "utf8")
-  const pills = pane.slice(pane.indexOf("id: pillRow") - 20, pane.indexOf("id: pillRow") + 1800)
-  // Bound to the facts, never to the children's `visible`: a child of a
-  // hidden item reports itself hidden, so a row that waits for its pills to
-  // be visible before showing itself never shows at all.
-  assert.match(pane, /readonly property bool verified: entry \? entry\.verified === true : false/)
-  assert.match(pane, /readonly property bool installed: entry \? entry\.installed === true : false/)
-  assert.match(pills, /Row \{\s*id: pillRow[\s\S]*?visible: root\.verified \|\| root\.installed/)
-  assert.doesNotMatch(pills, /verifiedPill\.visible \|\| installedPill\.visible/)
-  assert.match(pills, /id: verifiedPill[\s\S]*?text: "󰄬 verified"/)
-  // The same green the cards use for "installed", picked against the
-  // background so it reads on light themes too.
-  assert.match(pills, /id: installedPill[\s\S]*?visible: root\.installed/)
-  assert.match(pills, /id: verifiedPill[\s\S]*?visible: root\.verified/)
-  assert.match(pills, /readonly property color tint: Model\.installedTint\(root\.background\)/)
-  assert.match(pills, /text: "󰗠 installed"/)
-  assert.match(pills, /color: installedPill\.tint/)
-})
-
-test("card previews fit inside the frame instead of cropping", () => {
-  const card = readFileSync(new URL("../CatalogCard.qml", import.meta.url), "utf8")
-  // The frame keeps the grid uniform; the picture inside it is whole. Once
-  // it is up, the tile steps aside so the gutters read as card, not as a
-  // coloured mat around the photo.
-  const preview = card.slice(card.indexOf("id: preview"), card.indexOf("id: preview") + 2600)
-  // Opaque gutters: the card fill and the panel are both translucent, so a
-  // transparent tile let the desktop show through beside the picture.
-  assert.match(preview, /id: previewTile[\s\S]*?color: thumbnail\.status === Image\.Ready \? Color\.background : "transparent"[\s\S]*?gradient: thumbnail\.status === Image\.Ready \? null : previewTileGradient/)
-  assert.match(preview, /id: thumbnail[\s\S]*?fillMode: Image\.PreserveAspectFit/)
-  assert.doesNotMatch(preview, /PreserveAspectCrop/)
-})
-
-test("the search and filter row collapses in Settings, Arrange, and Browse details", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  const controls = expanded.slice(expanded.indexOf("id: controls\n"), expanded.indexOf("id: controls\n") + 900)
-  // They filter the grid; on the page there is no grid to filter, and the
-  // page is better off with the height.
-  assert.match(controls, /readonly property bool shown: !root\.settingsOpen && !root\.arrangeOpen && !\(root\.browsing && root\.detailsOpen\)/)
-  assert.match(controls, /visible: shown/)
-  assert.match(controls, /anchors\.topMargin: shown \? Style\.space\(10\) : 0/)
-  assert.match(controls, /height: !shown \? 0 : \(root\.browsing \? browseFilters\.implicitHeight : installedFilters\.implicitHeight\)/)
-})
-
-test("the shipped controls shown binding covers every view and tab combination", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  const controls = expanded.slice(expanded.indexOf("id: controls\n"), expanded.indexOf("id: controls\n") + 900)
-  const binding = controls.match(/readonly property bool shown: ([^\n]+)/)
-  assert.ok(binding, "controls must declare the shown binding")
-  const shown = new Function("root", `return (${binding[1]})`)
-  // Settings, Arrange, details, expected Installed, expected Browse.
-  const cases = [
-    [false, false, false, true, true],
-    [false, false, true, true, false],
-    [false, true, false, false, false],
-    [false, true, true, false, false],
-    [true, false, false, false, false],
-    [true, false, true, false, false],
-    [true, true, false, false, false],
-    [true, true, true, false, false]
-  ]
-  for (const [settingsOpen, arrangeOpen, detailsOpen, installed, browse] of cases) {
-    for (const browsing of [false, true]) {
-      const root = { settingsOpen, arrangeOpen, detailsOpen, browsing }
-      assert.equal(shown(root), browsing ? browse : installed, JSON.stringify(root))
-    }
-  }
-})
-
-test("installing from the details page keeps the page open", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  // The popup closed its details dialog before confirming because the dialog
-  // was modal and in the way. The page is not in the way: the confirmation
-  // sits on top of it, and once the install lands the page itself shows the
-  // installed pill and drops the Install button.
-  assert.match(expanded, /function askInstall\(entry\) \{\s*store\.askInstall\(entry\)\s*\}/)
-})
 
 test("the popup subtitle sits on its own full-width row under the title", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
@@ -5344,216 +2905,6 @@ test("the popup subtitle sits on its own full-width row under the title", () => 
   assert.match(panel, /return summary \+ " · " \+ root\.behindCount \+ " to update"/)
   assert.doesNotMatch(panel, /"  ·  "/)
 })
-
-test("the expanded summary elides before the tab cluster instead of running under it", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  const summaryStart = expanded.indexOf('return summary + "  ·  " + root.behindCount + " to update"')
-  const blockStart = expanded.lastIndexOf("Text {", summaryStart)
-  const block = expanded.slice(blockStart, summaryStart + 100)
-  assert.match(block, /anchors\.right: root\.browsing \? marketplaceLink\.left : tabs\.left/)
-  assert.match(block, /elide: Text\.ElideRight/)
-})
-
-test("the manifest registers the expanded window as a panel kind", () => {
-  const manifest = JSON.parse(readFileSync(new URL("../manifest.json", import.meta.url), "utf8"))
-  assert.deepEqual(manifest.kinds, ["bar-widget", "panel"])
-  assert.equal(manifest.entryPoints.barWidget, "BarWidget.qml")
-  assert.equal(manifest.entryPoints.panel, "Expanded.qml")
-})
-
-test("the store owns the pending confirmation flow for both windows", () => {
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-
-  // The surface tells the store who it is: disabling the surface's own plugin
-  // is the one disable that needs a warning.
-  assert.match(store, /property string selfId: ""/)
-  assert.match(store, /if \(row\.id === selfId\) \{/)
-  assert.match(store, /"omarchy plugin enable " \+ selfId \+ " right"/)
-  for (const name of ["pendingKind", "pendingId", "pendingLabel", "pendingUrl", "pendingPlacement",
-                      "pendingVerifiedCommit", "pendingBranch"])
-    assert.match(store, new RegExp(`property string ${name}: ""`), name)
-  assert.match(store, /function cancelPending\(\) \{[\s\S]*?pendingBranch = ""/)
-  // Only a marketplace-verified listing is installable at all, so there is no
-  // "is it verified" bit left to carry around.
-  assert.doesNotMatch(store, /pendingVerified\b/)
-  assert.match(store, /property bool pendingPlacementNeeded: false/)
-  // The question, the button and the busy state all call it an install; the
-  // old "add" kind is gone, so no message helper keeps a branch for it.
-  assert.match(store, /pendingKind = "install"/)
-  assert.doesNotMatch(store, /pendingKind === "add"|pendingKind = "add"/)
-  for (const surface of ["Panel.qml", "Expanded.qml"]) {
-    const source = readFileSync(new URL("../" + surface, import.meta.url), "utf8")
-    assert.match(source, /confirmText: root\.pendingKind === "cleanup" \? "Delete" : Model\.actionVerb\(root\.pendingKind\) === "Action"\s*\? "Confirm"\s*: Model\.actionVerb\(root\.pendingKind\)/, surface)
-  }
-  assert.equal(Model.actionVerb("install"), "Install")
-  assert.equal(Model.actionGerund("install"), "Installing")
-  assert.equal(Model.successMessage("install", "omarchy-clock"), "Installed omarchy-clock")
-  for (const fn of ["actionVerb", "actionGerund", "successMessage"])
-    assert.equal(Model[fn]("add", "x"), Model[fn]("nonsense", "x"), fn + " keeps no dead add branch")
-  assert.match(store, /readonly property bool confirming: pendingKind !== "" && pendingKind !== "place"/)
-  assert.match(store, /readonly property bool placing: pendingKind === "place"/)
-  assert.match(store, /readonly property var placementChoices: pendingKind === "move"\s*\? Model\.moveOptions\(pendingSection\) : Model\.placementOptions\(\)/)
-  assert.match(store, /readonly property string placementMessage:/)
-  assert.match(store, /readonly property string confirmMessage: \{/)
-  for (const fn of [
-    "askInstall(entry)", "askRemove(row)", "askEnable(row)", "askDisable(row)",
-    "confirmPlacement(section)", "cancelPending()", "confirmPending()", "startAdd(section)"
-  ]) assert.match(store, new RegExp(`function ${fn.replace(/[()]/g, "\\$&")} \\{`), fn)
-  // Asking returns whether the request was taken, so a surface can do its
-  // own bookkeeping (close details, retire a probe) only for real requests.
-  assert.match(store, /function askInstall\(entry\) \{[\s\S]*?if \(!entry \|\| !entry\.installable \|\| busy\) return false[\s\S]*?if \(!snapshot\) return false/)
-  assert.match(store, /function askRemove\(row\) \{\s*if \(!row \|\| !row\.removable \|\| busy\) return false/)
-  // Enable without a placement question and disable of anything but the
-  // surface itself are direct actions, exactly as before.
-  assert.match(store, /function askEnable\(row\) \{[\s\S]*?if \(!Model\.needsPlacement\(row\)\) \{[\s\S]*?startEnable\(row, ""\)\s*return true/)
-  assert.match(store, /function askDisable\(row\) \{[\s\S]*?startDisable\(row\)\s*return true/)
-  assert.match(store, /function confirmPending\(\) \{[\s\S]*?if \(pendingId !== "" && pendingPlacementNeeded\) \{\s*pendingKind = "place"/)
-  assert.match(store, /runAction\("remove", pendingLabel, \["omarchy", "plugin", "remove", pendingId, "--yes"\]\)/)
-
-  // The popup keeps its bindings through aliases and thin wrappers.
-  assert.match(panel, /PluginStore \{\s*id: store\s*externalBusy: !!root\.popupMoveOwner && root\.popupMoveOwner\.busy\s*selfId: root\.moduleName(?:\s*\/\/[^\n]*)*\s*shell: root\.bar \? root\.bar\.shell : null\s*\}/)
-  for (const name of ["pendingKind", "pendingId", "pendingLabel", "pendingUrl", "pendingVerifiedCommit", "pendingPlacementNeeded", "pendingPlacement"])
-    assert.match(panel, new RegExp(`property alias ${name}: store\\.${name}\\b`), name)
-  for (const name of ["confirming", "placing", "placementChoices", "placementMessage", "confirmMessage"])
-    assert.match(panel, new RegExp(`readonly property alias ${name}: store\\.${name}\\b`), name)
-  assert.match(panel, /function askInstall\(entry\) \{\s*if \(!store\.askInstall\(entry\)\) return\s*revokeReleaseNavigation\(\)[\s\S]*?detailsEntry = null\s*\}/)
-  assert.match(panel, /function askRemove\(row\) \{\s*if \(!store\.askRemove\(row\)\) return\s*revokeReleaseNavigation\(\)\s*\}/)
-  assert.match(panel, /function askEnable\(row\) \{\s*if \(!store\.askEnable\(row\)\) return\s*revokeReleaseNavigation\(\)\s*\}/)
-  assert.match(panel, /function askDisable\(row\) \{\s*if \(!store\.askDisable\(row\)\) return\s*revokeReleaseNavigation\(\)\s*\}/)
-  assert.match(panel, /function confirmPlacement\(section\) \{\s*if \(pendingKind !== "move" \|\| pendingPlacementNeeded\) \{\s*store\.confirmPlacement\(section\)/)
-  assert.match(panel, /function cancelPending\(\) \{\s*store\.cancelPending\(\)\s*\}/)
-  assert.match(panel, /function confirmPending\(\) \{\s*store\.confirmPending\(\)\s*\}/)
-  assert.doesNotMatch(panel, /property string pendingKind: ""/)
-})
-
-test("the popup's expand button hands the current tab to the shell panel", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  assert.match(panel, /readonly property string pluginId: "io\.github\.juancasanueva\.plugin-manager"/)
-  const button = panel.slice(panel.indexOf("id: expandButton"), panel.indexOf("id: refreshButton"))
-  assert.match(button, /anchors\.right: refreshButton\.left/)
-  assert.match(button, /anchors\.rightMargin: Style\.space\(6\)/)
-  assert.match(button, /iconText: "󰊓"/)
-  assert.match(button, /fontSize: Style\.font\.display/)
-  assert.match(button, /tooltipText: "Expand into a full panel"/)
-  assert.match(button, /onClicked: root\.advanceOpenAs\(\)/)
-  // Arrange sits beside Settings without moving the tabs between pages.
-  assert.match(panel, /id: tabs\s*anchors\.right: arrangeButton\.left/)
-  assert.match(panel, /id: settingsButton\s*anchors\.right: windowButton\.left/)
-  // The count line lives on its own row now, so nothing yields to the tabs.
-  assert.doesNotMatch(panel, /id: subtitle[\s\S]{0,400}anchors\.right: marketplaceLink/)
-  // Close first, then summon: the popup and the panel are never up together,
-  // and a bar without a shell reference (tests, odd hosts) is a no-op.
-  assert.match(panel, /function expand\(page, mode\) \{\s*if \(!bar \|\| !bar\.shell \|\| typeof bar\.shell\.summon !== "function"\) return[\s\S]*?close\(\)\s*var payload = \{ tab: tab, screen: screenName, page: page === "arrange" \? "arrange" : "" \}\s*if \(mode === "overlay" \|\| mode === "window"\) payload\.mode = mode\s*bar\.shell\.summon\(pluginId, JSON\.stringify\(payload\)\)\s*\}/)
-})
-
-test("the expanded window is a layer-shell overlay that the shell summons and hides", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  for (const line of ["import Quickshell.Wayland", "import qs.Commons", "import qs.Ui", 'import "Model.js" as Model'])
-    assert.ok(expanded.includes(line), line)
-  assert.match(expanded, /property var shell: null/)
-  assert.match(expanded, /property var manifest: null/)
-  assert.match(expanded, /property bool opened: false/)
-  assert.match(expanded, /PluginStore \{\s*id: store\s*watchConfig: root\.opened\s*selfId: root\.pluginId\s*(\/\/[^\n]*\n\s*)*shell: root\.shell\s*\}/)
-
-  const window = expanded.slice(expanded.indexOf("PanelWindow {"), expanded.indexOf("PanelWindow {") + 700)
-  assert.match(window, /visible: root\.opened/)
-  assert.match(window, /anchors \{ top: true; bottom: true; left: true; right: true \}/)
-  assert.match(window, /color: "transparent"/)
-  assert.match(window, /exclusionMode: ExclusionMode\.Ignore/)
-  assert.match(window, /WlrLayershell\.layer: WlrLayer\.Overlay/)
-  assert.match(window, /WlrLayershell\.keyboardFocus: WlrKeyboardFocus\.Exclusive/)
-  // Card size follows the screen, never exceeds it (the tiled window sizes the
-  // card itself; see the tiled-window test below).
-  assert.match(expanded, /: Math\.min\(Style\.space\(1180\), window\.width - Style\.gapsOut \* 4\)/)
-  assert.match(expanded, /: Math\.min\(Style\.space\(820\), window\.height - Style\.gapsOut \* 4\)/)
-
-  // Lifecycle: the shell calls open(payload)/close(); we never flip our own
-  // open state behind its back, so dismissing goes through shell.hide.
-  assert.match(expanded, /function open\(payloadJson\) \{[\s\S]*?activeTab = Model\.expandedTabFromPayload\(payloadJson\)[\s\S]*?showRetainedWindow\(\)[\s\S]*?initialLoad\.restart\(\)/)
-  assert.match(expanded, /function close\(\) \{[\s\S]*?opened = false/)
-  assert.match(expanded, /function dismiss\(\) \{\s*if \(!opened\) return\s*if \(shell && typeof shell\.hide === "function"\) shell\.hide\(pluginId\)\s*else close\(\)\s*\}/)
-  // A panel plugin's scoped shell has no bar and summon() routes here, so the
-  // way back crosses to the bar widget through the shared PopupBridge library.
-  assert.match(expanded, /import "PopupBridge\.js" as PopupBridge/)
-  assert.match(expanded, /function collapse\(\) \{\s*if \(barMovePending\) return\s*var screenName = targetScreenName\s*dismiss\(\)\s*PopupBridge\.openPopup\(screenName\)\s*\}/)
-  assert.doesNotMatch(expanded, /summonBarWidget/)
-
-  // Chrome: title, tabs, refresh, and the way back to the popup.
-  assert.match(expanded, /id: collapseButton[\s\S]*?iconText: "󰊔"[\s\S]*?tooltipText: "Back to the popup"[\s\S]*?onClicked: root\.backToPopup\(\)/)
-  assert.match(expanded, /id: tabs[\s\S]*?onChanged: function\(value\) \{ root\.switchTab\(value\) \}/)
-
-  // Installed is master/detail; Browse is the popup's card grid.
-  assert.match(expanded, /InstalledDetails \{/)
-  // The list beside a details pane is a summary: the actions and the
-  // metadata live on the right, so the row keeps only what identifies it.
-  assert.equal((expanded.match(/InstalledListRow \{/g) || []).length, 2)
-  assert.equal((expanded.match(/PluginRow \{/g) || []).length, 0)
-  assert.match(expanded, /GridView \{[\s\S]*?readonly property int columns: 4/)
-  assert.match(expanded, /CatalogCard \{/)
-  assert.doesNotMatch(expanded, /PluginDetails \{/)
-  assert.match(expanded, /CatalogDetailsPane \{\s*id: browseDetailsPane/)
-  assert.match(expanded, /ActionConfirmDialog \{[\s\S]*?opened: root\.confirming/)
-  assert.match(expanded, /ChoiceDialog \{[\s\S]*?opened: root\.placing/)
-
-  // Keys: Escape dismisses; Backspace returns from Browse details.
-  assert.match(expanded, /Keys\.onPressed: function\(event\) \{[\s\S]*?event\.key === Qt\.Key_Escape\) \{\s*root\.dismiss\(\)\s*event\.accepted = true/)
-
-  // Never rich text, anywhere on this surface either.
-  for (const file of ["Expanded.qml", "InstalledDetails.qml", "InstalledListRow.qml", "CatalogDetailsPane.qml"]) {
-    const qml = readFileSync(new URL("../" + file, import.meta.url), "utf8")
-    const texts = (qml.match(/\n\s*Text \{/g) || []).length
-    const plain = (qml.match(/textFormat: Text\.PlainText/g) || []).length
-    assert.equal(plain, texts, file + " Text blocks vs PlainText")
-    assert.ok(texts > 0, file)
-  }
-})
-
-test("InstalledDetails lays its actions out horizontally", () => {
-  const details = readFileSync(new URL("../InstalledDetails.qml", import.meta.url), "utf8")
-  // Side by side, wrapping when the pane is narrow, rather than one tall
-  // column of buttons.
-  const actions = details.slice(details.indexOf("id: actionRow") - 20, details.indexOf("id: actionRow") + 200)
-  assert.match(actions, /Flow \{\s*id: actionRow\s*width: parent\.width\s*spacing: Style\.space\(6\)/)
-  assert.doesNotMatch(details, /\/\/ ours to delete\.\s*Column \{/)
-  // Directly under the title, before the screenshot and the facts: what you
-  // can do comes first, what you are looking at follows.
-  assert.ok(details.indexOf("id: nameLine") < details.indexOf("id: actionRow"), "actions after the name")
-  assert.ok(details.indexOf("id: actionRow") < details.indexOf("id: detailsPreview"), "actions before the screenshot")
-  // On/off is a switch, not a button: the popup row's control, with the same
-  // placement-aware tooltip, vertically centred against the buttons.
-  const toggle = actions.length ? details.slice(details.indexOf("id: enabledSwitch") - 200, details.indexOf("id: enabledSwitch") + 1300) : ""
-  assert.match(toggle, /height: updateButton\.height/)
-  assert.match(toggle, /ToggleSwitch \{\s*id: enabledSwitch\s*anchors\.verticalCenter: parent\.verticalCenter/)
-  assert.match(toggle, /checked: root\.row \? root\.row\.enabled === true : false/)
-  assert.match(toggle, /interactive: root\.canEnable \|\| root\.canDisable/)
-  assert.match(toggle, /busy: !root\.actionsEnabled/)
-  assert.match(toggle, /onToggled: root\.canDisable \? root\.disableRequested\(\) : root\.enableRequested\(\)/)
-  assert.match(toggle, /PanelToolTip \{\s*visible: enabledSwitch\.containsMouse/)
-  assert.match(toggle, /"Disable — take it out of the bar, keep it installed"/)
-  assert.match(toggle, /"Enable — choose where in the bar it goes"/)
-  assert.doesNotMatch(details, /text: root\.canDisable \? "Disable" : "Enable"/)
-  assert.match(details, /Button \{\s*id: updateButton/)
-})
-
-test("InstalledDetails shows a row's facts and the same four actions as its row", () => {
-  const details = readFileSync(new URL("../InstalledDetails.qml", import.meta.url), "utf8")
-  assert.match(details, /property var row: null/)
-  assert.match(details, /property bool verified: false/)
-  assert.match(details, /required property color secondaryForeground/)
-  for (const sig of ["updateRequested", "removeRequested", "enableRequested", "disableRequested"])
-    assert.match(details, new RegExp(`signal ${sig}\\(\\)`), sig)
-  assert.match(details, /signal repositoryNavigationRequested\(string url\)/)
-  for (const label of ["Author", "Version", "Kinds", "Source", "Repository", "Update", "Status"])
-    assert.match(details, new RegExp(`label: "${label}"`), label)
-  assert.match(details, /"Select a plugin to see its details\."/)
-  // Same gates as the row: an up-to-date checkout has no update to click.
-  assert.match(details, /readonly property bool upToDate: Model\.upToDate\(row\)/)
-  assert.match(details, /readonly property bool canEnable: Model\.canEnable\(row\)/)
-  assert.match(details, /readonly property bool canDisable: Model\.canDisable\(row\)/)
-  assert.match(details, /text: "Remove"[\s\S]*?accent: Color\.urgent/)
-})
-
 
 test("PopupBridge hands the expanded window back to the popup on its own output", async () => {
   const source = readFileSync(new URL("../PopupBridge.js", import.meta.url), "utf8")
@@ -5695,17 +3046,6 @@ test("the plugin's own shell.json entry is read strictly and the setting is the 
   assert.equal(Model.allowUnverifiedUpdates(null), false)
   assert.equal(Model.allowUnverifiedUpdates(Object.create({ allowUnverifiedUpdates: true })), false, "own key only")
 
-  // Installing unreviewed code is its own decision, under its own key: the
-  // two settings never read each other's value.
-  assert.equal(Model.allowUnverifiedInstalls({ allowUnverifiedInstalls: true }), true)
-  for (const value of ["true", 1, "yes", null, undefined, {}, []])
-    assert.equal(Model.allowUnverifiedInstalls({ allowUnverifiedInstalls: value }), false, String(value))
-  assert.equal(Model.allowUnverifiedInstalls({}), false)
-  assert.equal(Model.allowUnverifiedInstalls(null), false)
-  assert.equal(Model.allowUnverifiedInstalls(Object.create({ allowUnverifiedInstalls: true })), false, "own key only")
-  assert.equal(Model.allowUnverifiedInstalls({ allowUnverifiedUpdates: true }), false, "separate keys")
-  assert.equal(Model.allowUnverifiedUpdates({ allowUnverifiedInstalls: true }), false, "separate keys")
-
   // The settings section rides ahead of the four fixed ones and is optional.
   const four = "===list===\n[]\n===catalog===\n[]\n===git===\n\n===manifest===\n"
   assert.equal(Model.splitSections(four).settings, "")
@@ -5752,351 +3092,6 @@ test("the plugin's own entry is kept whole for writing and null when it could no
   assert.deepEqual(Model.withSelfSetting(off, "allowUnverifiedUpdates", "true"), off, "only the boolean true is stored")
   assert.deepEqual(Model.withSelfSetting({ id: "x", __proto__: { leak: 1 } }, "allowUnverifiedUpdates", true), { allowUnverifiedUpdates: true })
   assert.deepEqual(Model.withSelfSetting(null, "allowUnverifiedUpdates", true), { allowUnverifiedUpdates: true })
-})
-
-test("the expanded panel's window type is the boolean true only, read from shell.json as the loader's jq reads it", () => {
-  const id = "io.github.juancasanueva.plugin-manager"
-
-  // Same strictness as the other two settings, and no key stands in for another.
-  assert.equal(Model.tiledExpandedPanel({ tiledExpandedPanel: true }), true)
-  for (const value of ["true", 1, "yes", null, undefined, {}, []])
-    assert.equal(Model.tiledExpandedPanel({ tiledExpandedPanel: value }), false, String(value))
-  assert.equal(Model.tiledExpandedPanel({}), false)
-  assert.equal(Model.tiledExpandedPanel(null), false)
-  assert.equal(Model.tiledExpandedPanel(Object.create({ tiledExpandedPanel: true })), false, "own key only")
-  assert.equal(Model.tiledExpandedPanel({ allowUnverifiedInstalls: true }), false, "separate keys")
-  assert.equal(Model.allowUnverifiedInstalls({ tiledExpandedPanel: true }), false, "separate keys")
-
-  // The entry is looked for in bar.layout first, whichever section holds it,
-  // and in .plugins after, exactly as the loader's `first` does.
-  const entry = { id: id, tiledExpandedPanel: true }
-  const inLayout = JSON.stringify({
-    bar: { layout: { left: [{ id: "omarchy.clock" }], right: [{ id: "acme.widget" }, entry] } },
-    plugins: [{ id: id, other: 1 }]
-  })
-  assert.deepEqual(JSON.parse(Model.selfEntryFromShellConfig(inLayout, id)), entry, "the layout wins")
-  const inPlugins = JSON.stringify({ bar: { layout: { right: [{ id: "acme.widget" }] } }, plugins: [{ id: "other" }, entry] })
-  assert.deepEqual(JSON.parse(Model.selfEntryFromShellConfig(inPlugins, id)), entry)
-  // What the window actually asks: the text feeds straight into the strict view.
-  assert.equal(Model.tiledExpandedPanel(Model.parseSelfSettings(Model.selfEntryFromShellConfig(inPlugins, id))), true)
-  assert.equal(Model.tiledExpandedPanel(Model.parseSelfSettings(Model.selfEntryFromShellConfig("", id))), false)
-  // jq's tostring compares a numeric id as its text; nothing else is an id.
-  assert.deepEqual(JSON.parse(Model.selfEntryFromShellConfig(JSON.stringify({ plugins: [{ id: 42, tiledExpandedPanel: true }] }), "42")),
-    { id: 42, tiledExpandedPanel: true })
-  for (const hostileId of [true, null, ["x"], { k: 1 }])
-    assert.equal(Model.selfEntryFromShellConfig(JSON.stringify({ plugins: [{ id: hostileId }] }), String(hostileId)), "",
-      JSON.stringify(hostileId))
-
-  // Nothing to read, nothing to parse, nothing of the right shape: no entry.
-  for (const raw of ["", "   ", "nonsense", "null", '"x"', "[]", `[{"id":"${id}"}]`,
-    JSON.stringify({ plugins: [{ id: "other" }] }), JSON.stringify({ bar: { layout: { right: "not-a-list" } } }),
-    JSON.stringify({ bar: "not-an-object" }), JSON.stringify({ plugins: { right: [entry] } }),
-    JSON.stringify({ bar: { layout: { right: ["a-string", null, [entry]] } } })])
-    assert.equal(Model.selfEntryFromShellConfig(raw, id), "", JSON.stringify(raw.slice(0, 24)))
-  assert.equal(Model.selfEntryFromShellConfig(JSON.stringify({ plugins: [entry] }), ""), "", "no id, no entry")
-
-  // The loader reads at most a megabyte of shell.json; so does this.
-  const oversized = JSON.stringify({ plugins: [entry, { id: "pad", pad: "x".repeat(1048576) }] })
-  assert.ok(oversized.length > 1048576)
-  assert.equal(Model.selfEntryFromShellConfig(oversized, id), "", "bounded")
-
-  // A crafted key never reaches a prototype: a section named __proto__ is not
-  // walked, and one inside the entry is dropped by the strict view.
-  assert.equal(Model.selfEntryFromShellConfig(`{"bar":{"layout":{"__proto__":[{"id":"${id}"}]}}}`, id), "")
-  const hostile = `{"plugins":[{"id":"${id}","tiledExpandedPanel":true,"__proto__":{"polluted":true}}]}`
-  assert.deepEqual(Model.parseSelfSettings(Model.selfEntryFromShellConfig(hostile, id)), { tiledExpandedPanel: true })
-  assert.equal(({}).polluted, undefined, "no prototype was touched")
-
-  // Stored like the other two: the boolean true, or removed.
-  const on = Model.withSelfSetting({ position: "right" }, "tiledExpandedPanel", true)
-  assert.deepEqual(on, { position: "right", tiledExpandedPanel: true })
-  assert.deepEqual(Model.withSelfSetting(on, "tiledExpandedPanel", false), { position: "right" })
-})
-
-test("the expanded window's settings face owns the one switch and reads back through the store", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  const button = expanded.slice(expanded.indexOf("id: settingsButton"), expanded.indexOf("id: settingsButton") + 600)
-  assert.match(button, /iconText: "󰒓"/)
-  assert.match(button, /tooltipText: root\.settingsOpen \? "Back to the list" : "Settings"/)
-  assert.match(button, /onClicked: root\.settingsOpen \? root\.closeSettings\(\) : root\.openSettings\(\)/)
-  assert.match(expanded, /id: tabs\s*enabled: !root\.barMovePending\s*anchors\.right: arrangeButton\.left/)
-  assert.match(expanded, /function openSettings\(\) \{\s*if \(settingsOpen\) return\s*flipTo\(1, function\(\) \{\s*detailsEntry = null\s*arrangeOpen = false\s*settingsOpen = true\s*store\.refreshUpdateData\(\)\s*\}\)\s*\}/)
-  assert.match(expanded, /function closeSettings\(\) \{\s*if \(!settingsOpen\) return\s*flipTo\(-1, function\(\) \{ settingsOpen = false \}\)\s*\}/)
-  const handler = expanded.slice(expanded.indexOf("onActiveTabChanged: {"), expanded.indexOf("onActiveTabChanged: {") + 200)
-  assert.match(handler, /settingsOpen = false/)
-  for (const id of ["installedPane", "catalogGrid", "browseDetailsPane"]) {
-    const face = expanded.slice(expanded.indexOf(`id: ${id}`), expanded.indexOf(`id: ${id}`) + 200)
-    assert.match(face, /visible: [^\n]*&& !root\.settingsOpen/, id)
-  }
-  const pane = expanded.slice(expanded.indexOf("id: settingsPane"), expanded.indexOf("ActionConfirmDialog {"))
-  assert.match(pane, /visible: root\.settingsOpen/)
-  assert.match(pane, /anchors\.top: statusLine\.bottom[\s\S]*?anchors\.bottom: hintBar\.top/)
-  assert.match(pane, /angle: root\.contentFlipAngle/)
-  assert.match(pane, /id: settingsBackButton[\s\S]*?text: "Back"[\s\S]*?onClicked: root\.arrangeOpen \? root\.closeArrange\(\) : root\.closeSettings\(\)/)
-  assert.match(pane, /text: "Settings"/)
-  assert.match(pane, /text: "Allow updating unverified plugins"/)
-  assert.match(pane, /Off: only marketplace-verified snapshots are offered\. /)
-  assert.match(pane, /pinned to the exact commit the check observed, after a confirmation\./)
-  assert.match(pane, /id: unverifiedSwitch[\s\S]*?checked: store\.allowUnverifiedUpdates[\s\S]*?onToggled: store\.setAllowUnverifiedUpdates\(!store\.allowUnverifiedUpdates\)/)
-  // The second opt-in, its own row and its own key, directly below the first.
-  assert.match(pane, /text: "Allow installing unverified plugins"/)
-  assert.match(pane, /Off: only listings with a marketplace-verified snapshot can be installed\. /)
-  assert.match(pane, /pinned to that exact commit, after a confirmation\./)
-  assert.match(pane, /id: unverifiedInstallSwitch[\s\S]*?checked: store\.allowUnverifiedInstalls[\s\S]*?onToggled: store\.setAllowUnverifiedInstalls\(!store\.allowUnverifiedInstalls\)/)
-  assert.ok(pane.indexOf("id: unverifiedSwitch") < pane.indexOf("id: unverifiedInstallSwitch"))
-  // Every Text on the face is plain text.
-  const texts = pane.split(/\bText \{/).slice(1)
-  assert.ok(texts.length >= 3)
-  for (const text of texts) assert.match(text.slice(0, 200), /textFormat: Text\.PlainText/)
-  // Backspace leaves the face; Escape still closes the window; cursor keys wait.
-  const { calls, press } = expandedKeyHarness({ browsing: false, detailsOpen: false, settingsOpen: true,
-    closeSettings: () => calls.push("settings-back") })
-  press({ key: "Backspace", text: "\b", accepted: false })
-  assert.deepEqual(calls, ["settings-back"])
-  press({ key: "Escape", text: "", accepted: false })
-  assert.deepEqual(calls, ["settings-back", "dismiss"])
-  const keys = expanded.slice(expanded.indexOf("Keys.onPressed: function(event) {"), expanded.indexOf("// ---- Header"))
-  assert.match(keys, /else if \(root\.detailsOpen \|\| root\.settingsOpen \|\| root\.arrangeOpen\) return/)
-
-  // The store owns the value and the write goes through the host.
-  assert.match(store, /property var shell: null/)
-  assert.match(store, /readonly property bool allowUnverifiedUpdates: Model\.allowUnverifiedUpdates\(selfSettings\)/)
-  assert.match(store, /onAllowUnverifiedUpdatesChanged: rows = Model\.applyPinnedUpdates\(rows, catalog, allowUnverifiedUpdates\)/)
-  // The install opt-in is the same mechanism under its own key, and flipping
-  // it re-stamps the cards already on screen rather than refetching them.
-  assert.match(store, /readonly property bool allowUnverifiedInstalls: Model\.allowUnverifiedInstalls\(selfSettings\)/)
-  assert.match(store, /onAllowUnverifiedInstallsChanged: restampCatalog\(\)/)
-  assert.equal(store.split("Model.applyPinnedUpdates(").length - 1,
-    (store.match(/Model\.applyPinnedUpdates\([^\n]*, allowUnverifiedUpdates\)/g) || []).length,
-    "every projection carries the setting")
-  assert.match(store, /selfEntry = Model\.parseSelfEntry\(sections\.settings\)\s*selfEntryLoaded = selfEntry !== null\s*selfSettings = Model\.parseSelfSettings\(sections\.settings\)/)
-  assert.match(store, /loadError = "Could not read the plugin list"[\s\S]{0,200}selfEntryLoaded = false/)
-  assert.ok(store.indexOf("printf '===settings===") < store.indexOf("printf '===list==="), "settings lead the load stream")
-  assert.ok(store.includes('head -c 1048577 -- \\"$HOME/.config/omarchy/shell.json\\" 2>/dev/null'), "bounded read of the host config")
-  assert.match(store, /jq -c --arg id io\.github\.juancasanueva\.plugin-manager/)
-  // Saving hands the host the whole entry as loaded, with the one key
-  // changed: arrays, objects and long strings the strict view does not
-  // carry all survive, since the host replaces the entry outright.
-  const saves = [], statuses = []
-  const loaded = { position: "right", pinned: ["a", "b"], nested: { k: 1 }, big: "y".repeat(300), allowUnverifiedUpdates: true }
-  const state = { busy: false, selfEntry: loaded, selfEntryLoaded: true,
-    selfSettings: { position: "right", allowUnverifiedUpdates: true }, selfId: "acme.plugin",
-    shell: { updateEntryInline: (id, settings) => { saves.push([id, settings]); return true } },
-    allowUnverifiedUpdates: true, setStatus(text, error) { statuses.push([text, error]) } }
-  const api = Function("Model", "state", `with (state) { ${qmlFunction(store, "writeSelfSetting")}; ${qmlFunction(store, "setAllowUnverifiedUpdates")}; return setAllowUnverifiedUpdates }`)(Model, state)
-  assert.equal(api(false), true)
-  assert.deepEqual(saves, [["acme.plugin", { position: "right", pinned: ["a", "b"], nested: { k: 1 }, big: "y".repeat(300) }]])
-  assert.deepEqual(state.selfEntry, saves[0][1])
-  assert.deepEqual(state.selfSettings, { position: "right" })
-  assert.deepEqual(loaded.pinned, ["a", "b"], "the loaded entry is not mutated in place")
-  state.allowUnverifiedUpdates = false // the readonly binding would have followed selfSettings
-  // Asking for the value already in force is a no-op, not a write.
-  assert.equal(api(false), true)
-  assert.equal(saves.length, 1)
-  // A host refusal is a failure even though the value did not move.
-  state.shell.updateEntryInline = () => false
-  assert.equal(api(true), false, "a refused write leaves the value alone")
-  assert.deepEqual(state.selfSettings, { position: "right" })
-  assert.deepEqual(state.selfEntry, saves[0][1])
-  assert.deepEqual(statuses.pop(), ["Could not save the setting", true])
-  state.shell = null
-  assert.equal(api(true), false)
-  assert.deepEqual(statuses.pop(), ["Could not save the setting: no shell connection", true])
-  // Nothing is written over an entry that was never read whole: after a
-  // failed load, or an entry the parser refused, the switch declines.
-  state.shell = { updateEntryInline: (id, settings) => { saves.push([id, settings]); return true } }
-  for (const change of [{ selfEntryLoaded: false }, { selfEntry: null }]) {
-    const saved = { ...state }
-    Object.assign(state, change)
-    assert.equal(api(true), false, JSON.stringify(change))
-    assert.equal(saves.length, 1, "no write")
-    assert.deepEqual(statuses.pop(), ["Settings unavailable until the plugin list loads", true])
-    Object.assign(state, saved)
-  }
-  // An absent entry loads as {} and is written as just the switch.
-  Object.assign(state, { selfEntry: {}, selfEntryLoaded: true, selfSettings: {}, allowUnverifiedUpdates: false })
-  assert.equal(api(true), true)
-  assert.deepEqual(saves[1], ["acme.plugin", { allowUnverifiedUpdates: true }])
-  assert.deepEqual(state.selfSettings, { allowUnverifiedUpdates: true })
-
-  // The install switch is the same write under its own key: both settings can
-  // stand in the entry at once, and neither erases the other.
-  Object.assign(state, { allowUnverifiedUpdates: true, allowUnverifiedInstalls: false })
-  const installApi = Function("Model", "state", `with (state) { ${qmlFunction(store, "writeSelfSetting")}; ${qmlFunction(store, "setAllowUnverifiedInstalls")}; return setAllowUnverifiedInstalls }`)(Model, state)
-  assert.equal(installApi(true), true)
-  assert.deepEqual(saves[2], ["acme.plugin", { allowUnverifiedUpdates: true, allowUnverifiedInstalls: true }])
-  assert.deepEqual(state.selfSettings, { allowUnverifiedUpdates: true, allowUnverifiedInstalls: true })
-  state.allowUnverifiedInstalls = true
-  assert.equal(installApi(true), true, "the value already in force is a no-op")
-  assert.equal(saves.length, 3)
-})
-
-test("the popup's settings pane owns the same switch and writes through the bar's shell", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-
-  // The popup's store reaches updateEntryInline through the bar facade the
-  // trusted bar hands every widget; it is a binding because `bar` arrives
-  // after construction.
-  const store = panel.slice(panel.indexOf("PluginStore {"), panel.indexOf("PluginStore {") + 700)
-  assert.match(store, /shell: root\.bar \? root\.bar\.shell : null/)
-
-  // The gear sits between the tabs and the expand icon, and toggles the pane.
-  const button = panel.slice(panel.indexOf("id: settingsButton"), panel.indexOf("id: settingsButton") + 700)
-  assert.match(button, /anchors\.right: windowButton\.left/)
-  assert.match(button, /iconText: "󰒓"/)
-  assert.match(button, /tooltipText: root\.settingsOpen \? "Back to the list" : "Settings"/)
-  assert.match(button, /foreground: root\.settingsOpen \? Color\.accent : root\.contentForeground/)
-  assert.match(button, /onClicked: root\.settingsOpen \? root\.closeSettings\(\) : root\.openSettings\(\)/)
-  assert.match(panel, /id: tabs\s*anchors\.right: arrangeButton\.left/)
-
-  // An overlay like the details page, not a third face of the two-tab flip.
-  assert.match(panel, /property bool settingsOpen: false/)
-  assert.match(panel, /function openSettings\(\) \{\s*closeArrange\(\)\s*if \(settingsOpen\) return\s*revokeReleaseNavigation\(\)\s*detailsEntry = null\s*settingsOpen = true\s*store\.refreshUpdateData\(\)\s*\}/)
-  assert.match(panel, /function closeSettings\(\) \{\s*if \(!settingsOpen\) return\s*revokeReleaseNavigation\(\)\s*settingsOpen = false\s*\}/)
-  const pane = panel.slice(panel.indexOf("id: settingsPane"), panel.indexOf("PluginDetails {"))
-  assert.match(pane, /anchors\.fill: parent\s*z: 10\s*visible: root\.settingsOpen/)
-  assert.match(pane, /color: Color\.popups\.background/)
-  assert.match(pane, /MouseArea \{ anchors\.fill: parent \}/)
-  assert.match(pane, /onVisibleChanged: \{\s*if \(visible\) forceActiveFocus\(\)\s*else root\.returnFocusToList\(\)\s*\}/)
-  assert.match(pane, /if \(event\.key !== Qt\.Key_Escape && event\.key !== Qt\.Key_Backspace\) return\s*root\.closeSettings\(\)\s*event\.accepted = true/)
-  assert.match(pane, /id: settingsBackButton[\s\S]*?text: "Back"[\s\S]*?onClicked: root\.arrangeOpen \? root\.closeArrange\(\) : root\.closeSettings\(\)/)
-  assert.match(pane, /text: "Settings"/)
-  assert.match(pane, /text: "Allow updating unverified plugins"/)
-  assert.match(pane, /Off: only marketplace-verified snapshots are offered\. /)
-  assert.match(pane, /pinned to the exact commit the check observed, after a confirmation\./)
-  assert.match(pane, /id: unverifiedSwitch[\s\S]*?checked: store\.allowUnverifiedUpdates[\s\S]*?onToggled: store\.setAllowUnverifiedUpdates\(!store\.allowUnverifiedUpdates\)/)
-  assert.match(pane, /text: "Allow installing unverified plugins"/)
-  assert.match(pane, /id: unverifiedInstallSwitch[\s\S]*?checked: store\.allowUnverifiedInstalls[\s\S]*?onToggled: store\.setAllowUnverifiedInstalls\(!store\.allowUnverifiedInstalls\)/)
-  assert.ok(pane.indexOf("id: unverifiedSwitch") < pane.indexOf("id: unverifiedInstallSwitch"))
-  // Every Text on the pane is plain text; the copy is the expanded window's.
-  const texts = pane.split(/\bText \{/).slice(1)
-  assert.ok(texts.length >= 3)
-  for (const text of texts) assert.match(text.slice(0, 200), /textFormat: Text\.PlainText/)
-  const caption = /text: "Off: only marketplace-verified snapshots are offered\. "\s*\+ "([^"]+)"/
-  assert.equal(pane.match(caption)[1], expanded.match(caption)[1], "same caption in both windows")
-  const installCaption = /text: "Off: only listings with a marketplace-verified snapshot can be installed\. "\s*\+ "([^"]+)"/
-  assert.equal(pane.match(installCaption)[1], expanded.match(installCaption)[1],
-    "same install caption in both windows")
-
-  // While the pane is up the key catcher hands keys to it, the list never
-  // steals focus back, a tab switch drops it, and closing the popup resets it.
-  assert.match(panel, /blocked: root\.confirming \|\| root\.placing \|\| root\.detailsOpen \|\| root\.settingsOpen/)
-  const restore = panel.slice(panel.indexOf("function returnFocusToList()"), panel.indexOf("\n  }", panel.indexOf("function returnFocusToList()")))
-  assert.match(restore, /=== "list"\s*&& !root\.settingsOpen/)
-  const flip = panel.slice(panel.indexOf("function switchTab(tab)"), panel.indexOf("function applyPendingTab()"))
-  assert.match(flip, /closeDetails\(\)\s*closeSettings\(\)/)
-  assert.match(panel, /if \(!opened\) \{ placementRefreshStarted = false; detailsEntry = null; settingsOpen = false; arrangeOpen = false; barBoard\.cancelDrag\(\); revokeReleaseNavigation\(\); return \}/)
-})
-
-test("the expanded panel opens as a tiled window when openAs says so, and as the overlay otherwise", () => {
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-
-  // The store owns the value and writes it through the same guarded path as
-  // the switches, as one of three modes rather than a boolean.
-  assert.match(store, /readonly property string openAs: Model\.openAs\(selfSettings\)/)
-  assert.match(store, /function setOpenAs\(mode\) \{[\s\S]*?openAsConfig\.reload\(\)[\s\S]*?var next = Model\.withOpenAs\(current, mode\)[\s\S]*?shell\.updateEntryInline\(selfId, next\)/)
-  const openAsView = store.slice(store.indexOf("id: openAsConfig"), store.indexOf("id: openAsConfig") + 300)
-  assert.match(openAsView, /blockAllReads: true/)
-  assert.doesNotMatch(openAsView, /watchChanges/)
-  assert.doesNotMatch(store, /setTiledExpandedPanel/)
-
-  // The window type cannot wait for that store: the panel is built again on
-  // every summon and its first load is a second away, so open() reads the file
-  // itself, blocking, once, and holds the answer for the life of that open.
-  assert.match(expanded, /^import Quickshell\.Io$/m)
-  assert.match(expanded, /property bool tiled: false/)
-  const view = expanded.slice(expanded.indexOf("FileView {"), expanded.indexOf("FileView {") + 400)
-  assert.match(view, /id: configView/)
-  assert.match(view, /path: Quickshell\.env\("HOME"\) \+ "\/\.config\/omarchy\/shell\.json"/)
-  assert.match(view, /blockAllReads: true/)
-  // Every read of the setting waits for the file as it is now: blockLoading
-  // waits only for the first load and then answers one click behind.
-  for (const [surface, source] of [["Expanded.qml", expanded], ["Panel.qml", panel], ["PluginStore.qml", store]])
-    assert.doesNotMatch(source, /blockLoading: true/, surface)
-  assert.match(view, /printErrors: false/)
-  // A mode in the summon (from a button that has just written it) wins over
-  // the file, which the write may not have reached yet.
-  assert.match(expanded, /var mode = Model\.expandedModeFromPayload\(payloadJson\)/)
-  assert.match(expanded, /mode = Model\.openAs\(Model\.parseSelfSettings\(\s*Model\.selfEntryFromShellConfig\(configView\.text\(\), pluginId\)\)\)/)
-  const open = expanded.slice(expanded.indexOf("function open(payloadJson)"), expanded.indexOf("function loadEverything()"))
-  assert.ok(open.indexOf('tiled = mode === "window"') < open.indexOf("opened = true"), "decided before the window shows")
-  // Summoned again for the window while it is one, it goes to that window
-  // instead; asked for the overlay, it moves host like any open.
-  assert.match(open, /if \(opened && tiled && mode === "window"\) \{\s*focusTiledWindow\(\)\s*return\s*\}/)
-  assert.ok(open.indexOf("var mode =") < open.indexOf("focusTiledWindow()"), "the mode is known before it decides")
-
-  // Two hosts: the overlay keeps its scrim, the tiled window has no outside
-  // to click, and Hyprland's own close goes back through dismiss().
-  const overlay = expanded.slice(expanded.indexOf("PanelWindow {"), expanded.indexOf("FloatingWindow {"))
-  assert.match(overlay, /id: window\s*visible: root\.opened && !root\.tiled/)
-  assert.match(overlay, /color: Color\.menu\.scrim[\s\S]*?onClicked: root\.dismiss\(\)/)
-  const tiled = expanded.slice(expanded.indexOf("FloatingWindow {"), expanded.indexOf("BorderSurface {"))
-  assert.match(tiled, /id: tiledWindow/)
-  assert.match(tiled, /visible: root\.opened && root\.tiled/)
-  assert.match(tiled, /title: "Plugin Manager"/)
-  assert.match(tiled, /color: Color\.menu\.background/)
-  assert.match(tiled, /minimumSize: Qt\.size\(640, 480\)/)
-  assert.doesNotMatch(tiled, /scrim/)
-  assert.match(tiled, /onClosed: root\.dismiss\(\)/)
-  assert.match(expanded, /tiledWindow\.visible = Qt\.binding\(function\(\) \{ return root\.opened && root\.tiled \}\)/)
-
-  // One card, hosted by whichever window is up: reparented, never duplicated,
-  // so every root.* to keyCatcher, searchField and listScroll still resolves.
-  assert.equal(expanded.split("BorderSurface {").length - 1, 1, "one card, not one per window")
-  assert.match(expanded, /readonly property Item cardHost: tiled \? tiledWindow\.contentItem : window\.contentItem/)
-  const card = expanded.slice(expanded.indexOf("BorderSurface {"), expanded.indexOf("id: keyCatcher"))
-  assert.match(card, /parent: root\.cardHost/)
-  assert.match(card, /width: root\.tiled \? root\.cardHost\.width\s*: Math\.min\(Style\.space\(1180\), window\.width - Style\.gapsOut \* 4\)/)
-  assert.match(card, /height: root\.tiled \? root\.cardHost\.height\s*: Math\.min\(Style\.space\(820\), window\.height - Style\.gapsOut \* 4\)/)
-  assert.match(card, /radius: root\.tiled \? 0 : Style\.cornerRadius/)
-  assert.match(card, /borderSpec: root\.tiled \? Border\.none\(\)/)
-
-  // No switch for it in either settings pane: the corner button is the way
-  // between popup and full size, in the same slot on every surface, and the
-  // button beside it goes straight to the other forms.
-  for (const [surface, source] of [["Expanded.qml", expanded], ["Panel.qml", panel]]) {
-    const pane = source.slice(source.indexOf("id: settingsPane"), source.indexOf("id: restartShellButton"))
-    assert.doesNotMatch(pane, /Open expanded panel as a tiled window/, surface)
-    assert.doesNotMatch(pane, /tiledPanelSwitch/, surface)
-  }
-  assert.match(panel, /id: expandButton[\s\S]*?onClicked: root\.advanceOpenAs\(\)/)
-  // A setting that could not be written (the store busy, say) switches
-  // nothing, so the form on screen and the saved one never part.
-  assert.match(panel, /function advanceOpenAs\(\) \{\s*if \(!store\.setOpenAs\("overlay"\)\) return\s*expand\("", "overlay"\)\s*\}/)
-  assert.match(expanded, /function backToPopup\(\) \{\s*if \(barMovePending \|\| !store\.setOpenAs\("popup"\)\) return\s*collapse\(\)\s*\}/)
-  assert.match(panel, /function openAsWindow\(\) \{\s*if \(!store\.setOpenAs\("window"\)\) return\s*expand\("", "window"\)\s*\}/)
-  assert.match(expanded, /function switchFullForm\(\) \{\s*if \(barMovePending \|\| !store\.setOpenAs\(tiled \? "overlay" : "window"\)\) return\s*tiled = !tiled\s*showRetainedWindow\(\)\s*\}/)
-  assert.doesNotMatch(expanded, /advanceOpenAs/)
-  for (const id of ["collapseButton", "formButton"]) {
-    const button = expanded.slice(expanded.indexOf("id: " + id), expanded.indexOf("onClicked", expanded.indexOf("id: " + id)))
-    assert.match(button, /enabled: !root\.barMovePending && !root\.busy/, id)
-  }
-  // Every form reaches the other two directly: the popup has a window button
-  // beside its expand, and the full-size forms swap with each other.
-  const windowButton = panel.slice(panel.indexOf("id: windowButton"), panel.indexOf("id: expandButton"))
-  assert.match(windowButton, /iconText: "\\uf2d0"/)
-  assert.match(windowButton, /tooltipText: "Open as a window"/)
-  assert.match(windowButton, /enabled: !root\.busy/)
-  assert.match(windowButton, /onClicked: root\.openAsWindow\(\)/)
-  assert.match(panel, /id: settingsButton\s*anchors\.right: windowButton\.left/)
-  const form = expanded.slice(expanded.indexOf("id: formButton"), expanded.indexOf("id: collapseButton"))
-  assert.doesNotMatch(form, /visible:/)
-  assert.match(form, /iconText: root\.tiled \? "󰊓" : "\\uf2d0"/)
-  assert.match(form, /tooltipText: root\.tiled \? "Open as an overlay" : "Open as a window"/)
-  assert.match(form, /onClicked: root\.switchFullForm\(\)/)
-  assert.match(expanded, /id: settingsButton[\s\S]*?anchors\.right: formButton\.left/)
-  // Focus falls back to the older dispatcher, as omarchy-launch-or-focus does.
-  const focus = expanded.slice(expanded.indexOf("function focusTiledWindow()"), expanded.indexOf("// ---- Shared state"))
-  assert.match(focus, /hl\.dsp\.focus\(\{ window = [^]*?\|\| hyprctl dispatch focuswindow "address:\$a"/)
-
-  const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8")
-  assert.doesNotMatch(readme, /popup → overlay → window/)
-  assert.match(readme, /direct way to the other two/)
-  assert.match(readme, /windowrule = float, title:\^\(Plugin Manager\)\$/)
 })
 
 // ---- Moving a bar widget between sections ---------------------------------
@@ -6222,36 +3217,6 @@ test("the store moves a widget through the placement question or straight from a
   assert.doesNotMatch(store, /runAction\("move"/)
 })
 
-test("the details pane retains its segmented movement control", () => {
-  const details = readFileSync(new URL("../InstalledDetails.qml", import.meta.url), "utf8")
-  assert.match(details, /signal moveRequested\(string section\)/)
-  assert.match(details, /readonly property bool canMove: Model\.canMove\(row\)/)
-  const group = details.slice(details.indexOf("id: sectionGroup") - 200, details.indexOf("id: sectionGroup") + 700)
-  assert.match(group, /visible: root\.canMove/)
-  assert.match(group, /ButtonGroup \{\s*id: sectionGroup/)
-  assert.match(group, /options: Model\.placementOptions\(\)/)
-  assert.match(group, /value: root\.row \? String\(root\.row\.barSection \|\| ""\) : ""/)
-  assert.match(group, /focusable: false/)
-  assert.match(group, /enabled: root\.actionsEnabled/)
-  assert.match(group, /onChanged: function\(value\) \{\s*if \(root\.row && value !== String\(root\.row\.barSection \|\| ""\)\) root\.moveRequested\(value\)/)
-  // Before Update in the toolbar, after the on/off switch.
-  assert.ok(details.indexOf("id: enabledSwitch") < details.indexOf("id: sectionGroup"), "after the switch")
-  assert.ok(details.indexOf("id: sectionGroup") < details.indexOf("id: updateButton"), "before update")
-
-  // The compact row has no action cluster, so it gets no icon.
-  const compact = readFileSync(new URL("../InstalledListRow.qml", import.meta.url), "utf8")
-  assert.doesNotMatch(compact, /moveRequested/)
-
-  // The expanded details pane still names the section directly.
-  const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
-  assert.match(expanded, /onMoveRequested: function\(section\) \{ store\.startMoveTo\(root\.selectedRow, section\) \}/)
-
-  const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8")
-  assert.match(readme, /- \*\*Move\*\* — for a bar widget that is on the bar, changes which section it/)
-  assert.match(readme, /Expanded still uses `omarchy plugin enable <id> <section>`/)
-  assert.match(readme, /Nothing edits `shell\.json` directly/)
-})
-
 test("popup Installed rows omit the move control and keep their other actions", () => {
   const row = readFileSync(new URL("../PluginRow.qml", import.meta.url), "utf8")
   assert.doesNotMatch(row, /\b(?:moveButton|moveRequested|canMove)\b|Move in the bar|󰓡/)
@@ -6280,44 +3245,305 @@ test("popup positioning stays in Arrange without dead Installed row wiring", () 
   assert.match(panel, /opened: root\.placing\s*message: root\.placementMessage\s*choices: root\.placementChoices/)
 })
 
-test("the popup row hides its update button unless an update is installable or running", () => {
-  // PanelActionButton disables its mouse area with the button, so a disabled
-  // update button shows no tooltip and says nothing; the row's status line
-  // carries the reason. The expanded details pane keeps its disabled button,
-  // whose Button component does show the tooltip.
-  const row = readFileSync(new URL("../PluginRow.qml", import.meta.url), "utf8")
-  const button = row.slice(row.indexOf("id: updateButton"), row.indexOf("id: updateButton") + 900)
-  assert.match(button, /visible: root\.updating \|\| \(!!root\.row && root\.row\.updatable === true\s*&& \(root\.row\.pinnedEligible === true \|\| root\.row\.unverifiedEligible === true\)\)/)
-  const details = readFileSync(new URL("../InstalledDetails.qml", import.meta.url), "utf8")
-  const detailsButton = details.slice(details.indexOf("id: updateButton"), details.indexOf("id: updateButton") + 400)
-  assert.match(detailsButton, /visible: root\.row \? root\.row\.updatable === true : false/)
+test("the store owns the pending confirmation flow", () => {
+  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
+  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
+
+  // The surface tells the store who it is: disabling the surface's own plugin
+  // is the one disable that needs a warning.
+  assert.match(store, /property string selfId: ""/)
+  assert.match(store, /if \(row\.id === selfId\) \{/)
+  assert.match(store, /"omarchy plugin enable " \+ selfId \+ " right"/)
+  for (const name of ["pendingKind", "pendingId", "pendingLabel"])
+    assert.match(store, new RegExp(`property string ${name}: ""`), name)
+  assert.match(store, /function cancelPending\(\) \{[\s\S]*?pendingSection = ""/)
+  // Only a marketplace-verified listing is installable at all, so there is no
+  // "is it verified" bit left to carry around.
+  assert.doesNotMatch(store, /pendingVerified\b/)
+  // The question, the button and the busy state all call it an install; the
+  // old "add" kind is gone, so no message helper keeps a branch for it.
+  assert.doesNotMatch(store, /pendingKind === "add"|pendingKind = "add"/)
+  for (const surface of ["Panel.qml"]) {
+    const source = readFileSync(new URL("../" + surface, import.meta.url), "utf8")
+    assert.match(source, /confirmText: root\.pendingKind === "cleanup" \? "Delete" : Model\.actionVerb\(root\.pendingKind\) === "Action"\s*\? "Confirm"\s*: Model\.actionVerb\(root\.pendingKind\)/, surface)
+  }
+  for (const fn of ["actionVerb", "actionGerund", "successMessage"])
+    assert.equal(Model[fn]("add", "x"), Model[fn]("nonsense", "x"), fn + " keeps no dead add branch")
+  assert.match(store, /readonly property bool confirming: pendingKind !== "" && pendingKind !== "place"/)
+  assert.match(store, /readonly property bool placing: pendingKind === "place"/)
+  assert.match(store, /readonly property var placementChoices: pendingKind === "move"\s*\? Model\.moveOptions\(pendingSection\) : Model\.placementOptions\(\)/)
+  assert.match(store, /readonly property string placementMessage:/)
+  assert.match(store, /readonly property string confirmMessage: \{/)
+  for (const fn of [
+    "askRemove(row)", "askEnable(row)", "askDisable(row)",
+    "confirmPlacement(section)", "cancelPending()", "confirmPending()"
+  ]) assert.match(store, new RegExp(`function ${fn.replace(/[()]/g, "\\$&")} \\{`), fn)
+  // Asking returns whether the request was taken, so a surface can do its
+  // own bookkeeping (close details, retire a probe) only for real requests.
+  assert.match(store, /function askRemove\(row\) \{\s*if \(!row \|\| !row\.removable \|\| busy\) return false/)
+  // Enable without a placement question and disable of anything but the
+  // surface itself are direct actions, exactly as before.
+  assert.match(store, /function askEnable\(row\) \{[\s\S]*?if \(!Model\.needsPlacement\(row\)\) \{[\s\S]*?startEnable\(row, ""\)\s*return true/)
+  assert.match(store, /function askDisable\(row\) \{[\s\S]*?startDisable\(row\)\s*return true/)
+  assert.match(store, /runAction\("remove", pendingLabel, \["omarchy", "plugin", "remove", pendingId, "--yes"\]\)/)
+
+  // The popup keeps its bindings through aliases and thin wrappers.
+  assert.match(panel, /PluginStore \{\s*id: store\s*externalBusy: !!root\.popupMoveOwner && root\.popupMoveOwner\.busy\s*selfId: root\.moduleName(?:\s*\/\/[^\n]*)*\s*shell: root\.bar \? root\.bar\.shell : null\s*\}/)
+  for (const name of ["pendingKind", "pendingId", "pendingLabel"])
+    assert.match(panel, new RegExp(`property alias ${name}: store\\.${name}\\b`), name)
+  for (const name of ["confirming", "placing", "placementChoices", "placementMessage", "confirmMessage"])
+    assert.match(panel, new RegExp(`readonly property alias ${name}: store\\.${name}\\b`), name)
+  assert.match(panel, /function askRemove\(row\) \{\s*if \(!store\.askRemove\(row\)\) return\s*revokeReleaseNavigation\(\)\s*\}/)
+  assert.match(panel, /function askEnable\(row\) \{\s*if \(!store\.askEnable\(row\)\) return\s*revokeReleaseNavigation\(\)\s*\}/)
+  assert.match(panel, /function askDisable\(row\) \{\s*if \(!store\.askDisable\(row\)\) return\s*revokeReleaseNavigation\(\)\s*\}/)
+  assert.match(panel, /function confirmPlacement\(section\) \{\s*if \(pendingKind !== "move"\) \{\s*store\.confirmPlacement\(section\)/)
+  assert.match(panel, /function cancelPending\(\) \{\s*store\.cancelPending\(\)\s*\}/)
+  assert.match(panel, /function confirmPending\(\) \{\s*store\.confirmPending\(\)\s*\}/)
+  assert.doesNotMatch(panel, /property string pendingKind: ""/)
 })
 
-test("openAs reads one of three modes, and an old tiled switch as window", () => {
-  for (const mode of ["popup", "overlay", "window"])
-    assert.equal(Model.openAs({ openAs: mode }), mode)
-  assert.equal(Model.openAs({}), "popup")
-  assert.equal(Model.openAs(null), "popup")
-  assert.equal(Model.openAs({ openAs: "tiled" }), "popup", "unknown values fall back")
-  assert.equal(Model.openAs({ openAs: true }), "popup")
-  assert.equal(Model.openAs({ tiledExpandedPanel: true }), "window", "the old switch carries over")
-  assert.equal(Model.openAs({ tiledExpandedPanel: true, openAs: "overlay" }), "overlay", "the new value wins")
-  assert.equal(Model.openAs(Object.create({ openAs: "window" })), "popup", "own key only")
+test("bulk update confirms once and delegates every bound verified or unverified target", () => {
+  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
+  assert.match(store, /property var bulkQueue: \[\]/)
+  assert.match(store, /property var bulkResults: \[\]/)
+  assert.match(store, /property bool bulkActive: false/)
+  assert.match(store, /readonly property int bulkUpdatableCount: Model\.bulkUpdateCandidates\(rows\)\.length/)
+  assert.match(store, /if \(pendingKind === "bulk-update"\)\s*return Model\.bulkUpdateConfirmMessage\(bulkQueue\)/)
+  assert.match(store, /if \(!bulkActive\) bulkQueue = \[\]/)
+  for (const fn of ["bulkUpdatables()", "askBulkUpdate()", "startNextBulk()", "runBulkUpdates(requests)", "finishBulkProcess()", "finishBulk()"])
+    assert.match(store, new RegExp(`function ${fn.replace(/[()]/g, "\\$&").replace(/,/g, ",")} \\{`), fn)
+  // One bulk confirmation covers the unreviewed tips: no per-row dialog later.
+  assert.match(store, /if \(pendingKind === "bulk-update"\) \{[\s\S]*?var queue = bulkQueue\.slice\(\)/)
+  assert.match(store, /JSON\.stringify\(\{ schemaVersion: 1, bulkUpdates: requests \}\)/)
+  assert.match(store, /function finishBulkProcess\(\)[\s\S]*?outcomes\[update\.id\] = update/)
+  for (const [surface, precedingId] of [["Panel.qml", "settingsButton"]]) {
+    const source = readFileSync(new URL("../" + surface, import.meta.url), "utf8")
+    assert.match(source, /readonly property alias bulkUpdatableCount: store\.bulkUpdatableCount/, surface)
+    const button = source.slice(source.indexOf("id: updateAllButton"), source.indexOf("id: updateAllButton") + 700)
+    assert.doesNotMatch(button, /visible:/, surface)
+    assert.match(button, /iconText: "󰑐"/, surface)
+    assert.match(button, /tooltipText: "Update all"/, surface)
+    assert.match(button, /enabled: root\.updateActionsEnabled/, surface)
+    assert.match(button, /opacity: root\.bulkUpdatableCount > 0 && enabled \? 1 : 0\.4/, surface)
+    assert.match(button, /onClicked: (root\.)?(askBulkUpdate\(\)|store\.askBulkUpdate\(\))/, surface)
+    assert.ok(source.indexOf(`id: ${precedingId}`) < source.indexOf("id: updateAllButton"), surface)
+    assert.ok(source.indexOf("id: updateAllButton") < source.indexOf("id: refreshButton"), surface)
+    const preceding = source.slice(source.indexOf(`id: ${precedingId}`), source.indexOf(`id: ${precedingId}`) + 500)
+    assert.match(preceding, /anchors\.right: updateAllButton\.left/, surface)
+    assert.match(button, /anchors\.right: refreshButton\.left/, surface)
+  }
+
+  const model = Function(source + `; return { pinnedRequest, unverifiedRequest, findRow, shortSha,
+    bulkUpdateCandidates, bulkUpdateConfirmMessage, bulkUpdateSummary,
+    applyUpdateReport, applyPinnedUpdates }`)()
+  const target = "b".repeat(40), base = "a".repeat(40), tip = "c".repeat(40)
+  const origin = "https://github.com/acme/plugin"
+  const rows = () => ([
+    { id: "acme.verified", name: "Verified", headSha: base, remoteSha: base, verifiedTargetSha: target,
+      gitManaged: true, pinnedEligible: true, updateOrigin: origin },
+    { id: "acme.tip", name: "Tip", headSha: base, remoteSha: tip, verifiedTargetSha: "",
+      gitManaged: true, unverifiedEligible: true, updateOrigin: origin },
+  ])
+  const catalog = [{ id: "acme.verified",
+    updateSnapshot: { id: "acme.verified", repository: origin, verifiedCommit: target } }]
+  const begin = (overrides = {}) => {
+    const pinnedProc = { running: false }, actionProc = { running: false }, summaryProc = { running: false }
+    const state = { rows: rows(), catalog, catalogLoaded: true, busy: false,
+      busyKind: "", busyId: "", busyRowId: "", pinnedOutput: "", pinnedExited: false,
+      pinnedOverflow: false, pinnedHelperPath: "/helpers/pinned_update.py", allowUnverifiedUpdates: true,
+      pendingKind: "", pendingId: "", pendingLabel: "", pendingUrl: "", pendingUnverifiedSha: "",
+      pendingVerifiedCommit: "", pendingBranch: "", pendingSection: "", pendingPlacementNeeded: false,
+      pendingUpdateReport: "", bulkQueue: [], bulkResults: [], bulkPendingRequests: [], bulkActive: false, finished: [], detached: [],
+      summaryOutput: "", summaryOverflow: false, summaryDrainOnly: false, lastBulkSummaryNonce: "",
+      setStatus(text, isError) { this.status = { text, isError: isError === true } },
+      loadProcessSettled: () => true, updateProcessSettled: () => true,
+      requestFreshUpdateCycle() { this.freshCycle = true }, refreshUpdateData() { this.updateRefresh = true },
+      actionFinished(kind, label, code) { this.finished.push([kind, label, code]) },
+      ...overrides }
+    state.root = state
+    const names = ["updateRequest", "canStartUpdate", "bulkUpdatables", "askBulkUpdate",
+      "cancelPending", "confirmPending", "startNextBulk", "runBulkUpdates", "finishBulk",
+      "finishBulkProcess", "finishPinnedUpdate", "runUpdate", "consumeBulkSummary", "finishBulkSummary"]
+    Object.assign(state, Function("Model", "state", "pinnedProc", "actionProc", "summaryProc", "Quickshell", `with (state) {
+      ${names.map(name => qmlFunction(store, name)).join("\n")}; return {${names.join(",")}}
+    }`)(model, state, pinnedProc, actionProc, summaryProc, {
+      env: () => "", execDetached(command) { state.detached.push(command) }
+    }))
+    state.pinnedProc = pinnedProc
+    state.summaryProc = summaryProc
+    return state
+  }
+  const land = (state, result) => {
+    state.pinnedProc.running = false
+    state.pinnedOutput = JSON.stringify(result)
+    state.pinnedExited = true
+    state.finishPinnedUpdate()
+  }
+
+  const state = begin()
+  assert.equal(state.askBulkUpdate(), true)
+  assert.equal(state.pendingKind, "bulk-update")
+  assert.match(model.bulkUpdateConfirmMessage(state.bulkQueue), /Verified — verified snapshot bbbbbbb/)
+  assert.match(model.bulkUpdateConfirmMessage(state.bulkQueue), /Tip — unreviewed commit ccccccc/)
+  state.confirmPending()
+  assert.equal(state.bulkActive, true)
+  const batch = JSON.parse(state.pinnedProc.command.at(-1))
+  assert.deepEqual(batch.bulkUpdates.map(request => request.id), ["acme.verified", "acme.tip"])
+  assert.equal(batch.bulkUpdates[1].unverifiedCommit, tip,
+    "the setting allows the unverified target in the same confirmed batch")
+  assert.equal(state.busyKind, "bulk-update")
+  land(state, { status: "bulk complete", nonce: "1-1", updates: [
+    { id: "acme.verified", status: "updated", reason: "" },
+    { id: "acme.tip", status: "updated", reason: "" },
+  ] })
+  assert.equal(state.bulkActive, false)
+  assert.deepEqual(state.finished, [["bulk-update", "Update all", 0]])
+  assert.equal(state.status.text, "Updated 2, skipped 0")
+  assert.equal(state.status.isError, false)
+  assert.equal(state.detached.length, 0, "the detached helper owns the final shell rescan")
+  assert.equal(state.summaryProc.running, true, "the live panel consumes the updated summary")
+  assert.deepEqual(state.summaryProc.command.slice(-2), ["--drain-bulk-summary", "1-1"])
+  state.summaryOutput = JSON.stringify({ status: "bulk complete", nonce: "1-1",
+    updates: [{ id: "acme.verified", status: "updated" }], rescan: "complete" })
+  state.finishBulkSummary()
+  assert.equal(state.finished.length, 1, "the live result nonce suppresses summary replay")
+
+  const completedStatus = state.status
+  state.summaryOutput = JSON.stringify({ status: "bulk complete", nonce: "2-1",
+    updates: [{ id: "acme.verified", status: "unchanged; update refused",
+      reason: "Another pinned update is running" }], rescan: "not needed" })
+  state.finishBulkSummary()
+  assert.equal(state.status, completedStatus, "a live drain must not present another batch's report")
+  assert.equal(state.finished.length, 1)
+  assert.equal(state.lastBulkSummaryNonce, "1-1")
+  state.summaryProc.running = false
+  state.consumeBulkSummary()
+  assert.equal(state.summaryProc.command.at(-1), "--consume-bulk-summary")
+  state.summaryOutput = JSON.stringify({ status: "bulk complete", nonce: "3-1",
+    updates: [{ id: "acme.verified", status: "updated" }], rescan: "complete" })
+  state.finishBulkSummary()
+  assert.equal(state.finished.length, 2, "recovery still reports a legitimate unseen batch")
+  assert.equal(state.lastBulkSummaryNonce, "3-1")
+
+  // A moved tip skips with a reason instead of installing something else.
+  const moved = begin()
+  assert.equal(moved.askBulkUpdate(), true)
+  moved.rows[1].remoteSha = "d".repeat(40)
+  moved.confirmPending()
+  land(moved, { status: "bulk complete", updates: [
+    { id: "acme.verified", status: "updated", reason: "" },
+  ] })
+  assert.deepEqual(moved.bulkResults, [{ id: "acme.verified", name: "Verified", ok: true, reason: "" },
+    { id: "acme.tip", name: "Tip", ok: false, reason: "the upstream tip moved" }])
+  assert.equal(moved.status.text, "Updated 1, skipped 1 (Tip: the upstream tip moved)")
+  assert.equal(moved.detached.length, 0, "the helper owns the rescan even after local skips")
+
+  const uncertain = begin()
+  assert.equal(uncertain.askBulkUpdate(), true)
+  uncertain.rows[1].remoteSha = "d".repeat(40)
+  uncertain.confirmPending()
+  land(uncertain, { status: "outcome unknown; inspect retained transactions" })
+  assert.equal(uncertain.detached.length, 0)
+  assert.equal(uncertain.summaryProc.running, false, "an unknown outcome cannot claim another batch's summary")
+
+  const rescanFailure = begin()
+  assert.equal(rescanFailure.askBulkUpdate(), true)
+  rescanFailure.confirmPending()
+  land(rescanFailure, { status: "bulk complete", nonce: "1-2", rescan: "failed", updates: [
+    { id: "acme.verified", status: "updated", reason: "" },
+    { id: "acme.tip", status: "updated", reason: "" },
+  ] })
+  assert.equal(rescanFailure.status.text, "Updated 2, skipped 0; shell did not reload the updated plugins")
+  assert.equal(rescanFailure.status.isError, true)
+  assert.deepEqual(rescanFailure.finished, [["bulk-update", "Update all", 1]])
+  assert.equal(rescanFailure.rows[0].remoteSha, base, "a failed shell rescan keeps pending update evidence")
+  assert.equal(rescanFailure.freshCycle, undefined)
+  assert.equal(rescanFailure.updateRefresh, undefined)
+  assert.equal(rescanFailure.summaryProc.running, true, "a failed rescan still consumes the live summary")
+
+  const updateReloadFailure = begin()
+  updateReloadFailure.askBulkUpdate()
+  updateReloadFailure.confirmPending()
+  land(updateReloadFailure, { status: "bulk complete", updates: [
+    { id: "acme.verified", status: "updated; reload failed", reason: "Shell rescan refused" },
+    { id: "acme.tip", status: "updated", reason: "" },
+  ] })
+  assert.deepEqual(updateReloadFailure.bulkResults, [
+    { id: "acme.verified", name: "Verified", ok: true, reason: "" },
+    { id: "acme.tip", name: "Tip", ok: true, reason: "" },
+  ])
+  assert.equal(updateReloadFailure.status.text, "Updated 2, skipped 0")
+
+  const rejected = begin()
+  rejected.askBulkUpdate()
+  rejected.confirmPending()
+  land(rejected, { status: "unchanged; request refused", reason: "Invalid bulk update request" })
+  assert.equal(rejected.status.text,
+    "Updated 0, skipped 2 (Verified: Invalid bulk update request; Tip: Invalid bulk update request)")
+
+  const prototypeId = begin({ bulkQueue: [{ id: "toString", name: "Special", kind: "verified", targetSha: target }],
+    bulkPendingRequests: [{ id: "toString" }], bulkActive: true,
+    pinnedOutput: JSON.stringify({ status: "bulk complete", updates: [
+      { id: "toString", status: "updated", reason: "" },
+    ] }) })
+  prototypeId.finishBulkProcess()
+  assert.deepEqual(prototypeId.bulkResults, [{ id: "toString", name: "Special", ok: true, reason: "" }])
+
+  // A capacity refusal stops the run: the rest are skipped, not retried.
+  const limited = begin()
+  assert.equal(limited.askBulkUpdate(), true)
+  limited.confirmPending()
+  land(limited, { status: "bulk complete", nonce: "1-3", updates: [
+    { id: "acme.verified", status: "unchanged; update refused", reason: "Transaction limit: review x" },
+    { id: "acme.tip", status: "unchanged; update refused", reason: "Stopped: transaction limit" },
+  ] })
+  assert.equal(limited.bulkActive, false)
+  assert.equal(limited.status.text,
+    "Updated 0, skipped 2 (Verified: Transaction limit: review x; Tip: Stopped: transaction limit)")
+  assert.equal(limited.detached.length, 0, "a run with no successful changes does not rescan the shell")
+  assert.equal(limited.summaryProc.running, true, "an all-refused live batch consumes its summary")
 })
 
-test("withOpenAs stores the mode and drops the switch it replaces", () => {
-  const entry = { id: "manager", tiledExpandedPanel: true, allowUnverifiedUpdates: true }
-  assert.deepEqual(Model.withOpenAs(entry, "overlay"), { allowUnverifiedUpdates: true, openAs: "overlay" })
-  assert.deepEqual(Model.withOpenAs({}, "bogus"), { openAs: "popup" })
-  assert.equal(entry.tiledExpandedPanel, true, "the loaded entry is not mutated")
-  assert.equal(Model.openAs(Model.parseSelfSettings(JSON.stringify(Model.withOpenAs(entry, "window")))), "window")
+test("the store reloads when shell.json changes under it", () => {
+  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
+  // Enable and disable are detached commands that rewrite shell.json. The bar
+  // rebuilds the popup with its new state; the expanded panel is not a bar
+  // widget and would keep showing the old rows, so the store watches the
+  // file and reloads once the write has settled.
+  // Opt-in: the popup is rebuilt by the bar on a real layout change, and
+  // three per-monitor popups reloading at once would be pure waste.
+  assert.match(store, /property bool watchConfig: false/)
+  assert.match(store, /FileView \{\s*id: shellConfig\s*path: root\.watchConfig \? Quickshell\.env\("HOME"\) \+ "\/\.config\/omarchy\/shell\.json" : ""\s*preload: false\s*blockAllReads: true\s*watchChanges: root\.watchConfig\s*printErrors: false\s*onFileChanged: if \(root\.watchConfig\) configReload\.restart\(\)/)
+  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
+  assert.doesNotMatch(panel, /watchConfig: true/)
+  assert.match(store, /Timer \{\s*id: configReload\s*interval: 1000\s*repeat: false\s*onTriggered: if \(root\.watchConfig\) root\.reload\(\)/)
 })
 
-test("expandedModeFromPayload accepts only overlay or window", () => {
-  assert.equal(Model.expandedModeFromPayload('{"mode":"window"}'), "window")
-  assert.equal(Model.expandedModeFromPayload('{"mode":"overlay","tab":"browse"}'), "overlay")
-  assert.equal(Model.expandedModeFromPayload('{"mode":"popup"}'), "")
-  assert.equal(Model.expandedModeFromPayload('{}'), "")
-  assert.equal(Model.expandedModeFromPayload("not json"), "")
-  assert.equal(Model.expandedModeFromPayload('["window"]'), "")
+test("buildCatalog fails closed on hostile field values instead of throwing", () => {
+  for (const field of ["name", "repo", "id"]) {
+    const plugin = { id: "a", name: "A", repo: "https://github.com/acme/a" }
+    plugin[field] = { toString: 1 }
+    const built = Model.buildCatalog(JSON.stringify({ plugins: [plugin] }))
+    assert.equal(built.entries, null, field)
+    assert.equal(built.error, "Could not read the plugin catalog", field)
+  }
+})
+
+test("an update snapshot exists only for an unambiguous verified GitHub commit", () => {
+  const base = { id: "acme.fresh", name: "Fresh", repo: "https://github.com/acme/fresh",
+    sourceType: "community", verificationStatus: "unverified" }
+  const snapshot = change => Model.catalogEntries({ plugins: [{ ...base, ...change }] })[0].updateSnapshot
+  assert.equal(snapshot({}), null)
+  for (const change of [{ verificationStatus: "verified" },
+    { verificationStatus: "verified", verificationCommit: "d".repeat(39) },
+    { verificationStatus: "verified", verificationCommit: "d".repeat(40), sourceType: "builtin2" },
+    { verificationStatus: "verified", verificationCommit: "d".repeat(40), repo: "https://evil.test/a/b" }])
+    assert.equal(snapshot(change), null, JSON.stringify(change))
+  assert.deepEqual(snapshot({ verificationStatus: "verified", verificationCommit: "d".repeat(40) }),
+    { id: "acme.fresh", repository: "https://github.com/acme/fresh", verifiedCommit: "d".repeat(40) })
+  const duplicated = Model.catalogEntries({ plugins: [
+    { ...base, verificationStatus: "verified", verificationCommit: "d".repeat(40) },
+    { ...base, verificationStatus: "verified", verificationCommit: "e".repeat(40) }] })
+  assert.equal(duplicated.length, 2)
+  assert.ok(duplicated.every(entry => entry.updateSnapshot === null))
 })

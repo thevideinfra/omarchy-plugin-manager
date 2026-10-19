@@ -2,6 +2,7 @@ import QtQuick
 
 Item {
     id: root
+    required property var look
     // Only Model.barLayoutSnapshot results belong here; never mutate them in place.
     property var snapshot: null
     property var labels: ({}) // Optional ID -> display name; instance identity stays raw.
@@ -102,7 +103,7 @@ Item {
         }
         Caption {
             anchors.fill: parent
-            anchors.leftMargin: root.spacing + 20
+            anchors.leftMargin: root.spacing + root.look.sp(20)
             anchors.rightMargin: root.spacing
             verticalAlignment: Text.AlignVCenter
             text: parent.labelText

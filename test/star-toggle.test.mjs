@@ -35,7 +35,7 @@ function starStore(catalogEntryFound = true) {
       return true
     },
     starToggleFinished: () => { finishCount++ },
-    browseUrlRequested: url => effects.push(["browser", url]),
+    externalUrlRequested: url => effects.push(["browser", url]),
   }
   const names = ["toggleStar", "finishStar", "settleStarStart"]
   Object.assign(state, new Function("state", `with (state) {

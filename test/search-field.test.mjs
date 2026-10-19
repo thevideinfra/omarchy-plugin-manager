@@ -26,7 +26,7 @@ function block(source, from) {
 
 const stripComments = source => source.replace(/\/\/[^\n]*/g, match => " ".repeat(match.length))
 
-for (const [file, button] of [["Panel.qml", "clearFiltersButton"], ["Expanded.qml", "clearSearchButton"]]) {
+for (const [file, button] of [["Panel.qml", "clearFiltersButton"]]) {
   const source = read(file)
   const loaderAt = source.search(/Loader \{\s*id: searchFieldLoader/)
 
@@ -81,20 +81,9 @@ test("Panel.qml: the loader takes the field's geometry and restores and snapshot
   const source = read("Panel.qml")
   const at = source.search(/Loader \{\s*id: searchFieldLoader/)
   const loader = source.slice(at, block(source, at).end)
-  assert.match(loader, /id: searchFieldLoader\s*anchors\.left: parent\.left\s*anchors\.right: clearFiltersButton\.visible \? clearFiltersButton\.left : parent\.right\s*anchors\.rightMargin: clearFiltersButton\.visible \? Style\.space\(4\) : 0\s*y: filterControls\.filterRowHeight \+ Style\.space\(8\)\s*height: filterControls\.controlHeight/)
+  assert.match(loader, /id: searchFieldLoader\s*anchors\.left: parent\.left\s*anchors\.right: clearFiltersButton\.visible \? clearFiltersButton\.left : parent\.right\s*anchors\.rightMargin: clearFiltersButton\.visible \? root\.look\.sp\(4\) : 0\s*y: filterControls\.filterRowHeight \+ root\.look\.sp\(8\)\s*height: filterControls\.controlHeight/)
   assert.match(source, /query: searchText, group: groupFilter/)
   assert.match(source, /searchText = origin\.query\s*flushSearch\(\)/)
-  assert.match(source, /searchText = cleared\.query/)
   assert.match(source, /\|\| root\.searchFieldFocused\n/)
   assert.match(source, /function focusSearchField\(\) \{[\s\S]*?field\.selectAll\(\)\s*\}/)
-})
-
-test("Expanded.qml: the loader takes the field's geometry and the keys ask the false-safe focus", () => {
-  const source = read("Expanded.qml")
-  const at = source.search(/Loader \{\s*id: searchFieldLoader/)
-  const loader = source.slice(at, block(source, at).end)
-  assert.match(loader, /id: searchFieldLoader\s*anchors\.left: parent\.left[\s\S]*?anchors\.right: clearSearchButton\.visible \? clearSearchButton\.left : parent\.right\s*anchors\.rightMargin: clearSearchButton\.visible \? Style\.space\(4\) : 0\s*anchors\.bottom: parent\.bottom\s*height: Style\.spacing\.controlHeight\s*active: root\.opened/)
-  assert.match(source, /anchors\.verticalCenter: searchFieldLoader\.verticalCenter/)
-  assert.equal((source.match(/!root\.searchFieldFocused/g) || []).length, 3)
-  assert.match(source, /text === "\/"\) \{ root\.focusSearchField\(\); event\.accepted = true \}/)
 })

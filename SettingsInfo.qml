@@ -6,6 +6,7 @@ import "Model.js" as Model
 // Presentation only: the owning panel supplies inventory and handles navigation.
 Column {
   id: root
+  required property var look
 
   property string pluginsBasePath: ""
   property string updateDataPath: ""
@@ -17,7 +18,7 @@ Column {
   required property color foreground
   required property color secondaryForeground
   required property string fontFamily
-  readonly property string repositoryUrl: "https://github.com/juancasanueva/omarchy-plugin-manager"
+  readonly property string repositoryUrl: "https://github.com/thevideinfra/omarchy-plugin-manager"
   readonly property string versionLabel: Model.releaseVersionLabel(installedVersion)
 
   // The store supplies validated passwd-home paths, independently of $HOME.
@@ -38,7 +39,7 @@ Column {
   signal repositoryNavigationRequested(string url)
   signal githubNavigationRequested(var candidates, string fallbackUrl)
 
-  spacing: Style.space(14)
+  spacing: root.look.sp(14)
 
   component PathEntry: Column {
     id: entry
@@ -47,7 +48,7 @@ Column {
     required property string pathObjectName
 
     width: parent.width
-    spacing: Style.space(4)
+    spacing: root.look.sp(4)
 
     Text {
       id: pathLabel
@@ -57,7 +58,7 @@ Column {
       text: entry.label
       color: root.secondaryForeground
       font.family: root.fontFamily
-      font.pixelSize: Style.font.body
+      font.pixelSize: root.look.font.body
       wrapMode: Text.WrapAnywhere
     }
 
@@ -67,9 +68,9 @@ Column {
       width: parent.width
       textFormat: Text.PlainText
       text: root.displayPath(entry.path)
-      color: Color.accent
+      color: root.look.accent
       font.family: root.fontFamily
-      font.pixelSize: Style.font.body
+      font.pixelSize: root.look.font.body
       font.bold: true
       wrapMode: Text.WrapAnywhere
     }
@@ -81,7 +82,7 @@ Column {
     text: "Info"
     color: root.foreground
     font.family: root.fontFamily
-    font.pixelSize: Style.font.title
+    font.pixelSize: root.look.font.title
     font.bold: true
     wrapMode: Text.WrapAnywhere
   }
@@ -89,7 +90,7 @@ Column {
   Rectangle {
     id: infoCard
     width: parent.width
-    height: updateInfo.implicitHeight + Style.space(12) * 2
+    height: updateInfo.implicitHeight + root.look.sp(12) * 2
     radius: Style.cornerRadius
     color: Style.normalFill
     border.width: 1
@@ -99,9 +100,9 @@ Column {
       id: updateInfo
       anchors.left: parent.left
       anchors.right: parent.right
-      anchors.margins: Style.space(12)
+      anchors.margins: root.look.sp(12)
       anchors.verticalCenter: parent.verticalCenter
-      spacing: Style.space(10)
+      spacing: root.look.sp(10)
 
       PathEntry {
         pathObjectName: "installationPath"
@@ -124,7 +125,7 @@ Column {
       Button {
         objectName: "deleteUpdateDataButton"
         width: parent.width
-        implicitHeight: deleteLabel.implicitHeight + Style.space(16)
+        implicitHeight: deleteLabel.implicitHeight + root.look.sp(16)
         bordered: true
         enabled: root.cleanupEnabled
         opacity: enabled ? 1 : 0.4
@@ -135,12 +136,12 @@ Column {
         Text {
           id: deleteLabel
           anchors.centerIn: parent
-          width: Math.max(0, parent.width - Style.space(24))
+          width: Math.max(0, parent.width - root.look.sp(24))
           textFormat: Text.PlainText
           text: "Delete update data"
           color: root.foreground
           font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
+          font.pixelSize: root.look.font.caption
           horizontalAlignment: Text.AlignHCenter
           wrapMode: Text.WrapAnywhere
         }
@@ -155,7 +156,7 @@ Column {
         text: root.cleanupOutcome
         color: root.foreground
         font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
+        font.pixelSize: root.look.font.caption
         wrapMode: Text.WrapAnywhere
       }
     }
@@ -167,7 +168,7 @@ Column {
     text: "About"
     color: root.foreground
     font.family: root.fontFamily
-    font.pixelSize: Style.font.title
+    font.pixelSize: root.look.font.title
     font.bold: true
     wrapMode: Text.WrapAnywhere
   }
@@ -175,7 +176,7 @@ Column {
   Rectangle {
     id: aboutCard
     width: parent.width
-    height: identity.implicitHeight + Style.space(12) * 2
+    height: identity.implicitHeight + root.look.sp(12) * 2
     radius: Style.cornerRadius
     color: Style.normalFill
     border.width: 1
@@ -185,9 +186,9 @@ Column {
       id: identity
       anchors.left: parent.left
       anchors.right: parent.right
-      anchors.margins: Style.space(12)
+      anchors.margins: root.look.sp(12)
       anchors.verticalCenter: parent.verticalCenter
-      spacing: Style.space(4)
+      spacing: root.look.sp(4)
 
       Text {
         width: parent.width
@@ -195,7 +196,7 @@ Column {
         text: "Plugin Manager"
         color: root.foreground
         font.family: root.fontFamily
-        font.pixelSize: Style.font.body
+        font.pixelSize: root.look.font.body
         font.bold: true
         wrapMode: Text.WrapAnywhere
       }
@@ -207,7 +208,7 @@ Column {
         text: "GitHub repository"
         color: root.foreground
         font.family: root.fontFamily
-        font.pixelSize: Style.font.body
+        font.pixelSize: root.look.font.body
         font.underline: true
         wrapMode: Text.WrapAnywhere
 
@@ -226,7 +227,7 @@ Column {
         enabled: root.versionLabel !== ""
         color: enabled ? root.foreground : root.secondaryForeground
         font.family: root.fontFamily
-        font.pixelSize: Style.font.body
+        font.pixelSize: root.look.font.body
         font.underline: enabled
         wrapMode: Text.WrapAnywhere
 
@@ -244,7 +245,7 @@ Column {
         text: "Juan Casanueva"
         color: root.secondaryForeground
         font.family: root.fontFamily
-        font.pixelSize: Style.font.body
+        font.pixelSize: root.look.font.body
         wrapMode: Text.WrapAnywhere
       }
     }

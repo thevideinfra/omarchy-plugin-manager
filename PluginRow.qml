@@ -19,6 +19,7 @@ import "Model.js" as Model
 // the user asked for. Panel.qml decides what that means.
 Rectangle {
   id: root
+  required property var look
 
   property var row: null
   property bool selected: false
@@ -33,7 +34,7 @@ Rectangle {
   property bool verified: false
   property color foreground: Color.foreground
   required property color secondaryForeground
-  property string fontFamily: Style.font.family
+  property string fontFamily: root.look.font.family
 
   signal clicked()
   signal updateRequested()
@@ -90,7 +91,7 @@ Rectangle {
     githubNavigationRequested([], compareUrl)
   }
 
-  height: Math.round(details.implicitHeight + Style.space(16))
+  height: Math.round(details.implicitHeight + root.look.sp(16))
   radius: Style.cornerRadius
   color: selected ? Style.selectedFill : (mouse.containsMouse ? Style.hoverFill : "transparent")
 
@@ -110,14 +111,14 @@ Rectangle {
   Rectangle {
     id: stateBar
     anchors.left: parent.left
-    anchors.leftMargin: Style.space(10)
+    anchors.leftMargin: root.look.sp(10)
     anchors.top: parent.top
     anchors.bottom: parent.bottom
-    anchors.topMargin: Style.space(6)
-    anchors.bottomMargin: Style.space(6)
-    width: Style.space(5)
+    anchors.topMargin: root.look.sp(6)
+    anchors.bottomMargin: root.look.sp(6)
+    width: root.look.sp(5)
     radius: width / 2
-    color: root.row && root.row.enabled ? Color.accent : Color.muted
+    color: root.row && root.row.enabled ? root.look.accent : Color.muted
     opacity: root.row && root.row.enabled ? 1 : 0.5
   }
 
@@ -126,18 +127,18 @@ Rectangle {
     anchors.left: stateBar.right
     // Wider than the gap the dot needed: a 5px rule sitting flush against the
     // text would read as a border on the row rather than as a state marker.
-    anchors.leftMargin: Style.space(12)
+    anchors.leftMargin: root.look.sp(12)
     anchors.right: actions.left
-    anchors.rightMargin: Style.space(10)
+    anchors.rightMargin: root.look.sp(10)
     anchors.verticalCenter: parent.verticalCenter
-    spacing: Style.space(2)
+    spacing: root.look.sp(2)
 
     // The name shares its line with the state mark, verified pill and comparison
     // link, yielding to their widths and gaps rather than pushing them into actions.
     Row {
       id: nameLine
       width: parent.width
-      spacing: Style.space(8)
+      spacing: root.look.sp(8)
 
       // Match the expanded list: an arrow when behind (green for a verified
       // snapshot, orange for an unreviewed change), a green check only when
@@ -151,7 +152,7 @@ Rectangle {
         text: root.hasUpdate ? "󰜷" : "󰸞"
         color: root.hasUpdate ? root.updateMarkColor : "#5fb865"
         font.family: root.fontFamily
-        font.pixelSize: Style.font.title
+        font.pixelSize: root.look.font.title
         font.bold: true
       }
 
@@ -169,7 +170,7 @@ Rectangle {
         font.family: root.fontFamily
         // A step above the metadata and the blurb under it, so the name reads as
         // the row's heading rather than one more line of text.
-        font.pixelSize: Style.font.subtitle
+        font.pixelSize: root.look.font.subtitle
         font.bold: true
         elide: Text.ElideRight
       }
@@ -181,10 +182,10 @@ Rectangle {
         id: verifiedPill
         anchors.verticalCenter: parent.verticalCenter
         visible: root.verified
-        width: verifiedLabel.implicitWidth + Style.space(10)
-        height: verifiedLabel.implicitHeight + Style.space(4)
+        width: verifiedLabel.implicitWidth + root.look.sp(10)
+        height: verifiedLabel.implicitHeight + root.look.sp(4)
         radius: height / 2
-        color: Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.16)
+        color: Qt.rgba(root.look.accent.r, root.look.accent.g, root.look.accent.b, 0.16)
 
         Text {
           id: verifiedLabel
@@ -192,9 +193,9 @@ Rectangle {
           textFormat: Text.PlainText
           anchors.centerIn: parent
           text: "󰄬 verified"
-          color: Color.accent
+          color: root.look.accent
           font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
+          font.pixelSize: root.look.font.caption
         }
       }
 
@@ -202,11 +203,11 @@ Rectangle {
         id: updatePill
         anchors.verticalCenter: parent.verticalCenter
         visible: root.hasUpdate
-        width: updateBadge.implicitWidth + Style.space(12)
-        height: updateBadge.implicitHeight + Style.space(4)
+        width: updateBadge.implicitWidth + root.look.sp(12)
+        height: updateBadge.implicitHeight + root.look.sp(4)
         radius: height / 2
         color: root.installable
-          ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.16)
+          ? Qt.rgba(root.look.accent.r, root.look.accent.g, root.look.accent.b, 0.16)
           : Qt.rgba(Color.muted.r, Color.muted.g, Color.muted.b, 0.16)
 
         Text {
@@ -215,9 +216,9 @@ Rectangle {
           textFormat: Text.PlainText
           anchors.centerIn: parent
           text: "󰚰 " + Model.updateBadge(root.row)
-          color: root.installable ? Color.accent : root.secondaryForeground
+          color: root.installable ? root.look.accent : root.secondaryForeground
           font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
+          font.pixelSize: root.look.font.caption
           font.underline: updateBadgeMouse.containsMouse
         }
 
@@ -261,7 +262,7 @@ Rectangle {
       color: Model.hasDescription(root.row) ? root.foreground : root.secondaryForeground
       opacity: Model.hasDescription(root.row) ? 0.85 : 1
       font.family: root.fontFamily
-      font.pixelSize: Style.font.caption
+      font.pixelSize: root.look.font.caption
       font.italic: !Model.hasDescription(root.row)
       wrapMode: Text.WordWrap
       verticalAlignment: Text.AlignTop
@@ -270,14 +271,14 @@ Rectangle {
     Row {
       width: parent.width
       visible: root.hasUpdate
-      spacing: Style.space(6)
+      spacing: root.look.sp(6)
 
       Text {
         textFormat: Text.PlainText
         text: "󰜷"
         color: root.updateMarkColor
         font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
+        font.pixelSize: root.look.font.caption
         font.bold: true
       }
 
@@ -287,7 +288,7 @@ Rectangle {
         text: Model.updateStatus(root.row)
         color: root.updateMarkColor
         font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
+        font.pixelSize: root.look.font.caption
         wrapMode: Text.WordWrap
       }
     }
@@ -310,7 +311,7 @@ Rectangle {
         text: root.metadata
         color: root.secondaryForeground
         font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
+        font.pixelSize: root.look.font.caption
         elide: Text.ElideRight
       }
 
@@ -322,7 +323,7 @@ Rectangle {
         text: "  ·  "
         color: root.secondaryForeground
         font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
+        font.pixelSize: root.look.font.caption
       }
 
       Text {
@@ -331,9 +332,9 @@ Rectangle {
         textFormat: Text.PlainText
         visible: root.versionText !== ""
         text: root.versionText
-        color: versionMouse.containsMouse ? Color.accent : root.secondaryForeground
+        color: versionMouse.containsMouse ? root.look.accent : root.secondaryForeground
         font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
+        font.pixelSize: root.look.font.caption
         font.underline: versionMouse.containsMouse
 
         MouseArea {
@@ -371,9 +372,9 @@ Rectangle {
         textFormat: Text.PlainText
         width: parent.width
         text: "󰊤  " + root.repoLabel
-        color: repoMouse.containsMouse ? Color.accent : root.secondaryForeground
+        color: repoMouse.containsMouse ? root.look.accent : root.secondaryForeground
         font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
+        font.pixelSize: root.look.font.caption
         font.underline: repoMouse.containsMouse
         elide: Text.ElideRight
       }
@@ -393,9 +394,9 @@ Rectangle {
   Row {
     id: actions
     anchors.right: parent.right
-    anchors.rightMargin: Style.space(8)
+    anchors.rightMargin: root.look.sp(8)
     anchors.verticalCenter: parent.verticalCenter
-    spacing: Style.space(4)
+    spacing: root.look.sp(4)
 
     // Where the plugin came from, but only when nothing else already said it.
     //
@@ -415,8 +416,8 @@ Rectangle {
       text: root.badge
       color: root.secondaryForeground
       font.family: root.fontFamily
-      font.pixelSize: Style.font.caption
-      rightPadding: Style.space(6)
+      font.pixelSize: root.look.font.caption
+      rightPadding: root.look.sp(6)
     }
 
     // On or off, in one control. Two icon buttons that swapped places with each
@@ -476,9 +477,9 @@ Rectangle {
       // Same trick as the header's refresh: the glyph steps aside while the
       // pull runs and a spinning copy takes its place.
       iconText: root.updating ? "" : "󰑐"
-      fontSize: Style.font.iconLarge
+      fontSize: root.look.font.iconLarge
       tooltipText: Model.pinnedUpdateTooltip(root.row)
-      foreground: root.installable ? Color.accent : root.foreground
+      foreground: root.installable ? root.look.accent : root.foreground
       fontFamily: root.fontFamily
       // Nothing to pull is nothing to click: a confirmed up-to-date checkout
       // gets no button to press and therefore no spin to watch.
@@ -512,7 +513,7 @@ Rectangle {
       anchors.verticalCenter: parent.verticalCenter
       visible: root.row ? root.row.removable === true : false
       iconText: "󰩹"
-      fontSize: Style.font.iconLarge
+      fontSize: root.look.font.iconLarge
       tooltipText: "Remove this plugin"
       foreground: root.foreground
       hoverColor: Color.urgent
@@ -526,7 +527,7 @@ Rectangle {
   Rectangle {
     anchors.left: details.left
     anchors.right: parent.right
-    anchors.rightMargin: Style.space(8)
+    anchors.rightMargin: root.look.sp(8)
     anchors.bottom: parent.bottom
     height: 1
     visible: root.showSeparator

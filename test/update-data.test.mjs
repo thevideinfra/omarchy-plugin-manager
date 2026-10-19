@@ -233,7 +233,7 @@ function storeHarness() {
   })
   const names = ["canCleanupUpdateData", "askCleanupUpdateData", "startCleanupUpdateData", "refreshUpdateData",
     "drainUpdateDataRefresh", "invalidateUpdateData", "finishUpdateDataProcess", "readUpdateDataChunk",
-    "stopUpdateDataProcesses", "confirmPending", "cancelPending", "runAction", "launchInstall",
+    "stopUpdateDataProcesses", "confirmPending", "cancelPending", "runAction",
     "canStartUpdate", "writeSelfSetting", "writeSelfIntSetting", "setTransactionLimit",
     "adjustTransactionLimit", "runDetached"]
   runInNewContext(names.map(method).join("\n"), context)
@@ -299,9 +299,8 @@ test("cleanup busy guard prevents all other store mutations from overlapping", (
   const h = storeHarness(), s = h.s
   s.askCleanupUpdateData(); s.confirmPending()
   s.runAction("remove", "sample", ["never-execute"])
-  s.launchInstall({}, "sample")
   assert.equal(s.canStartUpdate({}), false)
-  assert.equal(s.writeSelfSetting("allowUnverifiedInstalls", true, false), false)
+  assert.equal(s.writeSelfSetting("allowUnverifiedUpdates", true, false), false)
   s.runDetached("sample", "sample", ["never-execute"])
   assert.equal(s.actionProc.running, false)
   assert.equal(s.pinnedProc.running, false)
@@ -393,33 +392,11 @@ test("overflow, crash, start failure and destruction cannot become cleanup succe
   assert.equal(h.launches.length, 2)
 })
 
-test("both surfaces expose the history limit and near-limit warning", () => {
-  for (const file of ["Panel.qml", "Expanded.qml"]) {
-    const source = read(file)
-    for (const id of ["transactionLimitText", "limitStepRow", "limitDecreaseButton", "limitIncreaseButton"])
-      assert.match(source, new RegExp(`id: ${id}`), `${file} ${id}`)
-    assert.doesNotMatch(source, /autoCleanup/)
-    assert.match(source, /store\.adjustTransactionLimit\(-Model\.TRANSACTION_LIMIT_STEP\)/)
-    assert.match(source, /store\.adjustTransactionLimit\(Model\.TRANSACTION_LIMIT_STEP\)/)
-    assert.match(source, /Model\.updateDataNearLimit\(store\.updateDataStatus\)/)
-    assert.match(source, /Model\.transactionLimitFallback\(store\.updateDataStatus, store\.transactionLimit\)/)
-    // The hidden warning still evaluates its text before the first status loads.
-    assert.doesNotMatch(source, /\+ store\.updateDataStatus\.limit \+/, `${file} unguarded limit read`)
-    assert.match(source, /\(store\.updateDataStatus \? store\.updateDataStatus\.limit : ""\)/, `${file} guarded limit read`)
-    assert.match(source, /store\.transactionLimitFloor/)
-    assert.match(source, /store\.transactionLimit/)
-    assert.match(source, /History now: " \+ store\.updateDataCount/)
-  }
-  for (const name of ["setTransactionLimit", "adjustTransactionLimit", "writeSelfIntSetting"])
-    assert.notEqual(storeSource.indexOf(`  function ${name}(`), -1, `${name} exists`)
-  assert.equal(storeSource.indexOf("setAutoCleanupCompleted"), -1, "no automatic cleanup setter")
-})
-
 test("both surfaces wire Settings to the shared store and destructive confirmation", () => {
   assert.match(storeSource, /completed journals and rollback backups[\s\S]*both active and archive/i)
   assert.match(storeSource, /irreversible/i)
   assert.match(storeSource, /failed and unresolved[\s\S]*installed plugins/i)
-  for (const file of ["Panel.qml", "Expanded.qml"]) {
+  for (const file of ["Panel.qml"]) {
     const source = read(file)
     const start = source.indexOf("SettingsInfo {")
     const info = source.slice(start, source.indexOf("\n           }", start))
@@ -445,4 +422,26 @@ test("both surfaces wire Settings to the shared store and destructive confirmati
   assert.match(method("finishPinnedUpdate"), /refreshUpdateData\(\)/)
   const action = storeSource.slice(storeSource.lastIndexOf("id: actionProc"))
   assert.match(action, /refreshUpdateData\(\)/)
+})
+
+test("both surfaces expose the history limit and near-limit warning", () => {
+  for (const file of ["Panel.qml"]) {
+    const source = read(file)
+    for (const id of ["transactionLimitText", "limitStepRow", "limitDecreaseButton", "limitIncreaseButton"])
+      assert.match(source, new RegExp(`id: ${id}`), `${file} ${id}`)
+    assert.doesNotMatch(source, /autoCleanup/)
+    assert.match(source, /store\.adjustTransactionLimit\(-Model\.TRANSACTION_LIMIT_STEP\)/)
+    assert.match(source, /store\.adjustTransactionLimit\(Model\.TRANSACTION_LIMIT_STEP\)/)
+    assert.match(source, /Model\.updateDataNearLimit\(store\.updateDataStatus\)/)
+    assert.match(source, /Model\.transactionLimitFallback\(store\.updateDataStatus, store\.transactionLimit\)/)
+    // The hidden warning still evaluates its text before the first status loads.
+    assert.doesNotMatch(source, /\+ store\.updateDataStatus\.limit \+/, `${file} unguarded limit read`)
+    assert.match(source, /\(store\.updateDataStatus \? store\.updateDataStatus\.limit : ""\)/, `${file} guarded limit read`)
+    assert.match(source, /store\.transactionLimitFloor/)
+    assert.match(source, /store\.transactionLimit/)
+    assert.match(source, /History now: " \+ store\.updateDataCount/)
+  }
+  for (const name of ["setTransactionLimit", "adjustTransactionLimit", "writeSelfIntSetting"])
+    assert.notEqual(storeSource.indexOf(`  function ${name}(`), -1, `${name} exists`)
+  assert.equal(storeSource.indexOf("setAutoCleanupCompleted"), -1, "no automatic cleanup setter")
 })

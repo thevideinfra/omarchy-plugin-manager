@@ -1,7 +1,7 @@
 """Real QML runtime test of the search field's lifetime in both surfaces.
 
 The shipped search plumbing (root term, debounce, flush, clear, focus accessor)
-and the shipped Loader block are extracted from Panel.qml and Expanded.qml and
+and the shipped Loader block are extracted from Panel.qml and
 run against a real Qt Quick Controls TextField. Only theme values, the sibling
 clear button and the surrounding layout item are mocked. A Qt Quick text input
 subscribes to the system clipboard for as long as it exists, so the field must
@@ -67,7 +67,6 @@ def loader_block(source):
 
 SURFACES = {
     "Panel.qml": "clearFiltersButton",
-    "Expanded.qml": "clearSearchButton",
 }
 
 

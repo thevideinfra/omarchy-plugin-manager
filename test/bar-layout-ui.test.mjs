@@ -1,128 +1,22 @@
-import { readFileSync } from "node:fs"
+import { readFileSync, existsSync } from "node:fs"
 import { test } from "node:test"
 import assert from "node:assert/strict"
 
 const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-const expanded = readFileSync(new URL("../Expanded.qml", import.meta.url), "utf8")
 const storeSource = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
+// The retained headless move owner; read lazily so a missing file fails only its tests.
+const ownerUrl = new URL("../MoveOwner.qml", import.meta.url)
+const owner = existsSync(ownerUrl) ? readFileSync(ownerUrl, "utf8") : ""
 const Model = Function(readFileSync(new URL("../Model.js", import.meta.url), "utf8") +
-  "; return { barLayoutSnapshot, barLayoutMove, tiledExpandedPanel, openAs, expandedModeFromPayload, parseSelfSettings, selfEntryFromShellConfig, expandedTabFromPayload, expandedPageFromPayload, expandedScreenFromPayload }")()
+  "; return { barLayoutSnapshot, barLayoutMove, parseSelfSettings }")()
 function call(source, name, state, ...args) {
   const match = source.match(new RegExp(`  function ${name}\\(([^)]*)\\) \\{([\\s\\S]*?)\\n  \\}`))
   assert.ok(match, `${name} exists`)
   return new Function("state", "args", `with (state) { return (function(${match[1]}) {${match[2]}})(...args) }`)(state, args)
 }
 
-function lifecycle() {
-  const events = []
-  const shell = { barConfig: { layout: { left: ["same", { id: "same", settings: { n: 2 } }], center: [], right: [] } } }
-  const proc = { running: false }
-  const store = { shell, barMovePending: null, barMoveExited: true, barMoveFailed: false, barMoveBytes: 0,
-    cancelPending() { events.push("cancel confirmation") }, loadOnOpen() { events.push("load") },
-    setStatus(text, error) { this.status = text; this.statusIsError = error } }
-  Object.defineProperty(store, "busy", { get: () => store.barMovePending !== null })
-  for (const name of ["startBarMove", "finishBarMove", "reconcileBarMove"])
-    store[name] = (...args) => call(storeSource, name, { root: store, barMoveProc: proc, Model }, ...args)
-  const state = { shell, store, Model, opened: false, tiled: true, arrangeOpen: true,
-    activeTab: "installed", settingsOpen: false, detailsEntry: null, selectedIndex: 2,
-    contentFlipping: false, pendingFlip: null, pendingTab: "", contentFlipAngle: 0,
-    pluginId: "manager", targetScreenName: "DP-1", barSnapshot: null,
-    barBoard: { cancelDrag() { events.push("cancel drag") } },
-    contentFlip: { running: false, stop() { events.push("stop flip") }, restart() { events.push("flip") } },
-    initialLoad: { stop() { events.push("stop load") }, restart() { events.push("schedule load") } },
-    releaseNavigator: { revoke() { events.push("revoke") } },
-    configView: { reload() { events.push("read config") }, text() { throw Error("unexpected config read") } },
-    tiledWindow: { visible: false }, keyCatcher: { forceActiveFocus() {} },
-    titleIconIntro: { stop() {} }, titleIcon: { opacity: 1 }, titleIconIntroArmed: false,
-    Qt: { binding: fn => fn, callLater: fn => fn() },
-    PopupBridge: { openPopup() { events.push("popup") } } }
-  state.root = state
-  for (const name of ["open", "close", "dismiss", "collapse", "showRetainedWindow", "loadEverything",
-    "refreshBarLayout", "requestBarMove", "useCurrentLayout", "flipTo", "switchTab", "applyPendingFlip",
-    "openArrange", "closeArrange", "openSettings", "openDetails"])
-    state[name] = (...args) => call(expanded, name, state, ...args)
-  Object.defineProperty(state, "barMovePending", { get: () => store.barMovePending !== null })
-  Object.defineProperty(state, "busy", { get: () => store.busy })
-  shell.hide = () => { state.close(); events.push("host removes open id") }
-  const begin = () => {
-    state.opened = true
-    state.refreshBarLayout()
-    assert.equal(state.requestBarMove(state.barSnapshot, "left", 1, "right", 0), true)
-    return store.barMovePending
-  }
-  return { state, store, shell, proc, events, begin }
-}
-
-test("explicit Expanded routing preserves the tab and screen, while Arrange stays local", () => {
-  const events = []
-  const state = { activeTab: "browse", pluginId: "manager", panel: { screen: { name: "DP-2" } },
-    revokeReleaseNavigation() {}, closeArrange() {}, close() { events.push("close") },
-    bar: { shell: { summon(id, payload) { events.push([id, JSON.parse(payload)]) } } } }
-  call(panel, "expand", state, "arrange")
-  assert.deepEqual(events, ["close", ["manager", { tab: "browse", screen: "DP-2", page: "arrange" }]])
-  events.length = 0
-  call(panel, "expand", state, "untrusted")
-  assert.equal(events[1][1].page, "")
-  state.bar = null
-  call(panel, "expand", state, "arrange")
-  assert.match(panel, /tooltipText: "Arrange"[\s\S]*?onClicked: root\.arrangeOpen \? root\.closeArrange\(\) : root\.openArrange\(\)/)
-})
-
-test("Expanded Arrange, Settings and details are exclusive and Back preserves the tab", () => {
-  let statusRefreshes = 0
-  const state = { activeTab: "browse", settingsOpen: false, arrangeOpen: false, detailsEntry: { id: "old" },
-    store: { refreshUpdateData() { statusRefreshes++ } },
-    flipTo(direction, apply) { apply() } }
-  call(expanded, "openArrange", state)
-  assert.equal(state.arrangeOpen, true)
-  assert.equal(state.detailsEntry, null)
-  assert.equal(statusRefreshes, 0)
-  call(expanded, "openSettings", state)
-  assert.equal(state.arrangeOpen, false)
-  assert.equal(state.settingsOpen, true)
-  assert.equal(statusRefreshes, 1)
-  call(expanded, "openSettings", state)
-  assert.equal(statusRefreshes, 1, "already-open Settings must not refresh again")
-  call(expanded, "openArrange", state)
-  assert.equal(state.settingsOpen, false)
-  call(expanded, "closeArrange", state)
-  assert.equal(state.arrangeOpen, false)
-  assert.equal(state.activeTab, "browse")
-  call(expanded, "openArrange", state)
-  call(expanded, "openDetails", state, { id: "new" })
-  assert.equal(state.arrangeOpen, false)
-  assert.equal(state.detailsEntry.id, "new")
-  assert.equal(statusRefreshes, 1, "Arrange and details do not request update-data status")
-  assert.match(expanded, /arrangeOpen = Model\.expandedPageFromPayload\(payloadJson\) === "arrange"/)
-  assert.match(expanded, /onClicked: root\.arrangeOpen \? root\.closeArrange\(\) : root\.closeSettings\(\)/)
-})
-
-test("Arrange wires a themed board to guarded persistence with inventory labels", () => {
-  assert.match(expanded, /Model\.barLayoutSnapshot\(root\.shell[^\n]*barConfig\.layout/)
-  assert.match(expanded, /labels\[row\.id\] = row\.name/)
-  const board = expanded.split("BarLayoutPane {")[1].split("Flickable {")[0]
-  assert.match(board, /busy: root\.busy/)
-  assert.match(board, /onMoveRequested:[\s\S]*?root\.requestBarMove\(/)
-  for (const property of ["fill", "rowFill", "foreground", "mutedForeground", "borderColor", "accent", "fontFamily", "fontPixelSize", "spacing", "radius", "rowHeight"])
-    assert.match(board, new RegExp(`${property}: (root\\.|Color\\.|Style\\.)`))
-})
-
-test("Arrange status exposes pending outcomes and refused IDs instead of generic busy or inventory errors", () => {
-  const body = expanded.match(/id: statusLine[\s\S]*?text: \{([\s\S]*?)\n        \}/)[1]
-  const text = Function("root", "Model", body)
-  const state = { arrangeOpen: true, barSnapshot: {}, barMovePending: true, busy: true,
-    busyKind: "", busyId: "", status: "Move outcome unknown", browsing: false, loadError: "Old inventory error", catalogError: "" }
-  assert.equal(text(state, { actionGerund: () => "Working" }), state.status)
-  state.barMovePending = false
-  state.busy = false
-  state.status = "Move refused: this entry ID cannot be transported by omarchy-bar."
-  assert.equal(text(state, {}), state.status)
-  state.barSnapshot = null
-  assert.match(text(state, {}), /layout unavailable/i)
-})
-
 test("Settings hides layout status without masking ordinary outcomes or changing move ownership", () => {
-  for (const source of [expanded, panel]) {
+  for (const source of [panel]) {
     const body = source.match(/\/\/ ---- Status:[\s\S]*?text: \{([\s\S]*?)\n\s*\}/)[1]
     const text = Function("root", "Model", body)
     const owner = { status: "Waiting for layout", statusIsError: true, pending: true }
@@ -146,7 +40,7 @@ test("Settings hides layout status without masking ordinary outcomes or changing
     state.settingsOpen = false
     for (const arrangeOpen of [false, true]) {
       state.arrangeOpen = arrangeOpen
-      assert.equal(text(state, {}), source === panel ? owner.status : state.status)
+      assert.equal(text(state, {}), owner.status)
     }
     state.barMovePending = false; state.busy = false; state.arrangeOpen = false
     for (const status of ["Plugin removed", "Could not save the setting"]) {
@@ -157,58 +51,7 @@ test("Settings hides layout status without masking ordinary outcomes or changing
   }
 })
 
-test("Expanded layout messages belong only to Arrange; ordinary list outcomes retain priority", () => {
-  const body = expanded.match(/id: statusLine[\s\S]*?text: \{([\s\S]*?)\n\s*\}/)[1]
-  const text = Function("root", "Model", body)
-  for (const browsing of [false, true]) {
-    const state = { browsing, settingsOpen: false, arrangeOpen: false, barSnapshot: {},
-      statusSource: "layout", status: "Bar layout updated", loadError: "", catalogError: "" }
-    for (const pending of [false, true]) {
-      state.barMovePending = pending
-      for (const page of ["list", "settings", "arrange"]) {
-        state.settingsOpen = page === "settings"; state.arrangeOpen = page === "arrange"
-        assert.equal(text(state, {}), page === "arrange" ? state.status : "")
-        assert.equal(state.barMovePending, pending, "display must not change ownership")
-      }
-    }
-    Object.assign(state, { arrangeOpen: false, barMovePending: false, statusSource: "" })
-    assert.equal(text(state, {}), state.status, "filter by source, not wording")
-    state.status = "Plugin removed"
-    assert.equal(text(state, {}), state.status)
-    state.loadError = "Load failed"; state.catalogError = "Catalog failed"
-    assert.equal(text(state, {}), browsing ? state.catalogError : state.loadError)
-    state.busy = true; state.busyId = "example"
-    assert.equal(text(state, { actionGerund: () => "Updating" }), "Updating example…")
-  }
-})
 
-test("Expanded Back frames place one collapsible status before recovery, board and settings", () => {
-  const header = id => expanded.slice(expanded.indexOf(`id: ${id}`)).split(/\n\s*\n/)[0]
-  const listStatus = header("statusLine")
-  assert.match(listStatus, /visible: !root\.settingsOpen && !root\.arrangeOpen && text !== ""/)
-  assert.match(listStatus, /anchors\.top: controls\.bottom/)
-  assert.match(listStatus, /anchors\.topMargin: visible \? Style\.space\(8\) : 0/)
-  assert.match(listStatus, /height: visible \? implicitHeight : 0/)
-  assert.match(header("settingsPane"), /anchors\.top: statusLine\.bottom/)
-  assert.match(header("settingsBackButton"), /anchors\.top: parent\.top/)
-  const pageStatus = header("settingsStatusLine")
-  assert.match(pageStatus, /anchors\.top: settingsBackButton\.bottom/)
-  assert.match(pageStatus, /text: statusLine\.text/)
-  assert.match(pageStatus, /visible: text !== ""/)
-  assert.match(pageStatus, /anchors\.topMargin: visible \? Style\.space\(8\) : 0/)
-  assert.match(pageStatus, /height: visible \? implicitHeight : 0/)
-  assert.match(pageStatus, /textFormat: Text\.PlainText/)
-  for (const property of ["color", "font", "wrapMode"])
-    assert.match(pageStatus, new RegExp(`${property}: statusLine\\.${property}`))
-  for (const id of ["arrangeRecovery", "settingsScroll"])
-    assert.match(header(id), /anchors\.top: settingsStatusLine\.bottom/)
-  assert.match(header("arrangeRecovery"), /height: visible \? implicitHeight : 0/)
-  assert.match(header("barBoard"), /anchors\.top: arrangeRecovery\.bottom/)
-  for (const id of ["installedPane", "catalogGrid", "browseDetailsPane"])
-    assert.match(header(id), /anchors\.top: statusLine\.bottom/)
-  assert.ok(expanded.indexOf("id: settingsStatusLine") > expanded.indexOf("id: settingsPane"))
-  assert.equal((expanded.match(/text: statusLine\.text/g) || []).length, 1)
-})
 
 test("status source resets for settings errors and ordinary inventory outcomes", () => {
   const state = { status: "", statusIsError: false, statusSource: "" }
@@ -216,7 +59,7 @@ test("status source resets for settings errors and ordinary inventory outcomes",
   state.setStatus("Move outcome", true, "layout")
   assert.equal(state.statusSource, "layout")
   Object.assign(state, { busy: false, selfEntryLoaded: false })
-  assert.equal(call(storeSource, "writeSelfSetting", state, "tiledExpandedPanel", true, false), false)
+  assert.equal(call(storeSource, "writeSelfSetting", state, "allowUnverifiedUpdates", true, false), false)
   assert.equal(state.statusSource, "")
   assert.equal(state.statusIsError, true)
   state.setStatus("Plugin removed", false)
@@ -224,99 +67,82 @@ test("status source resets for settings errors and ordinary inventory outcomes",
   assert.equal(state.statusIsError, false)
 })
 
-test("retained eager load stays hidden and cannot initiate inventory work or dispatch", () => {
+// The owner as the shell retains it: hidden, keepLoaded, never summoned into a
+// window. The popup's board dispatches through it (see popup-arrange tests).
+function lifecycle() {
+  const events = []
+  const shell = { barConfig: { layout: { left: ["same", { id: "same", settings: { n: 2 } }], center: [], right: [] } } }
+  const proc = { running: false }
+  const store = { shell, barMovePending: null, barMoveExited: true, barMoveFailed: false, barMoveBytes: 0,
+    cancelPending() { events.push("cancel confirmation") }, loadOnOpen() { events.push("load") },
+    reload() { events.push("load") }, refreshUpdateData() { events.push("load") },
+    setStatus(text, error) { this.status = text; this.statusIsError = error } }
+  Object.defineProperty(store, "busy", { get: () => store.barMovePending !== null })
+  for (const name of ["startBarMove", "finishBarMove", "reconcileBarMove"])
+    store[name] = (...args) => call(storeSource, name, { root: store, barMoveProc: proc, Model }, ...args)
+  const state = { shell, store, Model, JSON, opened: false, pluginId: "manager", barSnapshot: null,
+    popupMoves: { continuationActive: false, generation: 0 },
+    PopupBridge: { openPopup() { events.push("popup"); return true }, closePopups() { events.push("close popups") } } }
+  state.root = state
+  for (const name of ["open", "close", "refreshBarLayout", "startPopupMove", "recoverPopupMove"])
+    state[name] = (...args) => call(owner, name, state, ...args)
+  Object.defineProperty(state, "barMovePending", { get: () => store.barMovePending !== null })
+  const begin = () => {
+    state.refreshBarLayout()
+    assert.equal(state.startPopupMove(state.barSnapshot, "left", 1, "right", 0), true)
+    return store.barMovePending
+  }
+  return { state, store, shell, proc, events, begin }
+}
+
+test("retained eager construction stays hidden and cannot initiate inventory work or dispatch", () => {
   const { state, events } = lifecycle()
-  state.loadEverything()
+  assert.equal(state.recoverPopupMove(), false)
+  assert.equal(state.startPopupMove(null, "left", 0, "right", 0), false)
   assert.deepEqual(events, [])
-  assert.equal(state.requestBarMove(null, "left", 0, "right", 0), false)
-  assert.equal(JSON.parse(readFileSync(new URL("../manifest.json", import.meta.url))).keepLoaded, true)
-  assert.match(expanded, /id: configView[\s\S]*?preload: false/)
-  assert.match(expanded, /watchConfig: root\.opened/)
+  const manifest = JSON.parse(readFileSync(new URL("../manifest.json", import.meta.url)))
+  assert.equal(manifest.keepLoaded, true)
+  assert.deepEqual(manifest.kinds, ["bar-widget", "panel"])
+  assert.equal(manifest.entryPoints.panel, "MoveOwner.qml")
+  assert.equal(manifest.entryPoints.barWidget, "BarWidget.qml")
+  assert.doesNotMatch(owner, /loadOnOpen|\.reload\(|refreshUpdateData|watchConfig: true|Component\.onCompleted:/)
+  assert.match(owner, /PluginStore \{[\s\S]*?selfId: root\.pluginId[\s\S]*?shell: root\.shell/)
   assert.match(storeSource, /id: shellConfig[\s\S]*?preload: false[\s\S]*?blockAllReads: true/)
-  assert.doesNotMatch(expanded + storeSource, /Component\.onCompleted:/)
+  assert.doesNotMatch(storeSource, /Component\.onCompleted:/)
 })
 
-test("normal open loads on demand and honors payload; closing cancels the scheduled load", () => {
-  const { state, events } = lifecycle()
-  state.configView.text = () => "{}"
-  state.open('{"page":"arrange","tab":"browse","screen":"DP-2"}')
-  assert.equal(state.opened, true)
-  assert.equal(state.arrangeOpen, true)
-  assert.equal(state.activeTab, "browse")
-  assert.equal(state.targetScreenName, "DP-2")
-  assert.equal(events.includes("read config"), true)
-  assert.equal(events.includes("schedule load"), true)
-  state.loadEverything()
-  assert.equal(events.filter(event => event === "load").length, 1)
-  state.close()
-  state.loadEverything()
-  assert.equal(events.filter(event => event === "load").length, 1)
-  assert.equal(events.includes("stop load"), true)
-  assert.equal(state.arrangeOpen, false)
-})
-
-test("pending hide/open preserves ownership, snapshot plan and lock without new IO", () => {
+test("pending hide/summon preserves ownership, snapshot plan and lock without new IO", () => {
   const { state, store, events, begin } = lifecycle()
   const plan = begin()
-  state.dismiss()
+  state.close()
   assert.equal(state.opened, false)
   assert.equal(store.barMovePending, plan)
-  assert.equal(state.arrangeOpen, true)
-  state.open('{"tab":"browse"}')
-  assert.equal(state.opened, true)
-  assert.equal(state.tiledWindow.visible(), true, "reinstalls visibility binding after compositor close")
-  assert.equal(state.activeTab, "installed")
+  state.open('{"screen":"DP-1"}')
+  assert.equal(state.opened, false)
   assert.equal(store.barMovePending, plan)
-  assert.equal(state.selectedIndex, 2)
   assert.equal(events.includes("cancel confirmation"), false)
-  assert.equal(events.includes("schedule load"), false)
-  assert.equal(events.includes("read config"), false)
-  assert.match(expanded, /onClosed: root\.dismiss\(\)/)
-})
-
-test("pending navigation, collapse, animation callbacks and conflicting drops cannot leave Arrange", () => {
-  const { state, events, begin } = lifecycle()
-  begin()
-  events.length = 0
-  state.switchTab("browse")
-  state.closeArrange()
-  state.openSettings()
-  state.openDetails({ id: "other" })
-  state.collapse()
-  state.pendingFlip = () => { state.arrangeOpen = false }
-  state.applyPendingFlip()
-  assert.equal(state.arrangeOpen, true)
-  assert.equal(state.pendingFlip, null)
-  assert.equal(state.pendingTab, "")
-  assert.equal(state.requestBarMove(state.barSnapshot, "left", 0, "center", 0), false)
-  assert.equal(events.includes("flip"), false)
-  assert.equal(events.includes("popup"), false)
-  call(storeSource, "restartShell", { busy: state.busy, actionProc: { running: false },
+  assert.equal(events.includes("load"), false)
+  assert.equal(state.startPopupMove(state.barSnapshot, "left", 0, "center", 0), false)
+  call(storeSource, "restartShell", { busy: store.busy, actionProc: { running: false },
     runDetached() { assert.fail("pending move must block restart") } })
 })
 
-test("a stale drop, hidden board or flip cannot dispatch through the integration", () => {
+test("a stale drop cannot dispatch through the owner", () => {
   const { state, shell, store } = lifecycle()
-  state.opened = true
   state.refreshBarLayout()
   const stale = state.barSnapshot
   shell.barConfig.layout.left.reverse()
   state.refreshBarLayout()
-  assert.equal(state.requestBarMove(stale, "left", 0, "right", 0), false)
+  assert.equal(state.startPopupMove(stale, "left", 0, "right", 0), false)
   assert.equal(store.barMovePending, null)
-  state.contentFlipping = true
-  assert.equal(state.requestBarMove(state.barSnapshot, "left", 0, "right", 0), false)
-  state.contentFlipping = false
-  state.arrangeOpen = false
-  assert.equal(state.requestBarMove(state.barSnapshot, "left", 0, "right", 0), false)
+  assert.match(store.status, /refused/)
 })
 
-test("host updates cancel stale drag and render raw duplicates before reconciling", () => {
-  const { state, store, shell, events, begin } = lifecycle()
+test("host updates refresh the raw snapshot, duplicates included, before reconciling", () => {
+  const { state, store, shell, begin } = lifecycle()
   const plan = begin()
   const original = store.reconcileBarMove
   store.reconcileBarMove = accept => {
-    assert.equal(events.at(-1), "cancel drag")
     assert.equal(state.barSnapshot.key, Model.barLayoutSnapshot(shell.barConfig.layout).key)
     assert.equal(accept, false)
     return original(accept)
@@ -325,6 +151,8 @@ test("host updates cancel stale drag and render raw duplicates before reconcilin
   state.refreshBarLayout()
   assert.equal(state.barSnapshot.rows.find(row => row.section === "right").entry.settings.n, 2)
   assert.equal(store.barMovePending, plan, "host update alone cannot release running client")
+  assert.match(owner, /onShellChanged: refreshBarLayout\(\)/)
+  assert.match(owner, /function onBarConfigChanged\(\) \{ root\.refreshBarLayout\(\) \}/)
 })
 
 test("exit and host layout can arrive in either order, without retrying", () => {
@@ -345,28 +173,53 @@ test("exit and host layout can arrive in either order, without retrying", () => 
   }
 })
 
-test("timeout/mismatch recovery needs a human click and unavailable layout allows safe hiding", () => {
+test("timeout/mismatch recovery needs an explicit recover and unavailable layout allows safe hiding", () => {
   for (const exitCode of [0, 124, 137]) {
     const { state, store, shell, proc, begin } = lifecycle()
     const plan = begin()
-    assert.equal(state.useCurrentLayout(), false)
+    assert.equal(state.recoverPopupMove(), false, "a running client cannot be recovered")
     proc.running = false
     store.finishBarMove(exitCode)
     shell.barConfig.layout = null
     state.refreshBarLayout()
     assert.equal(state.barSnapshot, null)
-    assert.equal(state.useCurrentLayout(), false)
-    state.dismiss()
-    assert.equal(state.opened, false)
+    assert.equal(state.recoverPopupMove(), false)
+    state.close()
     assert.equal(store.barMovePending, plan)
     state.open("{}")
     shell.barConfig.layout = { left: ["new", "new"], center: [], right: [] }
     state.refreshBarLayout()
     assert.equal(store.barMovePending, plan, "fresh but mismatched config is not acceptance")
     assert.equal(state.barSnapshot.rows.length, 2)
-    assert.equal(state.useCurrentLayout(), true)
+    assert.equal(state.recoverPopupMove(), true)
     assert.equal(store.barMovePending, null)
     assert.equal(proc.running, false)
-    assert.equal(state.arrangeOpen, true)
   }
+})
+
+test("Arrange wires a themed board to guarded persistence with inventory labels", () => {
+  assert.match(owner, /Model\.barLayoutSnapshot\(root\.shell[^\n]*barConfig\.layout/)
+  assert.match(panel, /readonly property var barSnapshot: popupMoveOwner \? popupMoveOwner\.snapshot : null/)
+  const board = panel.split("BarLayoutPane {")[1].split("Flickable {")[0]
+  assert.match(board, /labels\[row\.id\] = row\.name/)
+  assert.match(board, /snapshot: root\.barSnapshot/)
+  assert.match(board, /busy: root\.arrangeBusy/)
+  assert.match(board, /onMoveRequested:[\s\S]*?root\.requestBarMove\(/)
+  for (const property of ["fill", "rowFill", "foreground", "mutedForeground", "borderColor", "accent", "fontFamily", "fontPixelSize", "spacing", "radius", "rowHeight"])
+    assert.match(board, new RegExp(`${property}: (root\\.|Color\\.|Style\\.)`))
+})
+
+test("Arrange status exposes pending outcomes and refused IDs instead of generic busy or inventory errors", () => {
+  const pane = panel.split("id: arrangeStatus")[1].split("BarLayoutPane {")[0]
+  const [status, hint] = [...pane.matchAll(/text: ([\s\S]*?)\n\s*color:/g)].map(m => Function("root", `return ${m[1]}`))
+  const root = { popupMoveOwner: { status: "Move outcome unknown", exited: false }, barMovePending: true, barSnapshot: {} }
+  assert.equal(status(root), "Move outcome unknown")
+  assert.match(hint(root), /Saving/)
+  root.popupMoveOwner.exited = true
+  assert.match(hint(root), /Accept it without retrying/)
+  root.barMovePending = false
+  root.popupMoveOwner.status = "Move refused: this entry ID cannot be transported by omarchy-bar."
+  assert.equal(status(root), root.popupMoveOwner.status)
+  root.barSnapshot = null
+  assert.match(status(root), /layout unavailable/i)
 })
