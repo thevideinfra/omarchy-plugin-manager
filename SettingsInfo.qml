@@ -18,7 +18,7 @@ Column {
   required property color foreground
   required property color secondaryForeground
   required property string fontFamily
-  readonly property string repositoryUrl: "https://github.com/juancasanueva/omarchy-plugin-manager"
+  readonly property string repositoryUrl: "https://github.com/thevideinfra/omarchy-plugin-manager"
   readonly property string versionLabel: Model.releaseVersionLabel(installedVersion)
 
   // The store supplies validated passwd-home paths, independently of $HOME.

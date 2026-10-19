@@ -6,6 +6,8 @@ each widget sits in the bar. It opens as a popup under the bar.
 
 Fork of juancasanueva/omarchy-plugin-manager; Browse and the windowed mode removed.
 
+The plugin id is unchanged, so the shell may show the upstream listing's `verified` pill for this fork. Updates stay pinned to this checkout's own remote, not the upstream repository.
+
 Plugins are installed with the Omarchy CLI (`omarchy plugin add ...`). This
 plugin no longer installs from a catalog.
 
@@ -371,7 +373,7 @@ unsafe/unreadable root means `available: false`, `activeCount: null`, a bounded
 The endpoint creates, archives and deletes nothing, does not open the plugins
 or archive directories, and does not acquire or replace the update lock.
 It is a bounded observation with cancellation/deadline checks, not a locked
-snapshot or permission to mutate data. Both Settings surfaces request it on
+snapshot or permission to mutate data. The Settings view requests it on
 opening and after local cleanup, update and install completions, including
 failures. There is no polling loop. An invalidated response cannot restore a
 pre-mutation count.
@@ -495,6 +497,8 @@ The advisory lock excludes cooperating update/cleanup workers, not arbitrary
 same-user writers. Rechecks detect observed changes but cannot make a recursive
 snapshot or eliminate the final check-to-unlink race. Tests use disposable data
 and simulated mount identities, never host mounts or live update roots.
+
+
 ### Recovery and retained transactions
 
 When the active directory holds at least the configured limit (default 32) of
@@ -614,6 +618,7 @@ url cannot become a command. Urls are also validated against `https://`,
 | `s` | Cycle the Source dropdown |
 | `t` | Cycle the Status dropdown |
 | `r` | Refresh the plugin list and re-check updates |
+| `Tab` / `Shift+Tab` | Switch to the next / previous bar panel |
 | `Esc` | Clear the search, then leave the field, then close the popup |
 
 Open dialogs retain their own keys.
@@ -621,7 +626,7 @@ Open dialogs retain their own keys.
 ## Install
 
 ```bash
-omarchy plugin add https://github.com/juancasanueva/omarchy-plugin-manager.git --enable
+omarchy plugin add https://github.com/thevideinfra/omarchy-plugin-manager.git --enable
 ```
 
 Then move it if it did not land where you want it:
@@ -629,6 +634,8 @@ Then move it if it did not land where you want it:
 ```bash
 omarchy bar move io.github.juancasanueva.plugin-manager --section right
 ```
+
+
 ## Remove
 
 ```bash
@@ -719,7 +726,7 @@ omarchy-shell shell toggle io.github.juancasanueva.plugin-manager '{}'
 | `PopupBridge.js` | Hand-off between the popup and the retained owner |
 | `Model.js` | Pure parsing, merging, grouping, searching, and filtering |
 | `helpers/pinned_update.py` | The pinned update transaction, update-data status and cleanup, and the catalog cache |
-| `helpers/github_star.py` | GitHub star toggle helper |
+| `helpers/github_star.py` | GitHub star toggle helper (present, not wired into the popup) |
 
 ## License
 

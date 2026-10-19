@@ -48,9 +48,9 @@ Item {
   // One retry per load attempt; cleared by the next successful read.
   property bool loadRetried: false
   // Set by loadOnOpen(): the catalog and the update check wait until the
-  // list has landed. The catalog parse holds the main thread for seconds in
-  // QML, and the list read needs the shell to answer an IPC call in that
-  // same window; run together, the list came back empty.
+  // list has landed. Building the catalog in-process takes roughly 70 ms on
+  // the GUI thread (about 43 ms of it JSON.parse), once per panel; the list
+  // read needs the shell to answer an IPC call, so the two are kept apart.
   property bool openLoadPending: false
 
   // ---- Marketplace catalog ------------------------------------------------
@@ -427,8 +427,9 @@ Item {
 
   property int catalogGeneration: 0
 
-  // The cached projection is small (the helper keeps only the fields read
-  // here), so it is built in-process, one event-loop turn after the fetch.
+  // The helper's cached projection (about 6 MB, 5,700 listings) is built
+  // in-process by Model.buildCatalog in roughly 70 ms, one event-loop turn
+  // after the fetch.
   function applyCatalog(raw) {
     catalogGeneration += 1
     var generation = catalogGeneration

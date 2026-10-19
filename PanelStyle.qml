@@ -31,7 +31,7 @@ Item {
     family: Style.font.family,
     body: scaled(Style.font.body),
     bodySmall: scaled(Style.font.bodySmall),
-    caption: Math.max(9, scaled(Style.font.caption)),
+    caption: Math.max(Math.min(9, Style.font.caption), scaled(Style.font.caption)),
     display: scaled(Style.font.display),
     displayLarge: scaled(Style.font.displayLarge),
     icon: scaled(Style.font.icon),

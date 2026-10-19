@@ -50,6 +50,17 @@ test("paletteAccent returns the palette colour, null for theme or unknown", () =
   assert.equal(Model.paletteAccent(undefined, p), null)
 })
 
+test("accent names only resolve to the palette's own accent colours", () => {
+  const p = { blue: "#6E7FB8", background: "#000000" }
+  for (const bad of ["constructor", "toString", "__proto__", "hasOwnProperty", "background"])
+    assert.equal(Model.paletteAccent(bad, p), null, bad)
+  assert.equal(Model.paletteAccent("constructor", {}), null)
+  assert.equal(Model.paletteAccent("blue", p), "#6E7FB8")
+  assert.equal(Model.paletteAccent("blue", {}), null)
+  assert.deepEqual(Model.accentChoices({}), ["theme"])
+  assert.deepEqual(Model.accentChoices(Object.create({ blue: "#0000ff", red: "#ff0000" })), ["theme"])
+})
+
 test("choiceSetting returns an allowed string value, else the fallback", () => {
   const allowed = ["compact", "normal", "comfortable"]
   assert.equal(Model.choiceSetting({ density: "compact" }, "density", allowed, "normal"), "compact")

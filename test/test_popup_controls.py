@@ -203,7 +203,7 @@ QtObject {
             owner.setParentItem(window.contentItem())
             window.show()
             try:
-                repository = "https://github.com/juancasanueva/omarchy-plugin-manager"
+                repository = "https://github.com/thevideinfra/omarchy-plugin-manager"
                 repo_events, version_events = [], []
                 owner.repositoryNavigationRequested.connect(repo_events.append)
                 owner.githubNavigationRequested.connect(

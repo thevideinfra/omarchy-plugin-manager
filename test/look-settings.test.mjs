@@ -21,6 +21,16 @@ test("manifest declares density, fontSize and accent like omaudiopanel", () => {
 
 test("Panel reads its look from PanelStyle fed by the store's settings", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  assert.match(panel, /PanelStyle\s*\{[^}]*settings:\s*store\.selfSettings/)
+  assert.match(panel, /PanelStyle\s*\{[^}]*settings:[^}]*store\.selfSettings/)
   assert.match(panel, /readonly property var look:/)
+})
+
+test("Panel prefers the live host settings over the store's copy", () => {
+  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
+  assert.match(panel, /settings:\s*root\.settings && Object\.keys\(root\.settings\)\.length > 0 \? root\.settings : store\.selfSettings/)
+})
+
+test("the caption floor never exceeds the stock caption size", () => {
+  const style = readFileSync(new URL("../PanelStyle.qml", import.meta.url), "utf8")
+  assert.match(style, /Math\.max\(Math\.min\(9, Style\.font\.caption\), scaled\(Style\.font\.caption\)\)/)
 })

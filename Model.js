@@ -2151,14 +2151,14 @@ function parsePalette(text) {
 function accentChoices(palette) {
   var list = ["theme"]
   for (var i = 0; i < ACCENT_NAMES.length; i++)
-    if (palette && palette[ACCENT_NAMES[i]] !== undefined) list.push(ACCENT_NAMES[i])
+    if (palette && hasOwnKey(palette, ACCENT_NAMES[i])) list.push(ACCENT_NAMES[i])
   return list
 }
 
 // The palette colour for a choice, or null when the theme's own accent applies
 // ("theme", or a colour this theme does not define).
 function paletteAccent(choice, palette) {
-  if (choice && choice !== "theme" && palette && palette[choice] !== undefined) return palette[choice]
+  if (ACCENT_NAMES.indexOf(choice) >= 0 && palette && hasOwnKey(palette, choice)) return palette[choice]
   return null
 }
 

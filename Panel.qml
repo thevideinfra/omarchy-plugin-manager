@@ -5,10 +5,10 @@ import qs.Commons
 import qs.Ui
 import "Model.js" as Model
 
-// The plugin manager's popup: every plugin the shell discovered, split into
-// what you installed and what ships with Omarchy, with the three lifecycle
-// actions the CLI already exposes — add a repo, update a checkout, remove an
-// install.
+// The plugin manager's popup, Installed only: every plugin the shell
+// discovered, split into what you installed and what ships with Omarchy, with
+// the lifecycle actions the CLI already exposes — update a checkout, remove an
+// install, enable or disable.
 //
 // The split is not cosmetic. Built-ins live in /usr/share and can be neither
 // pulled nor deleted, so mixing them into one list means half the rows carry
@@ -60,7 +60,9 @@ Panel {
 
   PanelStyle {
     id: panelStyle
-    settings: store.selfSettings
+    // The shell patches the bar widget's settings in place, so prefer them;
+    // the store's copy only covers a host that hands none.
+    settings: root.settings && Object.keys(root.settings).length > 0 ? root.settings : store.selfSettings
   }
   readonly property var look: panelStyle
 

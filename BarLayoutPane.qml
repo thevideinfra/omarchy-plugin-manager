@@ -103,7 +103,7 @@ Item {
         }
         Caption {
             anchors.fill: parent
-            anchors.leftMargin: root.spacing + 20
+            anchors.leftMargin: root.spacing + root.look.sp(20)
             anchors.rightMargin: root.spacing
             verticalAlignment: Text.AlignVCenter
             text: parent.labelText
