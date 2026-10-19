@@ -1,0 +1,42 @@
+import QtQuick
+import qs.Commons
+import "Model.js" as Model
+
+// The panel's look: spacing, text size and highlight colour, from the
+// density, fontSize and accent settings. Normal/normal/theme is the stock look.
+Item {
+  id: root
+
+  // The plugin's shell.json entry (store.selfSettings).
+  property var settings: ({})
+
+  readonly property string density: Model.choiceSetting(settings, "density", ["compact", "normal", "comfortable"], "normal")
+  readonly property string fontSizeChoice: Model.choiceSetting(settings, "fontSize", ["small", "normal", "large"], "normal")
+  readonly property string accentChoice: settings && typeof settings.accent === "string" ? settings.accent : "theme"
+
+  readonly property real densityScale: Model.densityScale(density)
+  readonly property real fontScale: (0.5 + 0.5 * densityScale) * Model.fontSizeScale(fontSizeChoice)
+
+  AccentSource {
+    id: accentSource
+    choice: root.accentChoice
+  }
+  readonly property color accent: accentSource.value
+
+  function sp(px) { return Style.space(px * densityScale) }
+
+  function scaled(px) { return Math.round(px * fontScale) }
+
+  readonly property var font: ({
+    family: Style.font.family,
+    body: scaled(Style.font.body),
+    bodySmall: scaled(Style.font.bodySmall),
+    caption: Math.max(9, scaled(Style.font.caption)),
+    display: scaled(Style.font.display),
+    displayLarge: scaled(Style.font.displayLarge),
+    icon: scaled(Style.font.icon),
+    iconLarge: scaled(Style.font.iconLarge),
+    subtitle: scaled(Style.font.subtitle),
+    title: scaled(Style.font.title)
+  })
+}

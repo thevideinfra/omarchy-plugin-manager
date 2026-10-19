@@ -58,6 +58,12 @@ Panel {
   // reading `root.rows` and friends; only what it binds to or writes is
   // aliased.
 
+  PanelStyle {
+    id: panelStyle
+    settings: store.selfSettings
+  }
+  readonly property var look: panelStyle
+
   PluginStore {
     id: store
     externalBusy: !!root.popupMoveOwner && root.popupMoveOwner.busy

@@ -6,14 +6,66 @@
   "author": "Juan Casanueva",
   "license": "MIT",
   "description": "Enable, disable, place, update, and remove Omarchy shell plugins from the bar",
-  "kinds": ["bar-widget"],
+  "kinds": [
+    "bar-widget"
+  ],
   "keepLoaded": true,
-  "entryPoints": { "barWidget": "BarWidget.qml" },
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
   "barWidget": {
     "displayName": "Plugin Manager",
     "description": "Manage, place, and update installed Omarchy shell plugins",
     "category": "System",
     "allowMultiple": false,
-    "defaultSection": "right"
+    "defaultSection": "right",
+    "defaults": {
+      "density": "normal",
+      "fontSize": "normal",
+      "accent": "theme"
+    },
+    "schema": [
+      {
+        "key": "density",
+        "type": "enum",
+        "label": "Density",
+        "options": [
+          "compact",
+          "normal",
+          "comfortable"
+        ],
+        "defaultValue": "normal",
+        "description": "How tightly the panel is laid out."
+      },
+      {
+        "key": "fontSize",
+        "type": "enum",
+        "label": "Font size",
+        "options": [
+          "small",
+          "normal",
+          "large"
+        ],
+        "defaultValue": "normal",
+        "description": "Text size, on top of the density's own scaling."
+      },
+      {
+        "key": "accent",
+        "type": "enum",
+        "label": "Accent colour",
+        "options": [
+          "theme",
+          "blue",
+          "cyan",
+          "green",
+          "magenta",
+          "yellow",
+          "red",
+          "orange"
+        ],
+        "defaultValue": "theme",
+        "description": "The colour the panel highlights with: the theme's accent, or a colour from its palette."
+      }
+    ]
   }
 }
