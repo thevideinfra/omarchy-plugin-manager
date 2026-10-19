@@ -30,6 +30,11 @@ Item {
   // "theme" first, then the palette names the current theme defines.
   readonly property var accentChoices: accentSource.available
 
+  // The colour a palette name stands for, for the swatch in the settings page.
+  function accentSwatch(name) {
+    return accentSource.colorOf(name)
+  }
+
   function sp(px) { return Style.space(px * densityScale) }
 
   function scaled(px) { return Math.round(px * fontScale) }

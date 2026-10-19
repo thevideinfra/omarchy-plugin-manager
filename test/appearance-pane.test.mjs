@@ -32,7 +32,7 @@ test("choices follow the live look and use the accent", () => {
   assert.match(panel, /root\.look\.fontSizeChoice/)
   assert.match(panel, /root\.look\.accentChoice/)
   assert.match(panel, /component ChoiceRow/)
-  assert.match(panel, /color: chosen \? root\.look\.accent : root\.contentForeground/)
+  assert.match(panel, /color: chip\.chosen \? root\.look\.accent : root\.contentForeground/)
 })
 
 test("the key hints stack on two lines when they do not fit one", () => {
