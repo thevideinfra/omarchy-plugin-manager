@@ -29,7 +29,8 @@
       "showMeta": true,
       "showSummary": true,
       "showKeyHints": true,
-      "showSearch": true
+      "showSearch": true,
+      "accentToggles": true
     },
     "schema": [
       {
@@ -107,6 +108,13 @@
         "label": "Show the search box",
         "defaultValue": true,
         "description": "Show the search box above the plugin list."
+      },
+      {
+        "key": "accentToggles",
+        "type": "boolean",
+        "label": "Accent colour on switches",
+        "defaultValue": true,
+        "description": "Colour the on/off switches with the accent instead of the text colour."
       }
     ]
   }

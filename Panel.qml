@@ -146,52 +146,6 @@ Panel {
     font.bold: true
   }
 
-  // On/off switch in the accent colour: accent track and knob when on, a dim
-  // neutral track when off (the look omaudiopanel uses). busy dims it and
-  // stops clicks, like the grey switch it replaces.
-  component AccentSwitch: Item {
-    id: sw
-    property bool checked: false
-    property bool interactive: true
-    property bool busy: false
-    readonly property bool containsMouse: swMouse.containsMouse
-    signal toggled()
-
-    implicitWidth: root.look.sp(34)
-    implicitHeight: root.look.sp(18)
-    opacity: sw.busy || !sw.interactive ? 0.5 : 1.0
-
-    Rectangle {
-      anchors.fill: parent
-      radius: height / 2
-      color: sw.checked ? Qt.alpha(root.look.accent, 0.3) : Qt.alpha(root.contentForeground, 0.1)
-      border.width: 1
-      border.color: sw.checked ? root.look.accent : Qt.alpha(root.contentForeground, 0.25)
-      Behavior on color { ColorAnimation { duration: 120 } }
-
-      Rectangle {
-        width: parent.height - root.look.sp(6)
-        height: width
-        radius: width / 2
-        anchors.verticalCenter: parent.verticalCenter
-        x: sw.checked ? parent.width - width - (parent.height - height) / 2 : (parent.height - height) / 2
-        color: sw.checked ? root.look.accent : Qt.darker(root.contentForeground, 1.4)
-        Behavior on x { NumberAnimation { duration: 120 } }
-        Behavior on color { ColorAnimation { duration: 120 } }
-      }
-    }
-
-    MouseArea {
-      id: swMouse
-      anchors.fill: parent
-      anchors.margins: -root.look.sp(3)
-      hoverEnabled: true
-      enabled: sw.interactive && !sw.busy
-      cursorShape: Qt.PointingHandCursor
-      onClicked: sw.toggled()
-    }
-  }
-
   // A label with a row of choice chips; the selected one is accent filled and
   // bold. choices: array of strings; the chips wrap, so a long list such as
   // the accent names stays inside the pane. swatches puts a colour dot before
@@ -327,6 +281,9 @@ Panel {
 
     AccentSwitch {
       id: toggleSwitch
+      look: root.look
+      foreground: root.contentForeground
+      useAccent: root.look.accentToggles
       anchors.right: parent.right
       anchors.rightMargin: root.look.sp(12)
       anchors.verticalCenter: parent.verticalCenter
@@ -1680,6 +1637,7 @@ Panel {
           ShowToggleCard { key: "showSummary"; title: "Summary counts"; caption: "Installed, total and update counts in the header" }
           ShowToggleCard { key: "showKeyHints"; title: "Key hints"; caption: "Filter and action keys at the bottom" }
           ShowToggleCard { key: "showSearch"; title: "Search"; caption: "Search box above the list" }
+          ShowToggleCard { key: "accentToggles"; title: "Accent switches"; caption: "Colour the on/off switches with the accent" }
 
           // Off is the verified-snapshot promise; on is the user's own call, and
           // the caption says so in the same words the confirmation will.
@@ -1726,6 +1684,9 @@ Panel {
 
             AccentSwitch {
               id: unverifiedSwitch
+              look: root.look
+              foreground: root.contentForeground
+              useAccent: root.look.accentToggles
               anchors.right: parent.right
               anchors.rightMargin: root.look.sp(12)
               anchors.verticalCenter: parent.verticalCenter

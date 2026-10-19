@@ -48,6 +48,7 @@ the one key changes.
 | `showSummary` | on / off | on | The "installed, total, to update" counts in the header |
 | `showKeyHints` | on / off | on | The filter and action key hints at the bottom |
 | `showSearch` | on / off | on | The search box above the list; off also drops the `/` hint and key, and clears any search term |
+| `accentToggles` | on / off | on | Colour the on/off switches (the Settings page and every plugin row) with the accent; off uses the text colour |
 
 Density, font size and accent are picked from small rounded buttons in the settings page (the accent ones carry a dot in the palette colour), and the on/off settings use accent switches.
 

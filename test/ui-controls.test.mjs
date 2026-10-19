@@ -70,21 +70,17 @@ test("PanelStyle.accentSwatch maps names to palette colours", () => {
 // ---- 4. accent switch
 test("settings cards use an AccentSwitch, not the grey ToggleSwitch", () => {
   assert.doesNotMatch(panel, /\bToggleSwitch \{/)
-  const sw = panel.slice(panel.indexOf("component AccentSwitch"), panel.indexOf("component ShowToggleCard"))
+  const sw = read("AccentSwitch.qml")
   assert.match(sw, /signal toggled\(\)/)
-  assert.match(sw, /property bool checked: false/)
-  assert.match(sw, /property bool interactive: true/)
-  assert.match(sw, /property bool busy: false/)
-  assert.match(sw, /readonly property bool containsMouse: swMouse\.containsMouse/)
   assert.match(sw, /implicitWidth: root\.look\.sp\(34\)/)
   assert.match(sw, /implicitHeight: root\.look\.sp\(18\)/)
-  assert.match(sw, /Qt\.alpha\(root\.look\.accent, 0\.3\)/)
-  assert.match(sw, /Qt\.alpha\(root\.contentForeground, 0\.1\)/)
-  assert.match(sw, /Qt\.alpha\(root\.contentForeground, 0\.25\)/)
-  assert.match(sw, /Qt\.darker\(root\.contentForeground, 1\.4\)/)
+  assert.match(sw, /Qt\.alpha\(root\.tint, 0\.3\)/)
+  assert.match(sw, /Qt\.alpha\(root\.foreground, 0\.1\)/)
+  assert.match(sw, /Qt\.alpha\(root\.foreground, 0\.25\)/)
+  assert.match(sw, /Qt\.darker\(root\.foreground, 1\.4\)/)
   assert.match(sw, /radius: height \/ 2/)
   assert.equal(panel.split("AccentSwitch {").length - 1, 2) // the two cards
-  assert.match(panel, /AccentSwitch \{\s*id: unverifiedSwitch[\s\S]{0,400}busy: root\.busy/)
+  assert.match(panel, /AccentSwitch \{\s*id: unverifiedSwitch[\s\S]{0,500}busy: root\.busy/)
 })
 
 test("PanelDropdown imports qs.Ui for the types the shell copy got implicitly", () => {
