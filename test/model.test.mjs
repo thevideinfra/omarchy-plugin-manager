@@ -12,50 +12,31 @@ const source = readFileSync(new URL("../Model.js", import.meta.url), "utf8")
 const Model = new Function(
   source + `
   return {
-    splitSections, parseArray, parseGitMap, parseManifestMeta, mergePlugins, countRemovable,
-    rowsInGroup, groupLabel, sectionHeading,
-    kindLabel, kindsLabel, kindOptions, filterByKind, nextKind, filterKind, filterKindLabel,
-    statusOptions, filterByStatus,
-    matchesQuery, filterRows, isFiltering, emptyMessage, groupOptions, browseFilterHints, installedFilterHints, actionHints, nextOption, verifiedIdSet, isVerified, upToDate, catalogStarsById, rowStarLabel, catalogHeartsById, rowHeartLabel,
-    parseCatalog, catalogEntries, installedIdSet, installUrlFor, markInstalled,
-    restampCatalogInstallState, plainText, buildCatalog, idSetFromList,
-    catalogAssetUrl, catalogCount,
-    catalogCategories, catalogKindKey, catalogKindOptions, catalogAvailabilityOptions, catalogSortOptions,
-    filterCatalog, sortCatalog, matchesCatalogQuery, catalogIsFiltering,
-    clearedCatalogFilters, catalogEmptyMessage,
-    installState, installBlockedReason, installStateDiffers, catalogUnverifiedSnapshot,
-    installUnverifiedConfirmMessage, allowUnverifiedInstalls,
-    starLabel, accentColor, installedTint, catalogDetailFields, catalogMetaLine,
-    starSlugFor, starToggleCommand, parseStarResult,
-    bumpCount,
-    repoShortLabel, browsableUrl, repoWebUrl, rowRepoUrl, expandedTabFromPayload, expandedScreenFromPayload,
-    normalizedManifestVersion, normalizedReleaseVersion, releaseVersionLabel,
-    githubReleaseCandidates, versionReleaseCandidates, versionFallbackUrl,
-    catalogVersionLabel, catalogVersionReleaseCandidates, catalogVersionFallbackUrl,
-    repoPreviewUrl, previewCandidates, installedPreviewCandidates, rowInitials,
-    parseUpdateReport, applyUpdateReport, applyPinnedUpdates, pinnedRequest, installRequest, pinnedUpdateTooltip, updateStatus, updateCompareLabel,
-    unverifiedRequest, updateUnverifiedConfirmMessage, parseSelfSettings, parseSelfEntry, withSelfSetting, allowUnverifiedUpdates,
-    tiledExpandedPanel, openAs, withOpenAs, expandedModeFromPayload, selfEntryFromShellConfig,
-    updateBadge, updateCompareUrl,
-    updateReleaseCandidates, versionLabel, countBehind,
-    bulkUpdateCandidates, bulkUpdateConfirmMessage, bulkUpdateSummary,
+    splitSections, parseArray, parseGitMap, parseManifestMeta, mergePlugins, countRemovable, rowsInGroup,
+    groupLabel, sectionHeading, kindLabel, kindsLabel, kindOptions, filterByKind, nextKind, filterKind,
+    filterKindLabel, statusOptions, filterByStatus, matchesQuery, filterRows, isFiltering, emptyMessage,
+    groupOptions, installedFilterHints, actionHints, nextOption, verifiedIdSet, isVerified, upToDate,
+    catalogStarsById, rowStarLabel, parseCatalog, catalogEntries, plainText, buildCatalog, catalogCount,
+    starLabel, starSlugFor, starToggleCommand, parseStarResult, bumpCount, repoShortLabel, browsableUrl,
+    repoWebUrl, rowRepoUrl, normalizedManifestVersion, normalizedReleaseVersion, releaseVersionLabel,
+    githubReleaseCandidates, versionReleaseCandidates, versionFallbackUrl, parseUpdateReport,
+    applyUpdateReport, applyPinnedUpdates, pinnedRequest, pinnedUpdateTooltip, updateStatus,
+    updateCompareLabel, unverifiedRequest, updateUnverifiedConfirmMessage, parseSelfSettings, parseSelfEntry,
+    withSelfSetting, allowUnverifiedUpdates, updateBadge, updateCompareUrl, updateReleaseCandidates,
+    versionLabel, countBehind, bulkUpdateCandidates, bulkUpdateConfirmMessage, bulkUpdateSummary,
     trustedGithubReleaseApiUrl, trustedGithubReleaseUrl, trustedGithubRepoUrl, trustedGithubWebUrl,
-    githubNavigationRequest, releaseProbeCommand,
-    releaseNavigationInitialState, releaseNavigationRequestTransition,
-    releaseNavigationRevokeTransition, releaseNavigationDirectTransition,
+    githubNavigationRequest, releaseProbeCommand, releaseNavigationInitialState,
+    releaseNavigationRequestTransition, releaseNavigationRevokeTransition, releaseNavigationDirectTransition,
     releaseNavigationProbeExitedTransition, releaseNavigationProbeOutputTransition,
-    releaseNavigationStartQueuedTransition, releaseNavigationProbeStartFailedTransition,
-    metaLine, authorLabel, descriptionLine, hasDescription, sourceBadge,
-    normalizeGitUrl, isValidGitUrl, repoLabel, lastLine,
-    actionVerb, actionGerund, successMessage, failureMessage,
-    needsPlacement, canEnable, placementOptions, enableCommand, findRow,
-    parseLayoutSections, canMove, moveOptions, moveCommand, moveNote,
-    canDisable, disableCommand, enableNote, disableNote, restartShellCommand,
-    catalogNeedsPlacement, browseModalFocusOwner, catalogPlacementConfirmationNote
+    releaseNavigationStartQueuedTransition, releaseNavigationProbeStartFailedTransition, metaLine,
+    authorLabel, descriptionLine, hasDescription, sourceBadge, normalizeGitUrl, lastLine, actionVerb,
+    actionGerund, successMessage, failureMessage, needsPlacement, canEnable, placementOptions, enableCommand,
+    findRow, parseLayoutSections, canMove, moveOptions, moveCommand, moveNote, canDisable, disableCommand,
+    enableNote, disableNote, restartShellCommand
   }`
 )()
 
-test("Browse reads the canonical catalog endpoint from the helper alone", () => {
+test("The catalog is read from the canonical endpoint from the helper alone", () => {
   // The catalog is fetched, projected and cached by the pinned helper. No
   // QML or JavaScript names that endpoint, so nothing here can retarget the
   // catalog host. Python's subprocess contract pins the same URL and rejects
@@ -724,52 +705,8 @@ test("findRow looks a plugin up by id rather than by position", () => {
 // them. So anything that has to be asked about an install must be asked BEFORE
 // the install starts, which means reading the kind off the registry listing
 // rather than off the manifest that does not exist yet.
-test("catalogNeedsPlacement reads the registry's own words for the kind", () => {
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Bar widget" }), true)
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Service + Bar widget" }), true)
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Menu + Bar widget" }), true)
-})
-
 // "Bar" is a whole-bar replacement, and it is a prefix of "Bar widget" — so
 // this has to match the phrase, not the word.
-test("catalogNeedsPlacement does not place a plugin that IS the bar", () => {
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Bar" }), false)
-})
-
-test("catalogNeedsPlacement stays quiet about kinds it cannot vouch for", () => {
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Service" }), false)
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Overlay" }), false)
-  assert.equal(Model.catalogNeedsPlacement({ kind: "Suite" }), false)
-  assert.equal(Model.catalogNeedsPlacement({ kind: "" }), false)
-  assert.equal(Model.catalogNeedsPlacement(null), false)
-})
-
-test("isValidGitUrl accepts the three shapes git actually clones", () => {
-  assert.ok(Model.isValidGitUrl("https://github.com/user/repo.git"))
-  assert.ok(Model.isValidGitUrl("ssh://git@github.com/user/repo.git"))
-  assert.ok(Model.isValidGitUrl("git@github.com:user/repo.git"))
-  assert.ok(Model.isValidGitUrl("  https://github.com/user/repo  "))
-})
-
-test("isValidGitUrl rejects anything that could reach the CLI as a flag or a mess", () => {
-  assert.equal(Model.isValidGitUrl(""), false)
-  assert.equal(Model.isValidGitUrl("   "), false)
-  assert.equal(Model.isValidGitUrl("--yes"), false)
-  assert.equal(Model.isValidGitUrl("-f"), false)
-  assert.equal(Model.isValidGitUrl("file:///etc/passwd"), false)
-  assert.equal(Model.isValidGitUrl("http://github.com/user/repo.git"), false)
-  assert.equal(Model.isValidGitUrl("https://github.com/user/repo .git"), false)
-  assert.equal(Model.isValidGitUrl("https://github.com"), false)
-  assert.equal(Model.isValidGitUrl("github.com/user/repo"), false)
-})
-
-test("repoLabel names the repository, not the whole url", () => {
-  assert.equal(Model.repoLabel("https://github.com/user/omarchy-clock.git"), "omarchy-clock")
-  assert.equal(Model.repoLabel("git@github.com:user/omarchy-clock.git"), "omarchy-clock")
-  assert.equal(Model.repoLabel("https://github.com/user/repo/"), "repo")
-  assert.equal(Model.repoLabel("nonsense"), "nonsense")
-})
-
 test("mergePlugins tags each row with the section it belongs to", () => {
   const rows = Model.mergePlugins(listEntries, catalogEntries, gitMap)
   assert.equal(rows.find(r => r.id === "omarchy.clock").group, "built-in")
@@ -914,14 +851,13 @@ test("failureMessage prefers the CLI's own words, and falls back to the exit cod
 test("actionGerund does not produce Updateing", () => {
   assert.equal(Model.actionGerund("update"), "Updating")
   assert.equal(Model.actionGerund("remove"), "Removing")
-  assert.equal(Model.actionGerund("install"), "Installing")
-  assert.equal(Model.actionVerb("install"), "Install")
+  assert.equal(Model.actionGerund("install"), "Working")
+  assert.equal(Model.actionVerb("install"), "Action")
 })
 
-// Installing does enable, so the message may say the plugin is running; what
-// it must not do is name a kind nothing sends any more.
-test("successMessage reports an install as installed", () => {
-  assert.equal(Model.successMessage("install", "omarchy-clock"), "Installed omarchy-clock")
+// No install kind is sent any more, so none keeps a message branch.
+test("successMessage names no install kind", () => {
+  assert.equal(Model.successMessage("install", "omarchy-clock"), "Done")
   assert.equal(Model.successMessage("add", "omarchy-clock"), "Done")
 })
 
@@ -1107,9 +1043,9 @@ test("catalogEntries defaults to explicit GitHub-star ordering", () => {
   assert.deepEqual(entries.map(e => e.stars), [120, 9])
 })
 
-test("catalogEntries keeps GitHub stars and Marketplace hearts distinct and honest", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  assert.deepEqual(entries.map(e => [e.stars, e.marketplaceHearts]), [[120, 7], [9, 0]])
+test("catalogEntries keeps GitHub stars honest", () => {
+  const entries = Model.catalogEntries(catalogDoc)
+  assert.deepEqual(entries.map(e => e.stars), [120, 9])
 
   for (const value of [undefined, null, "12", false, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
     assert.equal(Model.catalogCount(value), null)
@@ -1119,50 +1055,18 @@ test("catalogEntries keeps GitHub stars and Marketplace hearts distinct and hone
   assert.equal(Model.starLabel(0), "0")
 })
 
-test("catalogEntries keeps listing timestamps for Recently added sorting", () => {
-  const weather = Model.catalogEntries(catalogDoc, {}).find(entry => entry.id === "acme.weather")
-  assert.equal(weather.listedAt, "2026-08-19T14:30:00.000Z")
-  assert.equal(weather.addedAt, "2026-08-19")
-})
-
-test("catalogEntries derives the search text and the listing timestamp once, on the worker", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const weather = entries.find(entry => entry.id === "acme.weather")
-  const suite = entries.find(entry => entry.id === "acme.suite")
-  assert.equal(weather.searchText, "weather\nacme.weather\nacme\nforecast in the bar")
-  assert.equal(weather.listedTimestamp, Date.parse("2026-08-19T14:30:00.000Z"))
-  // No listing date at all is null, never undefined: the sort must not fall
-  // back to parsing the entry again.
-  assert.equal(suite.listedTimestamp, null)
-  assert.ok(Object.prototype.hasOwnProperty.call(suite, "listedTimestamp"))
-})
-
-test("matchesCatalogQuery uses the precomputed text and cannot match across field seams", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const weather = entries.find(entry => entry.id === "acme.weather")
-  assert.ok(Model.matchesCatalogQuery(weather, "FORECAST"))
-  assert.ok(Model.matchesCatalogQuery(weather, "acme.wea"))
-  // "weather" ends one field and "acme.weather" starts the next.
-  assert.equal(Model.matchesCatalogQuery(weather, "weatheracme"), false)
-  assert.equal(Model.matchesCatalogQuery(weather, "weather acme"), false)
-  // A hand-built entry without the derived field still matches the same way.
-  const bare = { name: "Weather", id: "acme.weather", author: "acme", description: "Forecast in the bar" }
-  assert.ok(Model.matchesCatalogQuery(bare, "forecast"))
-  assert.equal(Model.matchesCatalogQuery(bare, "weatheracme"), false)
-  // The stale-field case: a copy that lost its search text is recomputed.
-  assert.ok(Model.matchesCatalogQuery({ ...weather, searchText: undefined }, "forecast"))
-})
-
 test("catalogEntries keeps the marketplace's reviewed commit, normalized, and drops junk", () => {
+  const listing = extra => Object.assign({ verificationStatus: "verified", sourceType: "community",
+    repo: "https://github.com/acme/thing" }, extra)
   const doc = { plugins: [
-    { id: "a.one", verificationCommit: "2D9321902AA0176D47DCDB21D76884BCA6A34F73" },
-    { id: "a.two", verificationCommit: "not-a-sha" },
-    { id: "a.three" }
+    listing({ id: "a.one", verificationCommit: "2D9321902AA0176D47DCDB21D76884BCA6A34F73" }),
+    listing({ id: "a.two", verificationCommit: "not-a-sha" }),
+    listing({ id: "a.three" })
   ] }
-  const entries = Model.catalogEntries(doc, {})
-  assert.equal(entries.find(e => e.id === "a.one").verifiedCommit, "2d9321902aa0176d47dcdb21d76884bca6a34f73")
-  assert.equal(entries.find(e => e.id === "a.two").verifiedCommit, "")
-  assert.equal(entries.find(e => e.id === "a.three").verifiedCommit, "")
+  const entries = Model.catalogEntries(doc)
+  assert.equal(entries.find(e => e.id === "a.one").updateSnapshot.verifiedCommit, "2d9321902aa0176d47dcdb21d76884bca6a34f73")
+  assert.equal(entries.find(e => e.id === "a.two").updateSnapshot, null)
+  assert.equal(entries.find(e => e.id === "a.three").updateSnapshot, null)
 })
 
 // Same brace-balanced extraction idiom as update-producer.test.mjs; no QML runtime.
@@ -1411,419 +1315,17 @@ test("pinned updates use a dedicated bounded process, not the host HEAD updater"
   assert.match(store, /Qt.resolvedUrl\("helpers\/pinned_update.py"\)/)
 })
 
-test("markInstalled copies keep the derived search text and timestamp", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const stamped = Model.markInstalled(entries, { "acme.weather": true })
-  const weather = stamped.find(entry => entry.id === "acme.weather")
-  assert.equal(weather.installed, true)
-  assert.equal(weather.searchText, entries[0].searchText)
-  assert.equal(weather.listedTimestamp, entries[0].listedTimestamp)
-})
-
-test("sortCatalog reads the precomputed timestamp and parses nothing for built entries", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const originalParse = Date.parse
-  let parseCalls = 0
-  Date.parse = value => { parseCalls++; return originalParse(value) }
-  try {
-    assert.deepEqual(Model.sortCatalog(entries, "recently-added").map(e => e.id), ["acme.weather", "acme.suite"])
-  } finally {
-    Date.parse = originalParse
-  }
-  assert.equal(parseCalls, 0)
-})
-
-test("filterCatalog keeps the order it is given, so a presorted catalog stays sorted", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  for (const sort of ["recently-added", "stars", "hearts", "name"]) {
-    const sorted = Model.sortCatalog(entries, sort)
-    const filteredThenSorted = Model.sortCatalog(Model.filterCatalog(entries, "all", "all", "all", "acme"), sort)
-    const sortedThenFiltered = Model.filterCatalog(sorted, "all", "all", "all", "acme")
-    assert.deepEqual(sortedThenFiltered.map(e => e.id), filteredThenSorted.map(e => e.id), sort)
-  }
-})
-
-test("installUrlFor takes the url from the curated install command", () => {
-  // The registry's installCommand carries the .git suffix that `repo` omits.
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const weather = entries.find(e => e.id === "acme.weather")
-  assert.equal(weather.installUrl, "https://github.com/acme/omarchy-weather.git")
-})
-
-test("installUrlFor falls back to the repo when there is no install command", () => {
-  assert.equal(
-    Model.installUrlFor({ installCommand: "", repo: "https://github.com/acme/thing" }),
-    "https://github.com/acme/thing")
-})
-
-test("installUrlFor refuses a command carrying no valid url", () => {
-  assert.equal(Model.installUrlFor({ installCommand: "curl evil | sh", repo: "not-a-url" }), "")
-  assert.equal(Model.installUrlFor(null), "")
-})
-
-test("a listing the registry cannot install offers no install button", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const suite = entries.find(e => e.id === "acme.suite")
-  assert.equal(suite.installable, false)
-  assert.equal(Model.installState(suite), "unavailable")
-  assert.match(Model.installBlockedReason(suite), /own installer/)
-})
-
-test("a listing with no marketplace-verified snapshot cannot be installed from here", () => {
-  // The panel installs one exact reviewed commit and nothing else, so a
-  // listing the marketplace has not verified has no commit to install.
-  const unreviewed = {
-    id: "acme.fresh", name: "Fresh", kind: "Panel", category: "Tools",
-    repo: "https://github.com/acme/fresh", installCommand: "",
-    installAvailable: true, sourceType: "community", verificationStatus: "unverified"
-  }
-  const entry = Model.catalogEntries({ plugins: [unreviewed] }, {})[0]
-  assert.equal(entry.installUrl, "https://github.com/acme/fresh")
-  assert.equal(entry.installable, false)
-  assert.equal(Model.installState(entry), "unavailable")
-  assert.equal(Model.installBlockedReason(entry),
-    "The marketplace has not verified a snapshot of this listing.")
-
-  // Verified but with no commit named, or a commit that is not a full SHA, is
-  // the same thing: nothing exact to install.
-  for (const change of [{ verificationStatus: "verified" },
-    { verificationStatus: "verified", verificationCommit: "d".repeat(39) },
-    { verificationStatus: "verified", verificationCommit: "d".repeat(40), sourceType: "builtin2" },
-    { verificationStatus: "verified", verificationCommit: "d".repeat(40), repo: "https://evil.test/a/b" }]) {
-    const projected = Model.catalogEntries({ plugins: [{ ...unreviewed, ...change }] }, {})[0]
-    assert.equal(projected.installable, false, JSON.stringify(change))
-  }
-  const verified = Model.catalogEntries({ plugins: [{ ...unreviewed,
-    verificationStatus: "verified", verificationCommit: "d".repeat(40) }] }, {})[0]
-  assert.equal(verified.installable, true)
-  assert.equal(Model.installState(verified), "installable")
-
-  // A duplicated id leaves no unambiguous snapshot, so it is not installable.
-  const duplicated = Model.catalogEntries({ plugins: [
-    { ...unreviewed, verificationStatus: "verified", verificationCommit: "d".repeat(40) },
-    { ...unreviewed, verificationStatus: "verified", verificationCommit: "e".repeat(40) }] }, {})
-  assert.ok(duplicated.every(entry => entry.installable === false))
-})
-
-test("the registry's generic note never hides why this panel refuses an install", () => {
-  // Every installable listing carries the same boilerplate note about how
-  // Omarchy installs. When the registry offers the listing and this panel is
-  // the one refusing, that sentence explains nothing; the panel's reason does.
-  const note = "Omarchy clones the current upstream repository, validates it locally, and only then installs and enables the plugin."
-  const unreviewed = {
-    id: "acme.fresh", name: "Fresh", kind: "Overlay", category: "Appearance",
-    repo: "https://github.com/acme/fresh", installCommand: "omarchy plugin add https://github.com/acme/fresh.git --enable",
-    installAvailable: true, installNote: note, sourceType: "community",
-    verificationStatus: "unverified", verificationCommit: "e".repeat(40)
-  }
-  const entry = Model.catalogEntries({ plugins: [unreviewed] }, {})[0]
-  assert.equal(entry.installable, false)
-  assert.equal(Model.installBlockedReason(entry),
-    "The marketplace has not verified a snapshot of this listing.")
-
-  const spoofed = Model.catalogEntries({ plugins: [{ ...unreviewed, verificationStatus: "verified",
-    installCommand: "omarchy plugin add https://github.com/attacker/evil.git" }] }, {})[0]
-  assert.equal(Model.installBlockedReason(spoofed),
-    "This listing's install command names a repository its verified snapshot does not.")
-
-  // A note the registry attaches while withholding installation is the reason.
-  const withheld = Model.catalogEntries({ plugins: [{ ...unreviewed, installAvailable: false,
-    installNote: "This plugin requires additional setup before it can be enabled." }] }, {})[0]
-  assert.equal(Model.installBlockedReason(withheld),
-    "This plugin requires additional setup before it can be enabled.")
-})
-
-// One unreviewed listing that names the branch the marketplace validated, so
-// the install opt-in has something to offer. Kept beside the tests that use it.
-const unreviewedListing = {
-  id: "acme.fresh", name: "Fresh", kind: "Panel", category: "Tools",
-  repo: "https://github.com/acme/fresh",
-  installCommand: "omarchy plugin add https://github.com/acme/fresh.git --enable",
-  installAvailable: true, sourceType: "community", verificationStatus: "unverified",
-  listingValidatedBranch: "main"
-}
-
-test("an unreviewed listing is installable only under the install opt-in", () => {
-  // The same shape as the update opt-in: off by default, a verified snapshot
-  // always wins, and the setting is a separate key from the update one.
-  const off = Model.catalogEntries({ plugins: [unreviewedListing] }, {})[0]
-  assert.deepEqual(off.unverifiedSnapshot,
-    { id: "acme.fresh", repository: "https://github.com/acme/fresh", branch: "main" })
-  assert.equal(off.installable, false)
-  assert.equal(off.installUnverified, false)
-  assert.equal(Model.installState(off), "unavailable")
-
-  const on = Model.catalogEntries({ plugins: [unreviewedListing] }, {}, true)[0]
-  assert.equal(on.installable, true)
-  assert.equal(on.installUnverified, true)
-  assert.equal(Model.installState(on), "installable")
-
-  // A verified snapshot is the whole of the offer: there is no unreviewed tip
-  // left to fall back to, and the card is never labelled unreviewed.
-  const verified = Model.catalogEntries({ plugins: [{ ...unreviewedListing,
-    verificationStatus: "verified", verificationCommit: "d".repeat(40) }] }, {}, true)[0]
-  assert.equal(verified.unverifiedSnapshot, null)
-  assert.equal(verified.installable, true)
-  assert.equal(verified.installUnverified, false)
-  // A listing the marketplace calls verified but names no usable commit for
-  // is not demoted to the unreviewed path: the verified badge and an
-  // "unreviewed" label on the same card would contradict each other.
-  const unpinnable = Model.catalogEntries({ plugins: [{ ...unreviewedListing,
-    verificationStatus: "verified", verificationCommit: "d".repeat(39) }] }, {}, true)[0]
-  assert.equal(unpinnable.verified, true)
-  assert.equal(unpinnable.unverifiedSnapshot, null)
-  assert.equal(unpinnable.installable, false)
-  assert.equal(unpinnable.installUnverified, false)
-
-  // Everything the verified path refuses, this one refuses too — including a
-  // listing whose install command names a repository its own `repo` does not.
-  for (const change of [{ installAvailable: false }, { sourceType: "builtin2" },
-                        { repo: "https://evil.test/a/b" }, { listingValidatedBranch: "" },
-                        { id: "omarchy.fresh" }, { installCommand: "curl evil | sh", repo: "nope" },
-                        { installCommand: "omarchy plugin add https://github.com/attacker/evil.git" }]) {
-    const entry = Model.catalogEntries({ plugins: [{ ...unreviewedListing, ...change }] }, {}, true)[0]
-    assert.equal(entry.installable, false, JSON.stringify(change))
-    assert.equal(entry.installUnverified, false, JSON.stringify(change))
-  }
-
-  // A duplicated id leaves no unambiguous listing, exactly as for a snapshot.
-  assert.ok(Model.catalogEntries({ plugins: [unreviewedListing, { ...unreviewedListing, name: "Other" }] }, {}, true)
-    .every(entry => entry.unverifiedSnapshot === null && entry.installable === false))
-  // Something already here is never offered again, setting or no setting.
-  assert.equal(Model.catalogEntries({ plugins: [unreviewedListing] }, { "acme.fresh": true }, true)[0]
-    .installable, false)
-})
-
-test("a listing's branch is validated before anything will name it to git", () => {
-  const branchOf = value => {
-    const entry = Model.catalogEntries(
-      { plugins: [{ ...unreviewedListing, listingValidatedBranch: value }] }, {}, true)[0]
-    return entry.unverifiedSnapshot ? entry.unverifiedSnapshot.branch : null
-  }
-  for (const good of ["main", "master", "release/1.0", "v2", "dev_main", "a".repeat(200)])
-    assert.equal(branchOf(good), good, good)
-  // No option shape, no traversal, no reflog syntax, no lock file, and never
-  // a guess: a listing with no branch has nothing to install, not "main".
-  for (const bad of ["", "-main", "--upload-pack=x", "/main", ".main", "main/", "main.",
-                     "main.lock", "a..b", "a//b", "ma@{in", "a".repeat(201), "ma in",
-                     "main\n", "ma;in", "réf", null, 7, undefined])
-    assert.equal(branchOf(bad), null, JSON.stringify(bad))
-})
-
-test("a blocked listing with a validated branch names the setting that would offer it", () => {
-  const off = Model.catalogEntries({ plugins: [unreviewedListing] }, {})[0]
-  assert.equal(Model.installBlockedReason(off),
-    "The marketplace has not verified a snapshot of this listing."
-    + " Settings can allow installing its unreviewed upstream tip.")
-
-  // Only when the setting would actually help. A listing whose install
-  // command names another repository stays refused under either setting, so
-  // pointing at the switch would be an offer nothing can honour.
-  const spoofed = Model.catalogEntries({ plugins: [{ ...unreviewedListing,
-    installCommand: "omarchy plugin add https://github.com/attacker/evil.git" }] }, {})[0]
-  assert.equal(Model.installBlockedReason(spoofed),
-    "The marketplace has not verified a snapshot of this listing.")
-})
-
-test("the install opt-in re-stamps the cards already on screen, without a refetch", () => {
-  const entries = Model.catalogEntries({ plugins: [unreviewedListing] }, {})
-  assert.equal(Model.installStateDiffers(entries, {}, false), false)
-  assert.equal(Model.installStateDiffers(entries, {}, true), true)
-
-  const on = Model.restampCatalogInstallState(entries, {}, entries[0], true)
-  assert.equal(on.changed, true)
-  assert.equal(on.entries[0].installable, true)
-  assert.equal(on.entries[0].installUnverified, true)
-  assert.equal(on.detailsEntry, on.entries[0])
-  assert.equal(entries[0].installable, false, "the original array is left alone")
-
-  const back = Model.restampCatalogInstallState(on.entries, {}, on.detailsEntry, false)
-  assert.equal(back.changed, true)
-  assert.equal(back.entries[0].installable, false)
-  assert.equal(back.entries[0].installUnverified, false)
-  // Nothing moved: the very same array returns, so the grid never resets.
-  assert.equal(Model.restampCatalogInstallState(entries, {}, null, false).changed, false)
-  assert.equal(Model.markInstalled(entries, {}, true)[0].installUnverified, true)
-})
-
-test("the unreviewed install confirmation names the branch, never a commit", () => {
-  assert.equal(
-    Model.installUnverifiedConfirmMessage("Fresh", "https://github.com/acme/fresh", "main", false),
-    "Install Fresh from an unreviewed listing?\n\n"
-    + "https://github.com/acme/fresh\n\n"
-    + "The marketplace has not verified any snapshot of this listing. The current tip of branch "
-    + "main is fetched, validated and installed, pinned to that exact commit — nobody has reviewed "
-    + "what it runs. Plugins run unsandboxed inside omarchy-shell. Only add repositories whose code "
-    + "you are willing to run.")
-  assert.ok(Model.installUnverifiedConfirmMessage("Fresh", "https://github.com/acme/fresh", "main", true)
-    .endsWith(Model.catalogPlacementConfirmationNote(true)))
-})
-
-test("a listing whose install command names another repository is not installable", () => {
-  // The card shows a url and the request fetches a repository; if those can
-  // disagree, a listing can display an official url and install someone
-  // else's code. `installCommand` is registry-supplied free text, `repo` is
-  // what the verified snapshot is bound to, so they must agree or the listing
-  // is not installable at all.
-  const spoofed = {
-    id: "acme.clock", name: "Clock", kind: "Panel", category: "Tools",
-    repo: "https://github.com/attacker/evil",
-    installCommand: "omarchy plugin add https://github.com/omarchy/official-clock.git --enable",
-    installAvailable: true, sourceType: "community",
-    verificationStatus: "verified", verificationCommit: "d".repeat(40)
-  }
-  const entry = Model.catalogEntries({ plugins: [spoofed] }, {})[0]
-  assert.equal(entry.installUrl, "https://github.com/omarchy/official-clock.git")
-  assert.equal(entry.updateSnapshot.repository, "https://github.com/attacker/evil")
-  assert.equal(entry.installable, false)
-  assert.equal(Model.installState(entry), "unavailable")
-  assert.equal(Model.installBlockedReason(entry),
-    "This listing's install command names a repository its verified snapshot does not.")
-  assert.equal(Model.installRequest(entry, "left"), null)
-  assert.equal(Model.markInstalled([entry], {})[0].installable, false)
-
-  // Agreement is canonical, not textual: a `.git` suffix, a trailing slash,
-  // an ssh form and a different case are the same repository.
-  for (const command of ["omarchy plugin add https://github.com/Attacker/Evil.git",
-                         "omarchy plugin add https://github.com/attacker/evil/",
-                         "omarchy plugin add git@github.com:attacker/evil.git", ""]) {
-    const agreed = Model.catalogEntries({ plugins: [{ ...spoofed, installCommand: command }] }, {})[0]
-    assert.equal(agreed.installable, true, command)
-    assert.equal(Model.installRequest(agreed, "left").repository, "https://github.com/attacker/evil")
-  }
-})
-
-test("installRequest binds the verified snapshot, never the repository tip", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const weather = entries.find(entry => entry.id === "acme.weather")
-  assert.deepEqual(Model.installRequest(weather, "right"), {
-    schemaVersion: 1, id: "acme.weather",
-    repository: "https://github.com/acme/omarchy-weather",
-    verifiedCommit: "d".repeat(40), section: "right"
-  })
-  // The clone url the card shows carries a .git suffix; the request carries
-  // the canonical repository the helper reauthorizes against instead.
-  assert.equal(weather.installUrl, "https://github.com/acme/omarchy-weather.git")
-  for (const section of ["", "left", "center"])
-    assert.equal(Model.installRequest(weather, section).section, section)
-  for (const section of ["Right", "bogus", "left right", null, undefined, 0, ["left"]])
-    assert.equal(Model.installRequest(weather, section), null, String(section))
-  assert.equal(Model.installRequest(null, "left"), null)
-  assert.equal(Model.installRequest(entries.find(entry => entry.id === "acme.suite"), "left"), null)
-  // Something already installed is never requested again.
-  assert.equal(Model.installRequest({ ...weather, installed: true }, "left"), null)
-  assert.equal(Model.installRequest({ ...weather, updateSnapshot: null }, "left"), null)
-  // Installability is re-derived, never read off the stale flag: a grid
-  // refetch that withdraws the listing while the dialog is open produces no
-  // request, exactly as canStartUpdate re-gates an update.
-  for (const change of [{ installAvailable: false }, { installUrl: "" },
-                        { installUrl: "https://github.com/acme/other" }])
-    assert.equal(Model.installRequest({ ...weather, ...change }, "left"), null, JSON.stringify(change))
-  assert.equal(Model.installRequest({ ...weather, installAvailable: false, installable: true }, "left"),
-    null, "the derived flag carries no authority of its own")
-  // A snapshot that does not describe this very entry carries no authority.
-  assert.equal(Model.installRequest(
-    { ...weather, updateSnapshot: { ...weather.updateSnapshot, id: "acme.other" } }, "left"), null)
-  // The install opt-in never touches a verified listing's request.
-  assert.deepEqual(Model.installRequest(weather, "right", true), Model.installRequest(weather, "right"))
-})
-
-test("installRequest binds the validated branch only while the install opt-in allows it", () => {
-  const entry = Model.catalogEntries({ plugins: [unreviewedListing] }, {}, true)[0]
-  assert.equal(entry.installable, true)
-  // The setting is re-read here, never taken from the entry's stale flag: it
-  // may have been switched off while the question was on screen.
-  assert.equal(Model.installRequest(entry, "right"), null)
-  assert.equal(Model.installRequest(entry, "right", "true"), null)
-  assert.deepEqual(Model.installRequest(entry, "right", true), {
-    schemaVersion: 1, id: "acme.fresh", repository: "https://github.com/acme/fresh",
-    branch: "main", section: "right"
-  })
-  for (const section of ["", "left", "center"])
-    assert.equal(Model.installRequest(entry, section, true).section, section)
-  for (const section of ["Right", "bogus", null, undefined, 0])
-    assert.equal(Model.installRequest(entry, section, true), null, String(section))
-  // The same re-derivation the verified path does, on the same evidence.
-  for (const change of [{ installAvailable: false }, { installUrl: "" }, { installed: true },
-                        { installUrl: "https://github.com/acme/other" }, { unverifiedSnapshot: null },
-                        { unverifiedSnapshot: { ...entry.unverifiedSnapshot, id: "acme.other" } }])
-    assert.equal(Model.installRequest({ ...entry, ...change }, "left", true), null, JSON.stringify(change))
-})
-
-test("an already-installed plugin is not offered again", () => {
-  const entries = Model.catalogEntries(catalogDoc, { "acme.weather": true })
-  const weather = entries.find(e => e.id === "acme.weather")
-  assert.equal(weather.installed, true)
-  assert.equal(weather.installable, false)
-  assert.equal(Model.installState(weather), "installed")
-})
-
-test("markInstalled re-stamps state without rebuilding or resorting", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const after = Model.markInstalled(entries, { "acme.weather": true })
-
-  assert.deepEqual(after.map(e => e.id), entries.map(e => e.id))
-  assert.equal(after[0].installed, true)
-  assert.equal(after[0].installable, false)
-  // The original array is left alone.
-  assert.equal(entries[0].installed, false)
-})
-
-test("catalog re-stamping refreshes an open details entry atomically", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const detailsEntry = entries.find(entry => entry.id === "acme.weather")
-  assert.equal(detailsEntry.installable, true)
-
-  const state = Model.restampCatalogInstallState(
-    entries, Model.installedIdSet([{ id: "acme.weather" }]), detailsEntry)
-  assert.notEqual(state.detailsEntry, detailsEntry)
-  assert.equal(state.detailsEntry.installed, true)
-  assert.equal(state.detailsEntry.installable, false)
-  assert.equal(Model.installState(state.detailsEntry), "installed")
-  assert.equal(state.detailsEntry, state.entries.find(entry => entry.id === "acme.weather"))
-})
-
-test("catalog re-stamping is a no-op when no install state changed", () => {
-  const installed = Model.installedIdSet([{ id: "acme.weather" }])
-  const entries = Model.catalogEntries(catalogDoc, installed)
-  const detailsEntry = entries.find(entry => entry.id === "acme.weather")
-
-  // Same installed set: the very same array and details object come back, so
-  // the panel can skip the assignment and the grid never resets its model
-  // (which tears down and rebuilds every visible card mid-animation).
-  const same = Model.restampCatalogInstallState(entries, installed, detailsEntry)
-  assert.equal(same.changed, false)
-  assert.equal(same.entries, entries)
-  assert.equal(same.detailsEntry, detailsEntry)
-
-  const changed = Model.restampCatalogInstallState(entries, Model.installedIdSet([]), detailsEntry)
-  assert.equal(changed.changed, true)
-  assert.notEqual(changed.entries, entries)
-  assert.equal(changed.detailsEntry.installed, false)
-})
-
-test("buildCatalog turns raw catalog text into stamped entries, or an error, in one pure call", () => {
-  // This is what the worker thread runs: everything the catalog needs from
-  // raw text to entries, with no QML object in reach.
+test("buildCatalog turns raw catalog text into slim entries, or an error, in one pure call", () => {
   const raw = JSON.stringify(catalogDoc)
-  const built = Model.buildCatalog(raw, ["acme.weather"])
+  const built = Model.buildCatalog(raw)
   assert.equal(built.error, "")
-  assert.equal(built.entries.length, Model.catalogEntries(catalogDoc, Model.installedIdSet([{ id: "acme.weather" }])).length)
-  assert.equal(built.entries.find(entry => entry.id === "acme.weather").installed, true)
-  assert.equal(built.entries.find(entry => entry.id !== "acme.weather").installed, false)
+  assert.deepEqual(built.entries.map(entry => entry.id), ["acme.weather", "acme.suite"])
 
   for (const bad of ["not json", "", "[]", '{"plugins": 3}', undefined]) {
-    const failed = Model.buildCatalog(bad, [])
+    const failed = Model.buildCatalog(bad)
     assert.equal(failed.entries, null, String(bad))
     assert.equal(failed.error, "Could not read the plugin catalog")
   }
-
-  // Ids cross the worker boundary as a plain list; hostile names stay data.
-  const set = Model.idSetFromList(["a.b", "__proto__", "constructor", 7, null])
-  assert.ok(Object.prototype.hasOwnProperty.call(set, "a.b"))
-  assert.ok(Object.prototype.hasOwnProperty.call(set, "__proto__"))
-  assert.ok(Object.prototype.hasOwnProperty.call(set, "constructor"))
-  assert.equal(Object.keys(set).length, 3)
 })
 
 // Catalog runtime, lifecycle, and Model.js parity are exercised in
@@ -1843,378 +1345,6 @@ test("catalogStarsById joins GitHub stars onto installed rows by id", () => {
   assert.equal(Model.rowStarLabel({ id: "acme.weather" }, null), "")
   assert.equal(Model.rowStarLabel({ id: "x" }, Model.catalogStarsById([{ id: "x", stars: null }])), "")
   assert.equal(Model.rowStarLabel({ id: "y" }, Model.catalogStarsById([{ id: "y", stars: 1966 }])), "2k")
-})
-
-test("catalogHeartsById joins Marketplace hearts onto installed rows by id", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const hearts = Model.catalogHeartsById(entries)
-  // Null prototype, like catalogStarsById: an id named `constructor` is data.
-  assert.equal(Object.getPrototypeOf(hearts), null)
-  assert.equal(hearts["acme.weather"], 7)
-  assert.equal(Model.rowHeartLabel({ id: "acme.weather" }, hearts), "7")
-  assert.equal(Model.rowHeartLabel({ id: "nobody.home" }, hearts), "")
-  assert.equal(Model.rowHeartLabel(null, hearts), "")
-  assert.equal(Model.rowHeartLabel({ id: "acme.weather" }, null), "")
-  assert.equal(Model.rowHeartLabel({ id: "constructor" }, hearts), "")
-  // Unknown stays unknown; a real zero is a count and may show.
-  assert.equal(Model.rowHeartLabel({ id: "x" }, Model.catalogHeartsById([{ id: "x", marketplaceHearts: null }])), "")
-  assert.equal(Model.rowHeartLabel({ id: "z" }, Model.catalogHeartsById([{ id: "z", marketplaceHearts: 0 }])), "0")
-  assert.equal(Model.rowHeartLabel({ id: "y" }, Model.catalogHeartsById([{ id: "y", marketplaceHearts: 1966 }])), "2k")
-  // Stars and hearts are separate maps.
-  assert.equal(Model.rowHeartLabel({ id: "s" }, Model.catalogHeartsById([{ id: "s", stars: 5 }])), "")
-})
-
-test("installedPreviewCandidates prefers the checkout's own preview, then the listing's", () => {
-  const row = { id: "acme.weather", name: "Weather", sourceDir: "/home/u/.config/omarchy/plugins/acme.weather", remote: "https://github.com/acme/omarchy-weather.git" }
-  const entry = { repoPreview: "https://raw.githubusercontent.com/acme/omarchy-weather/main/preview.png", thumbnail: "https://cdn.example/acme.webp" }
-  assert.deepEqual(Model.installedPreviewCandidates(row, entry, true), [
-    "file:///home/u/.config/omarchy/plugins/acme.weather/preview.png",
-    "https://raw.githubusercontent.com/acme/omarchy-weather/main/preview.png",
-    "https://cdn.example/acme.webp"
-  ])
-  // No WebP when the build cannot decode it; no listing means the repository
-  // guess from the remote; no checkout means no local file.
-  assert.deepEqual(Model.installedPreviewCandidates(row, entry, false).slice(-1), ["https://raw.githubusercontent.com/acme/omarchy-weather/main/preview.png"])
-  assert.deepEqual(Model.installedPreviewCandidates(row, null, true), [
-    "file:///home/u/.config/omarchy/plugins/acme.weather/preview.png",
-    "https://raw.githubusercontent.com/acme/omarchy-weather/main/preview.png"
-  ])
-  assert.deepEqual(Model.installedPreviewCandidates({ id: "x", name: "X", sourceDir: "", remote: "" }, null, true), [])
-  assert.deepEqual(Model.installedPreviewCandidates(null, entry, true), [])
-  // A hostile source directory cannot smuggle a query or a scheme in.
-  assert.deepEqual(Model.installedPreviewCandidates({ id: "y", name: "Y", sourceDir: "https://evil/x", remote: "" }, null, true), [])
-
-  assert.equal(Model.rowInitials({ name: "Alt+Tab" }), "AT")
-  assert.equal(Model.rowInitials({ name: "hyprmoncfg: Multi-Monitor Manager" }), "HM")
-  assert.equal(Model.rowInitials({ name: "Herdr" }), "H")
-  assert.equal(Model.rowInitials({ name: "" }), "")
-  assert.equal(Model.rowInitials(null), "")
-})
-
-test("catalogDetailFields lists a listing's facts in the details order, omitting the unknown", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const weather = entries.find(entry => entry.id === "acme.weather")
-  const rows = Model.catalogDetailFields(weather, "Available to install", true)
-  assert.deepEqual(rows.map(row => row.label), [
-    "Author", "Version", "Category", "Kind", "Marketplace review",
-    "GitHub stars", "Marketplace hearts", "Availability", "Placement"
-  ])
-  assert.equal(rows.find(row => row.label === "Version").value, "v1.2.3")
-  assert.equal(rows.find(row => row.label === "GitHub stars").value, "120")
-  assert.equal(rows.find(row => row.label === "Marketplace hearts").value, "7")
-  assert.equal(rows.find(row => row.label === "Availability").value, "Available to install")
-
-  // No version, no review, no placement: the rows simply are not there; an
-  // unknown count is omitted rather than shown as zero.
-  const suite = Model.catalogDetailFields(entries.find(entry => entry.id === "acme.suite"), "Not installable here", false)
-  assert.deepEqual(suite.map(row => row.label), ["Author", "Category", "Kind", "GitHub stars", "Marketplace hearts", "Availability"])
-  const unknown = Model.catalogDetailFields(Object.assign({}, weather, { stars: null, marketplaceHearts: undefined, license: "MIT" }), "Installed", false)
-  assert.deepEqual(unknown.map(row => row.label), ["Author", "Version", "Category", "Kind", "License", "Marketplace review", "Availability"])
-  assert.deepEqual(Model.catalogDetailFields(null, "", false), [])
-
-  assert.equal(Model.catalogMetaLine(weather), "acme  ·  Bar widget")
-  assert.equal(Model.catalogMetaLine({ author: "", kind: "Suite" }), "Suite")
-  assert.equal(Model.catalogMetaLine({ author: "acme", kind: "" }), "acme")
-  assert.equal(Model.catalogMetaLine(null), "")
-})
-
-test("installedIdSet indexes the installed rows by id", () => {
-  const set = Model.installedIdSet([{ id: "a.b" }, { id: "c.d" }, null])
-  assert.ok(Object.prototype.hasOwnProperty.call(set, "a.b"))
-  assert.ok(Object.prototype.hasOwnProperty.call(set, "c.d"))
-  assert.equal(Object.keys(set).length, 2)
-})
-
-test("installed membership is collision-safe for valid hostile property names", () => {
-  const hostileIds = ["hasOwnProperty", "constructor", "__proto__"]
-  const installed = Model.installedIdSet(hostileIds.map(id => ({ id })))
-  assert.equal(Object.getPrototypeOf(installed), null)
-  for (const id of hostileIds)
-    assert.equal(Object.prototype.hasOwnProperty.call(installed, id), true)
-
-  const doc = {
-    plugins: hostileIds.map((id, index) => ({
-      id, name: id, kind: "Panel", category: "Tools", sourceType: "community",
-      repo: `https://github.com/acme/plugin-${index}`,
-      installAvailable: true
-    }))
-  }
-  const entries = Model.catalogEntries(doc, installed)
-  assert.equal(entries.length, hostileIds.length)
-  assert.ok(entries.every(entry => entry.installed && !entry.installable))
-  assert.ok(Model.markInstalled(entries, installed).every(entry => entry.installed))
-
-  // Inherited Object properties are never membership evidence.
-  assert.ok(Model.catalogEntries(doc, {}).every(entry => !entry.installed))
-})
-
-test("catalog search covers author and description, unlike the installed search", () => {
-  // Browsing is how you find something you cannot already name.
-  const entry = { name: "Weather", id: "acme.weather", author: "acme", description: "Forecast in the bar" }
-  assert.equal(Model.matchesCatalogQuery(entry, "forecast"), true)
-  assert.equal(Model.matchesCatalogQuery(entry, "acme"), true)
-  assert.equal(Model.matchesCatalogQuery(entry, "zzz"), false)
-})
-
-test("filterCatalog composes query, category, kind, and availability", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  const installed = Model.markInstalled(entries, { "acme.weather": true })
-
-  assert.equal(Model.filterCatalog(installed, "all", "all", "all", "").length, 2)
-  assert.deepEqual(
-    Model.filterCatalog(installed, "Widgets", "Bar widget", "installed", "forecast").map(e => e.id),
-    ["acme.weather"])
-  assert.equal(Model.filterCatalog(installed, "Widgets", "Suite", "installed", "").length, 0)
-  assert.deepEqual(
-    Model.filterCatalog(entries, "Desktop", "Suite", "all", "acme").map(e => e.id),
-    ["acme.suite"])
-  // Available follows the existing installability policy; blocked listings
-  // remain visible under All but are not presented as available to install.
-  assert.deepEqual(
-    Model.filterCatalog(entries, "all", "all", "available", "").map(e => e.id),
-    ["acme.weather"])
-})
-
-test("catalogCategories is derived from the catalog and led by All", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  assert.deepEqual(Model.catalogCategories(entries).map(o => o.value), ["all", "Desktop", "Widgets"])
-})
-
-test("missing category groups under Other without becoming details metadata", () => {
-  const entries = Model.catalogEntries({ plugins: [
-    { id: "missing", name: "Missing", kind: "Panel", sourceType: "community" },
-    { id: "present", name: "Present", category: "Other", kind: "Panel", sourceType: "community" }
-  ] }, {})
-  const missing = entries.find(entry => entry.id === "missing")
-  const present = entries.find(entry => entry.id === "present")
-  assert.equal(missing.category, "Other")
-  assert.equal(missing.categoryPresent, false)
-  assert.equal(present.category, "Other")
-  assert.equal(present.categoryPresent, true)
-  assert.deepEqual(Model.catalogCategories(entries).map(option => option.value), ["all", "Other"])
-})
-
-test("Browse options are derived from catalog kinds and keep fixed policy labels", () => {
-  const entries = Model.catalogEntries(catalogDoc, {})
-  assert.deepEqual(Model.catalogKindOptions(entries), [
-    { value: "all", label: "All" },
-    { value: "bar widget", label: "Bar widget" },
-    { value: "suite", label: "Suite" }
-  ])
-  assert.deepEqual(Model.catalogKindOptions([
-    { kind: "Panel" }, { kind: "panel" }, { kind: "" }, {}, null
-  ]), [
-    { value: "all", label: "All" },
-    { value: "panel", label: "Panel" }
-  ])
-  assert.deepEqual(Model.catalogAvailabilityOptions().map(o => o.label), ["All", "Available", "Installed"])
-})
-
-test("Browse sort options put Recently added first", () => {
-  assert.deepEqual(Model.catalogSortOptions(), [
-    { value: "recently-added", label: "Recently added" },
-    { value: "updated", label: "Recent activity" },
-    { value: "stars", label: "Most starred" },
-    { value: "views", label: "Most viewed" },
-    { value: "copies", label: "Most copied" },
-    { value: "hearts", label: "Most hearts" },
-    { value: "rank", label: "Top ranked" },
-    { value: "installRate", label: "Install rate" },
-    { value: "name", label: "A–Z" },
-    { value: "verified", label: "Verified" },
-    { value: "unverified", label: "Unverified" }
-  ])
-})
-
-test("catalog kind filtering uses the same case-insensitive key as its option", () => {
-  const entries = [
-    { id: "upper", kind: "Panel", name: "Upper", author: "", description: "", category: "Tools" },
-    { id: "lower", kind: "panel", name: "Lower", author: "", description: "", category: "Tools" }
-  ]
-  assert.equal(Model.catalogKindKey(" Panel "), "panel")
-  assert.deepEqual(Model.catalogKindOptions(entries), [
-    { value: "all", label: "All" },
-    { value: "panel", label: "Panel" }
-  ])
-  assert.deepEqual(
-    Model.filterCatalog(entries, "all", "panel", "all", "").map(entry => entry.id).sort(),
-    ["lower", "upper"])
-})
-
-test("modal focus ownership prioritizes successors and restores the list only when clear", () => {
-  assert.equal(Model.browseModalFocusOwner(false, false, false), "list")
-  assert.equal(Model.browseModalFocusOwner(true, false, false), "details")
-  assert.equal(Model.browseModalFocusOwner(true, true, false), "confirmation")
-  assert.equal(Model.browseModalFocusOwner(false, true, true), "placement")
-  assert.equal(Model.browseModalFocusOwner(true, true, true), "placement")
-})
-
-test("install confirmation describes placement before installing only when required", () => {
-  assert.equal(Model.catalogPlacementConfirmationNote(false), "")
-  assert.equal(
-    Model.catalogPlacementConfirmationNote(true),
-    "\n\nNext, choose its bar section. Installation starts only after that choice.")
-})
-
-test("Browse sorting keeps stars and hearts independent with deterministic tie-breakers", () => {
-  const entries = [
-    { id: "z.same", name: "Same", stars: 10, marketplaceHearts: 2 },
-    { id: "A.same", name: "same", stars: 10, marketplaceHearts: 5 },
-    { id: "b.beta", name: "Beta", stars: null, marketplaceHearts: 5 },
-    { id: "c.alpha", name: "alpha", stars: 1, marketplaceHearts: null }
-  ]
-
-  assert.deepEqual(Model.sortCatalog(entries, "stars").map(e => e.id),
-    ["A.same", "z.same", "c.alpha", "b.beta"])
-  assert.deepEqual(Model.sortCatalog(entries, "hearts").map(e => e.id),
-    ["b.beta", "A.same", "z.same", "c.alpha"])
-  assert.deepEqual(Model.sortCatalog(entries, "name").map(e => e.id),
-    ["c.alpha", "b.beta", "A.same", "z.same"])
-  assert.deepEqual(entries.map(e => e.id), ["z.same", "A.same", "b.beta", "c.alpha"])
-})
-
-test("Browse sort modes follow their listing data and put missing values last", () => {
-  const entries = [
-    { id: "missing", name: "A missing", verified: false },
-    { id: "old", name: "B old", stars: 1, marketplaceHearts: 1, marketplaceViews: 20,
-      marketplaceCopies: 1, listedAt: "2026-08-01T00:00:00Z", repositoryUpdatedAt: "2026-08-01T00:00:00Z",
-      installCommand: "install old", verified: true },
-    { id: "new", name: "C new", stars: 3, marketplaceHearts: 3, marketplaceViews: 100,
-      marketplaceCopies: 20, listedAt: "2026-08-03T00:00:00Z", versionUpdatedAt: "2026-08-03T00:00:00Z",
-      installCommand: "install new", verified: false },
-    { id: "middle", name: "D middle", stars: 2, marketplaceHearts: 2, marketplaceViews: 50,
-      marketplaceCopies: 10, listedAt: "2026-08-02T00:00:00Z", repositoryUpdatedAt: "2026-08-02T00:00:00Z",
-      installCommand: "install middle", verified: true }
-  ]
-
-  assert.deepEqual(Model.sortCatalog(entries, "updated").map(e => e.id), ["new", "middle", "old", "missing"])
-  assert.deepEqual(Model.sortCatalog(entries, "views").map(e => e.id), ["new", "middle", "old", "missing"])
-  assert.deepEqual(Model.sortCatalog(entries, "copies").map(e => e.id), ["new", "middle", "old", "missing"])
-  assert.deepEqual(Model.sortCatalog(entries, "installRate").map(e => e.id), ["new", "middle", "old", "missing"])
-  assert.deepEqual(Model.sortCatalog(entries, "rank").map(e => e.id), ["new", "middle", "old", "missing"])
-  assert.deepEqual(Model.sortCatalog(entries, "verified").map(e => e.id), ["old", "middle", "missing", "new"])
-  assert.deepEqual(Model.sortCatalog(entries, "unverified").map(e => e.id), ["missing", "new", "old", "middle"])
-})
-
-test("Browse install rate needs 20 views and top-ranked ties keep name order", () => {
-  const entries = [
-    { id: "few", name: "A few views", marketplaceViews: 19, marketplaceCopies: 19, installCommand: "install" },
-    { id: "tie-b", name: "B tied", stars: 10, marketplaceHearts: 10, marketplaceViews: 20, marketplaceCopies: 10 },
-    { id: "tie-a", name: "A tied", stars: 10, marketplaceHearts: 10, marketplaceViews: 20, marketplaceCopies: 10 },
-    { id: "rated", name: "Rated", marketplaceViews: 20, marketplaceCopies: 20, installCommand: "install" }
-  ]
-
-  assert.deepEqual(Model.sortCatalog(entries, "installRate").map(e => e.id), ["rated", "tie-a", "tie-b", "few"])
-  assert.deepEqual(Model.sortCatalog(entries, "rank").map(e => e.id), ["tie-a", "tie-b", "rated", "few"])
-})
-
-test("catalog engagement stats come only from marketplace-prefixed projection fields", () => {
-  const entry = Model.catalogEntries({ plugins: [{ id: "bare", hearts: 5, views: 30, copies: 4 }] }, {})[0]
-  assert.deepEqual([entry.marketplaceHearts, entry.marketplaceViews, entry.marketplaceCopies], [null, null, null])
-})
-
-test("Browse sorting is stable for exact missing-metadata ties", () => {
-  const entries = [
-    { id: "same", name: "Same", stars: null, marketplaceHearts: null, marker: 1 },
-    { id: "same", name: "Same", stars: null, marketplaceHearts: null, marker: 2 }
-  ]
-  assert.deepEqual(Model.sortCatalog(entries, "stars").map(e => e.marker), [1, 2])
-  assert.deepEqual(Model.sortCatalog(entries, "hearts").map(e => e.marker), [1, 2])
-})
-
-test("Recently added sorts precise listing timestamps newest first", () => {
-  const entries = [
-    { id: "old", name: "Old", listedAt: "2026-08-20T08:15:00.000Z" },
-    { id: "new", name: "New", listedAt: "2026-08-20T16:45:00.000Z" }
-  ]
-  assert.deepEqual(Model.sortCatalog(entries, "recently-added").map(e => e.id), ["new", "old"])
-})
-
-test("Recently added prefers listedAt and falls back to addedAt when needed", () => {
-  const entries = [
-    { id: "listed", name: "Listed", listedAt: "2026-08-02T10:00:00Z", addedAt: "2026-08-31" },
-    { id: "missing-listed", name: "Missing", listedAt: "", addedAt: "2026-08-03" },
-    { id: "invalid-listed", name: "Invalid", listedAt: "not-a-date", addedAt: "2026-08-01" }
-  ]
-  assert.deepEqual(Model.sortCatalog(entries, "recently-added").map(e => e.id),
-    ["missing-listed", "listed", "invalid-listed"])
-})
-
-test("Recently added puts invalid and missing timestamps after valid timestamps", () => {
-  const entries = [
-    { id: "invalid", name: "Zulu", listedAt: "not-a-date", addedAt: "also-not-a-date" },
-    { id: "valid", name: "Middle", listedAt: "2026-08-01T00:00:00Z" },
-    { id: "missing", name: "Alpha" }
-  ]
-  assert.deepEqual(Model.sortCatalog(entries, "recently-added").map(e => e.id),
-    ["valid", "missing", "invalid"])
-})
-
-test("Recently added uses the existing text tie-breaker for equal timestamps", () => {
-  const entries = [
-    { id: "z.same", name: "Same", listedAt: "2026-08-01T00:00:00Z" },
-    { id: "A.same", name: "same", listedAt: "2026-08-01T00:00:00Z" },
-    { id: "beta", name: "Beta", listedAt: "2026-08-01T00:00:00Z" }
-  ]
-  assert.deepEqual(Model.sortCatalog(entries, "recently-added").map(e => e.id),
-    ["beta", "A.same", "z.same"])
-})
-
-test("Recently added normalizes catalog-scale timestamps at most once per entry", () => {
-  const entries = []
-  for (let i = 0; i < 1203; i++) {
-    entries.push({
-      id: `listed-${i}`,
-      name: `Listed ${String(i).padStart(4, "0")}`,
-      listedAt: new Date(Date.UTC(2026, 0, 1, 0, i)).toISOString(),
-      addedAt: "2024-01-01"
-    })
-  }
-  for (let i = 0; i < 36; i++) {
-    entries.push({
-      id: `fallback-${i}`,
-      name: `Fallback ${String(i).padStart(2, "0")}`,
-      listedAt: i < 18 ? "   " : (i < 27 ? "not-a-date" : "2026-02-30T12:00:00Z"),
-      addedAt: new Date(Date.UTC(2025, 0, i + 1)).toISOString().slice(0, 10)
-    })
-  }
-  entries.reverse()
-
-  const originalParse = Date.parse
-  let parseCalls = 0
-  Date.parse = value => {
-    parseCalls++
-    return originalParse(value)
-  }
-  try {
-    const sorted = Model.sortCatalog(entries, "recently-added")
-    assert.equal(parseCalls, entries.length,
-      "normalization should parse at most once per entry")
-    assert.equal(sorted[0].id, "listed-1202")
-    assert.equal(sorted[1202].id, "listed-0")
-    assert.equal(sorted[1203].id, "fallback-35")
-    assert.equal(sorted[1238].id, "fallback-0")
-  } finally {
-    Date.parse = originalParse
-  }
-})
-
-test("Browse active-filter detection and clear state cover every narrowing control", () => {
-  assert.equal(Model.catalogIsFiltering("all", "all", "all", ""), false)
-  assert.equal(Model.catalogIsFiltering("Widgets", "all", "all", ""), true)
-  assert.equal(Model.catalogIsFiltering("all", "Panel", "all", ""), true)
-  assert.equal(Model.catalogIsFiltering("all", "all", "available", ""), true)
-  assert.equal(Model.catalogIsFiltering("all", "all", "installed", ""), true)
-  assert.equal(Model.catalogIsFiltering("all", "all", "all", " weather "), true)
-  assert.deepEqual(Model.clearedCatalogFilters(), {
-    category: "all", kind: "all", availability: "all", query: ""
-  })
-})
-
-test("catalogEmptyMessage names what excluded everything", () => {
-  assert.match(Model.catalogEmptyMessage("all", "all", "all", "zzz"), /No plugins match “zzz”/)
-  assert.match(Model.catalogEmptyMessage("Widgets", "all", "available", "zzz"), /selected filters/)
-  assert.match(Model.catalogEmptyMessage("Widgets", "all", "all", ""), /selected filters/)
 })
 
 test("starLabel keeps big counts short", () => {
@@ -2255,27 +1385,6 @@ test("bumpCount moves known counts and never invents unknown ones", () => {
 // Omarchy themes define foreground, background, accent, urgent and muted —
 // there is no success role to borrow, so the installed badge brings its own
 // green and only has to survive both ends of the theme range.
-test("installedTint darkens the green for a light theme background", () => {
-  assert.equal(Model.installedTint({ r: 0.06, g: 0.07, b: 0.08 }), "#5fb37a")
-  assert.equal(Model.installedTint({ r: 0.98, g: 0.98, b: 0.98 }), "#1f7a4d")
-})
-
-test("installedTint reads lightness, not any single channel", () => {
-  // Pure blue is dark despite a full channel; pure green is light despite two
-  // empty ones. A naive max() or average would get both of these backwards.
-  assert.equal(Model.installedTint({ r: 0, g: 0, b: 1 }), "#5fb37a")
-  assert.equal(Model.installedTint({ r: 0, g: 1, b: 0 }), "#1f7a4d")
-})
-
-test("installedTint assumes a dark panel when handed nothing", () => {
-  assert.equal(Model.installedTint(null), "#5fb37a")
-})
-
-test("accentColor falls back rather than returning nothing", () => {
-  assert.equal(Model.accentColor("cyan"), Model.accentColor("CYAN"))
-  assert.equal(Model.accentColor("not-a-colour"), Model.accentColor("violet"))
-})
-
 test("repoShortLabel drops the host, which is the same on every card", () => {
   assert.equal(Model.repoShortLabel("https://github.com/akitaonrails/ai-usagebar"), "akitaonrails/ai-usagebar")
   assert.equal(Model.repoShortLabel("https://github.com/acme/thing.git"), "acme/thing")
@@ -2362,30 +1471,6 @@ test("manifest versions become bounded encoded Release candidates in determinist
   ])
 })
 
-test("catalog versions link only through exact GitHub release candidates with repository fallback", () => {
-  const github = { repo: "https://github.com/acme/thing.git", version: "v1.2.3" }
-  assert.equal(Model.catalogVersionLabel(github), "v1.2.3")
-  assert.deepEqual(Model.catalogVersionReleaseCandidates(github),
-    Model.githubReleaseCandidates(github.repo, "1.2.3"))
-  assert.equal(Model.catalogVersionFallbackUrl(github), "https://github.com/acme/thing")
-
-  const nonGithub = { repo: "https://gitlab.com/acme/thing", version: "1.2.3" }
-  assert.equal(Model.catalogVersionLabel(nonGithub), "v1.2.3")
-  assert.deepEqual(Model.catalogVersionReleaseCandidates(nonGithub), [])
-  assert.equal(Model.catalogVersionFallbackUrl(nonGithub), "")
-
-  for (const entry of [
-    { repo: github.repo, version: "" },
-    { repo: github.repo, version: "v" },
-    { repo: github.repo, version: "x".repeat(101) },
-    null
-  ]) {
-    assert.equal(Model.catalogVersionLabel(entry), "")
-    assert.deepEqual(Model.catalogVersionReleaseCandidates(entry), [])
-    assert.equal(Model.catalogVersionFallbackUrl(entry), "")
-  }
-})
-
 test("installed version eligibility requires checkout, version, and hardened current GitHub origin, not exactTag", () => {
   const eligible = {
     gitManaged: true,
@@ -2449,31 +1534,6 @@ test("Release candidates preserve hardened GitHub owner and repository boundarie
     "https://github.com/" + "a".repeat(40) + "/repo",
     "https://github.com/owner/" + "r".repeat(101)
   ]) assert.deepEqual(Model.githubReleaseCandidates(remote, "1.0.0"), [], remote)
-})
-
-test("repoPreviewUrl points at the repo's own preview.png on the validated branch", () => {
-  assert.equal(
-    Model.repoPreviewUrl("https://github.com/acme/thing", "master"),
-    "https://raw.githubusercontent.com/acme/thing/master/preview.png")
-  assert.equal(
-    Model.repoPreviewUrl("https://github.com/acme/thing.git", ""),
-    "https://raw.githubusercontent.com/acme/thing/main/preview.png")
-})
-
-test("repoPreviewUrl only builds urls for github repos it can parse", () => {
-  assert.equal(Model.repoPreviewUrl("https://gitlab.com/acme/thing", "main"), "")
-  assert.equal(Model.repoPreviewUrl("https://github.com/acme", "main"), "")
-  assert.equal(Model.repoPreviewUrl("", "main"), "")
-})
-
-test("previewCandidates tries the repo png before the registry webp", () => {
-  const entry = { repoPreview: "https://raw.example/preview.png", thumbnail: "https://reg.example/x.webp" }
-  assert.deepEqual(Model.previewCandidates(entry, true),
-    ["https://raw.example/preview.png", "https://reg.example/x.webp"])
-  // Once WebP is known undecodable the panel drops it from the walk.
-  assert.deepEqual(Model.previewCandidates(entry, false), ["https://raw.example/preview.png"])
-  assert.deepEqual(Model.previewCandidates({ repoPreview: "", thumbnail: "" }, true), [])
-  assert.deepEqual(Model.previewCandidates(null, true), [])
 })
 
 // ---- Update checks ---------------------------------------------------------
@@ -3019,7 +2079,7 @@ test("repository and direct fallback navigation revoke A and open immediately", 
   }
 })
 
-test("Browse Marketplace root URL survives direct navigation validation", () => {
+test("Marketplace root URL survives direct navigation validation", () => {
   const url = "https://omarchyplugins.com/"
   const transition = Model.releaseNavigationDirectTransition(
     Model.releaseNavigationInitialState(), url)
@@ -3215,32 +2275,6 @@ test("Installed filters: labels on top, Search on its own row", () => {
   assert.match(panel, /groupDropdown\.popupOpen/)
 })
 
-test("browseFilterHints names the filter when neutral and its value when narrowing", () => {
-  const options = {
-    category: [{ value: "all", label: "All" }, { value: "Games", label: "Games" }],
-    kind: [{ value: "all", label: "All" }, { value: "bar-widget", label: "bar-widget" }],
-    availability: Model.catalogAvailabilityOptions(),
-    sort: Model.catalogSortOptions()
-  }
-
-  assert.deepEqual(Model.browseFilterHints(
-    { category: "all", kind: "all", availability: "all", sort: "recently-added" }, options), [
-    { key: "c", text: "CATEGORY", active: false },
-    { key: "f", text: "KIND", active: false },
-    { key: "a", text: "AVAILABILITY", active: false },
-    { key: "s", text: "RECENTLY ADDED", active: false }
-  ])
-  assert.deepEqual(Model.browseFilterHints(
-    { category: "Games", kind: "bar-widget", availability: "installed", sort: "stars" }, options), [
-    { key: "c", text: "GAMES", active: true },
-    { key: "f", text: "BAR-WIDGET", active: true },
-    { key: "a", text: "INSTALLED", active: true },
-    { key: "s", text: "MOST STARRED", active: true }
-  ])
-  // A value the options no longer carry still reads as itself, never blank.
-  assert.equal(Model.browseFilterHints({ category: "gone" }, options)[0].text, "GONE")
-})
-
 test("installedFilterHints mirrors the Browse row for Source, Kind, and Status", () => {
   const options = {
     group: Model.groupOptions(),
@@ -3430,12 +2464,11 @@ test("every keyboard-cycled filter replays its value into its dropdown", () => {
 })
 
 test("nextOption cycles any option list and nextKind is that same walk", () => {
-  const options = Model.catalogSortOptions()
-  assert.equal(Model.nextOption(options, "recently-added"), "updated")
-  assert.equal(Model.nextOption(options, "name"), "verified")
-  assert.equal(Model.nextOption(options, "unverified"), "recently-added")
-  assert.equal(Model.nextOption(options, "gone"), "recently-added")
-  assert.equal(Model.nextKind(options, "hearts"), Model.nextOption(options, "hearts"))
+  const options = [{ value: "a" }, { value: "b" }, { value: "c" }]
+  assert.equal(Model.nextOption(options, "a"), "b")
+  assert.equal(Model.nextOption(options, "c"), "a")
+  assert.equal(Model.nextOption(options, "gone"), "a")
+  assert.equal(Model.nextKind(options, "b"), Model.nextOption(options, "b"))
 })
 
 test("one hint bar: filter hints left, action hints right, keys cycle the dropdowns", () => {
@@ -3460,7 +2493,7 @@ test("one hint bar: filter hints left, action hints right, keys cycle the dropdo
   assert.match(bar, /id: filterHints\s+anchors\.left: parent\.left/)
   assert.match(bar, /id: actionHints\s+anchors\.right: parent\.right/)
   assert.match(bar, /model: root\.installedFilterHints/)
-  assert.match(bar, /model: Model\.actionHints\(false, root\.bulkUpdatableCount > 0\)/)
+  assert.match(bar, /model: Model\.actionHints\(root\.bulkUpdatableCount > 0\)/)
   // One delegate for both groups, keys shown uppercase in the accent.
   assert.equal(bar.split("delegate: hintDelegate").length - 1, 2)
   assert.match(bar, /text: "\[" \+ hint\.modelData\.key\.toUpperCase\(\) \+ "\]"\s+color: Color\.accent/)
@@ -3519,77 +2552,6 @@ test("Panel delegates data, processes and actions to PluginStore", () => {
   assert.doesNotMatch(panel, /Quickshell\.execDetached\(\["bash"/)
 })
 
-test("add confirmation never promises placement after cloning", () => {
-  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  assert.match(store, /Model\.catalogPlacementConfirmationNote\(pendingPlacementNeeded\)/)
-  assert.doesNotMatch(store, /asked where to put it once it is cloned|where to put it once it is cloned/)
-  assert.doesNotMatch(panel, /asked where to put it once it is cloned|where to put it once it is cloned/)
-})
-
-test("an unreviewed install is confirmed and re-gated on the branch the dialog named", () => {
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  const catalog = Model.catalogEntries({ plugins: [unreviewedListing] }, {}, true)
-  const base = () => ({ busy: false, pendingKind: "", pendingId: "", pendingLabel: "", pendingUrl: "",
-    pendingBranch: "", pendingVerifiedCommit: "", pendingSection: "", pendingPlacement: "",
-    pendingPlacementNeeded: false, pendingUnverifiedSha: "", allowUnverifiedInstalls: true,
-    bulkActive: false, bulkQueue: [],
-    catalog: catalog, launched: [], statuses: [],
-    launchInstall(request, label) { this.launched.push([request, label]) },
-    setStatus(text, error) { this.statuses.push([text, error]) } })
-  const call = (state, name, args) => Function("Model", "state", "args", `with (state) {
-    ${qmlFunction(store, "cancelPending")}
-    ${qmlFunction(store, "askInstall")}
-    ${qmlFunction(store, "startAdd")}
-    return ${name}.apply(null, args) }`)(Model, state, args)
-
-  const asked = base()
-  assert.equal(call(asked, "askInstall", [catalog[0]]), true)
-  assert.equal(asked.pendingKind, "install")
-  assert.equal(asked.pendingUrl, "https://github.com/acme/fresh")
-  assert.equal(asked.pendingBranch, "main")
-  assert.equal(asked.pendingVerifiedCommit, "", "there is no reviewed commit to name")
-
-  // The setting went off while the question was on screen: nothing installs.
-  asked.allowUnverifiedInstalls = false
-  call(asked, "startAdd", [""])
-  assert.deepEqual(asked.launched, [])
-  assert.match(asked.statuses.pop()[0], /^Could not install Fresh: /)
-
-  // The listing named another branch under the open dialog: also nothing.
-  const moved = base()
-  call(moved, "askInstall", [catalog[0]])
-  moved.catalog = Model.catalogEntries(
-    { plugins: [{ ...unreviewedListing, listingValidatedBranch: "attacker" }] }, {}, true)
-  call(moved, "startAdd", [""])
-  assert.deepEqual(moved.launched, [])
-
-  // Unchanged: exactly the branch the dialog named is what the helper is asked for.
-  const ok = base()
-  call(ok, "askInstall", [catalog[0]])
-  call(ok, "startAdd", ["right"])
-  assert.deepEqual(ok.launched, [[{ schemaVersion: 1, id: "acme.fresh",
-    repository: "https://github.com/acme/fresh", branch: "main", section: "right" }, "Fresh"]])
-  assert.equal(ok.pendingKind, "", "the pending state is cleared before anything launches")
-
-  // A verified listing still takes the verified shape through the same path,
-  // and never gains a branch.
-  const verifiedEntries = Model.catalogEntries(catalogDoc, {}, true)
-  const weather = base()
-  weather.catalog = verifiedEntries
-  call(weather, "askInstall", [verifiedEntries.find(entry => entry.id === "acme.weather")])
-  assert.equal(weather.pendingBranch, "")
-  call(weather, "startAdd", [""])
-  assert.deepEqual(weather.launched[0][0], { schemaVersion: 1, id: "acme.weather",
-    repository: "https://github.com/acme/omarchy-weather", verifiedCommit: "d".repeat(40), section: "" })
-
-  // With the opt-in off the question is never even asked.
-  const refused = base()
-  refused.allowUnverifiedInstalls = false
-  assert.equal(call(refused, "askInstall", [catalog[0]]), false)
-  assert.equal(refused.pendingKind, "")
-})
-
 test("catalog refresh failures retain displayed entries in every process callback order", () => {
   const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
   const process = store.slice(store.indexOf("    id: catalogProc"), store.indexOf("  // The Python worker is independent"))
@@ -3608,21 +2570,21 @@ test("catalog refresh failures retain displayed entries in every process callbac
       const state = { catalog: displayed, catalogLoaded: true, catalogLoading: false, catalogError: "",
         catalogGeneration: 4, catalogExitCode: 0, catalogOutputFinished: true, catalogErrorFinished: true,
         pinnedHelperPath: "/plugin/helpers/pinned_update.py", rows: [],
-        catalogBuildPending: null, catalogBuildExit: 0 }
+        catalogBuildPending: null }
       state.root = state
       const catalogProc = { running: false }
       const catalogOutput = { text: "" }, catalogErrors = { text: error }
-      const messages = []
-      const startCatalogBuild = () => messages.push(state.catalogBuildPending)
-      let restamps = 0
+      const queue = []
+      const Qt = { callLater: fn => queue.push(fn) }
       const functions = ["loadCatalog", "finishCatalogFetch", "applyCatalog", "applyCatalogResult"]
       const handlers = ["outputFinished", "errorFinished", "exited"]
-      const api = Function("state", "Model", "catalogProc", "catalogOutput", "catalogErrors", "startCatalogBuild", "restampCatalog",
+      const api = Function("state", "Model", "catalogProc", "catalogOutput", "catalogErrors", "Qt",
         `with (state) { ${functions.map(name => qmlFunction(store, name)).join("\n")}
           ${handlers.map(name => qmlFunction(callbacks, name)).join("\n")}
           return { ${[...functions, ...handlers].join(",")} }
-        }`)(state, Model, catalogProc, catalogOutput, catalogErrors, startCatalogBuild, () => restamps++)
+        }`)(state, Model, catalogProc, catalogOutput, catalogErrors, Qt)
       state.finishCatalogFetch = api.finishCatalogFetch
+      state.applyCatalogResult = api.applyCatalogResult
       api.loadCatalog(true)
       api.applyCatalogResult({ generation: 4, entries: [{ id: "obsolete" }] })
       assert.equal(state.catalog, displayed, "an earlier worker cannot overwrite a new refresh")
@@ -3632,7 +2594,7 @@ test("catalog refresh failures retain displayed entries in every process callbac
       }
       assert.equal(state.catalog, displayed)
       assert.equal(state.catalogLoaded, true)
-      assert.equal(messages.length, 0, "failed stdout never reaches the catalog worker")
+      assert.equal(queue.length, 0, "failed stdout is never built")
       assert.match(state.catalogError, /Catalog refresh failed\./)
       assert.match(state.catalogError, /Try Refresh again\./)
       if (error.startsWith("Could not")) assert.match(state.catalogError, /Command failed: curl/)
@@ -3644,48 +2606,12 @@ test("catalog refresh failures retain displayed entries in every process callbac
       catalogErrors.text = ""
       api.loadCatalog(true)
       for (const name of order) api[name](0)
-      assert.equal(messages.length, 1)
-      assert.equal(messages[0].raw, catalogOutput.text)
-      assert.equal(state.catalogLoading, true, "success waits for worker projection")
-      const entries = [{ id: "new" }]
-      api.applyCatalogResult({ generation: messages[0].generation, entries })
-      assert.equal(state.catalog, entries)
+      assert.equal(queue.length, 1)
+      assert.equal(state.catalogLoading, true, "success waits for the build turn")
+      queue.shift()()
+      assert.deepEqual(state.catalog.map(entry => entry.id), ["new"])
       assert.equal(state.catalogLoading, false)
       assert.equal(state.catalogError, "")
-      assert.equal(restamps, 1)
-    }
-  }
-})
-
-test("catalog build completion waits for all callbacks and rejects stale generations", () => {
-  const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  const flags = ["catalogBuildExit", "catalogBuildOutputDone", "catalogBuildErrorDone"]
-  for (const first of flags) for (const second of flags.filter(flag => flag !== first)) {
-    const order = [first, second, flags.find(flag => flag !== first && flag !== second)]
-    for (const generation of [6, 7]) for (const exit of [0, 1]) {
-      const calls = []
-      const state = { catalogGeneration: 7, catalogBuildGeneration: generation,
-        catalogBuildExit: -1, catalogBuildStarted: true,
-        catalogBuildOutputDone: false, catalogBuildErrorDone: false,
-        catalogBuilder: {running: false},
-        catalogBuilt: {text: "bounded frames"}, startCatalogBuild() {},
-        publishCatalogBuild(text, gen) { calls.push([text, gen]) },
-        applyCatalogResult(result) { calls.push(result) } }
-      const api = Function("state", `with (state) {
-        ${qmlFunction(store, "finishCatalogBuild")}
-        ${qmlFunction(store, "catalogBuildRunningChanged")}
-        return { finishCatalogBuild, catalogBuildRunningChanged }
-      }`)(state)
-      for (const [i, flag] of order.entries()) {
-        state[flag] = flag === "catalogBuildExit" ? exit : true
-        // The process pointer may already be null while streams settle.
-        // That does not make a successfully started build a failed launch.
-        api.catalogBuildRunningChanged()
-        api.finishCatalogBuild()
-        assert.equal(calls.length, i === 2 && generation === 7 ? 1 : 0)
-      }
-      if (generation === 7 && exit === 0) assert.deepEqual(calls[0], ["bounded frames", 7])
-      if (generation === 7 && exit === 1) assert.match(calls[0].error, /Try Refresh again/)
     }
   }
 })
@@ -3829,42 +2755,12 @@ test("bar update dot projects the panel's confirmed count without changing butto
     /if \(b === Qt\.MiddleButton\) root\.refresh\(\)\s+else root\.openFromBar\(\)/)
 })
 
-// ---- Expanded panel --------------------------------------------------------
-
-test("expanded page admits only Arrange and otherwise defaults to the list", () => {
-  const page = new Function(source + "\nreturn expandedPageFromPayload")()
-  assert.equal(page('{"page":"arrange"}'), "arrange")
-  for (const value of [undefined, "", "broken", "null", "[]", '"arrange"', '{}',
-    '{"page":"settings"}', '{"page":"<img>"}', '{"page":true}'])
-    assert.equal(page(value), "")
-})
-
-test("expandedTabFromPayload never trusts the summon payload", () => {
-  assert.equal(Model.expandedTabFromPayload('{"tab":"browse"}'), "browse")
-  assert.equal(Model.expandedTabFromPayload('{"tab":"installed"}'), "installed")
-  assert.equal(Model.expandedTabFromPayload('{"tab":"<script>"}'), "installed")
-  assert.equal(Model.expandedTabFromPayload("not json"), "installed")
-  assert.equal(Model.expandedTabFromPayload('"browse"'), "installed")
-  assert.equal(Model.expandedTabFromPayload("[]"), "installed")
-  assert.equal(Model.expandedTabFromPayload(""), "installed")
-  assert.equal(Model.expandedTabFromPayload(undefined), "installed")
-})
-
-test("expandedScreenFromPayload keeps only a plausible output name", () => {
-  assert.equal(Model.expandedScreenFromPayload('{"screen":"eDP-1"}'), "eDP-1")
-  assert.equal(Model.expandedScreenFromPayload('{"screen":"HDMI-A-2"}'), "HDMI-A-2")
-  assert.equal(Model.expandedScreenFromPayload('{"screen":"../x"}'), "")
-  assert.equal(Model.expandedScreenFromPayload('{"screen":" eDP-1"}'), "")
-  assert.equal(Model.expandedScreenFromPayload('{"screen":"' + "a".repeat(65) + '"}'), "")
-  assert.equal(Model.expandedScreenFromPayload('{"screen":7}'), "")
-  assert.equal(Model.expandedScreenFromPayload("not json"), "")
-  assert.equal(Model.expandedScreenFromPayload(""), "")
-})
+// ---- Store loading ---------------------------------------------------------
 
 test("a plugin-list read that comes back empty is retried once before it is an error", () => {
   const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
   // `omarchy plugin list` asks the shell over IPC; while the shell is busy
-  // (right after a restart, or while it builds the expanded overlay) that
+  // (right after a restart) that
   // answer is empty. One bounded retry turns a spurious "could not read" into
   // a slightly later success; a second failure is reported as before.
   assert.match(store, /property bool loadRetried: false/)
@@ -4150,17 +3046,6 @@ test("the plugin's own shell.json entry is read strictly and the setting is the 
   assert.equal(Model.allowUnverifiedUpdates(null), false)
   assert.equal(Model.allowUnverifiedUpdates(Object.create({ allowUnverifiedUpdates: true })), false, "own key only")
 
-  // Installing unreviewed code is its own decision, under its own key: the
-  // two settings never read each other's value.
-  assert.equal(Model.allowUnverifiedInstalls({ allowUnverifiedInstalls: true }), true)
-  for (const value of ["true", 1, "yes", null, undefined, {}, []])
-    assert.equal(Model.allowUnverifiedInstalls({ allowUnverifiedInstalls: value }), false, String(value))
-  assert.equal(Model.allowUnverifiedInstalls({}), false)
-  assert.equal(Model.allowUnverifiedInstalls(null), false)
-  assert.equal(Model.allowUnverifiedInstalls(Object.create({ allowUnverifiedInstalls: true })), false, "own key only")
-  assert.equal(Model.allowUnverifiedInstalls({ allowUnverifiedUpdates: true }), false, "separate keys")
-  assert.equal(Model.allowUnverifiedUpdates({ allowUnverifiedInstalls: true }), false, "separate keys")
-
   // The settings section rides ahead of the four fixed ones and is optional.
   const four = "===list===\n[]\n===catalog===\n[]\n===git===\n\n===manifest===\n"
   assert.equal(Model.splitSections(four).settings, "")
@@ -4207,65 +3092,6 @@ test("the plugin's own entry is kept whole for writing and null when it could no
   assert.deepEqual(Model.withSelfSetting(off, "allowUnverifiedUpdates", "true"), off, "only the boolean true is stored")
   assert.deepEqual(Model.withSelfSetting({ id: "x", __proto__: { leak: 1 } }, "allowUnverifiedUpdates", true), { allowUnverifiedUpdates: true })
   assert.deepEqual(Model.withSelfSetting(null, "allowUnverifiedUpdates", true), { allowUnverifiedUpdates: true })
-})
-
-test("the expanded panel's window type is the boolean true only, read from shell.json as the loader's jq reads it", () => {
-  const id = "io.github.juancasanueva.plugin-manager"
-
-  // Same strictness as the other two settings, and no key stands in for another.
-  assert.equal(Model.tiledExpandedPanel({ tiledExpandedPanel: true }), true)
-  for (const value of ["true", 1, "yes", null, undefined, {}, []])
-    assert.equal(Model.tiledExpandedPanel({ tiledExpandedPanel: value }), false, String(value))
-  assert.equal(Model.tiledExpandedPanel({}), false)
-  assert.equal(Model.tiledExpandedPanel(null), false)
-  assert.equal(Model.tiledExpandedPanel(Object.create({ tiledExpandedPanel: true })), false, "own key only")
-  assert.equal(Model.tiledExpandedPanel({ allowUnverifiedInstalls: true }), false, "separate keys")
-  assert.equal(Model.allowUnverifiedInstalls({ tiledExpandedPanel: true }), false, "separate keys")
-
-  // The entry is looked for in bar.layout first, whichever section holds it,
-  // and in .plugins after, exactly as the loader's `first` does.
-  const entry = { id: id, tiledExpandedPanel: true }
-  const inLayout = JSON.stringify({
-    bar: { layout: { left: [{ id: "omarchy.clock" }], right: [{ id: "acme.widget" }, entry] } },
-    plugins: [{ id: id, other: 1 }]
-  })
-  assert.deepEqual(JSON.parse(Model.selfEntryFromShellConfig(inLayout, id)), entry, "the layout wins")
-  const inPlugins = JSON.stringify({ bar: { layout: { right: [{ id: "acme.widget" }] } }, plugins: [{ id: "other" }, entry] })
-  assert.deepEqual(JSON.parse(Model.selfEntryFromShellConfig(inPlugins, id)), entry)
-  // What the window actually asks: the text feeds straight into the strict view.
-  assert.equal(Model.tiledExpandedPanel(Model.parseSelfSettings(Model.selfEntryFromShellConfig(inPlugins, id))), true)
-  assert.equal(Model.tiledExpandedPanel(Model.parseSelfSettings(Model.selfEntryFromShellConfig("", id))), false)
-  // jq's tostring compares a numeric id as its text; nothing else is an id.
-  assert.deepEqual(JSON.parse(Model.selfEntryFromShellConfig(JSON.stringify({ plugins: [{ id: 42, tiledExpandedPanel: true }] }), "42")),
-    { id: 42, tiledExpandedPanel: true })
-  for (const hostileId of [true, null, ["x"], { k: 1 }])
-    assert.equal(Model.selfEntryFromShellConfig(JSON.stringify({ plugins: [{ id: hostileId }] }), String(hostileId)), "",
-      JSON.stringify(hostileId))
-
-  // Nothing to read, nothing to parse, nothing of the right shape: no entry.
-  for (const raw of ["", "   ", "nonsense", "null", '"x"', "[]", `[{"id":"${id}"}]`,
-    JSON.stringify({ plugins: [{ id: "other" }] }), JSON.stringify({ bar: { layout: { right: "not-a-list" } } }),
-    JSON.stringify({ bar: "not-an-object" }), JSON.stringify({ plugins: { right: [entry] } }),
-    JSON.stringify({ bar: { layout: { right: ["a-string", null, [entry]] } } })])
-    assert.equal(Model.selfEntryFromShellConfig(raw, id), "", JSON.stringify(raw.slice(0, 24)))
-  assert.equal(Model.selfEntryFromShellConfig(JSON.stringify({ plugins: [entry] }), ""), "", "no id, no entry")
-
-  // The loader reads at most a megabyte of shell.json; so does this.
-  const oversized = JSON.stringify({ plugins: [entry, { id: "pad", pad: "x".repeat(1048576) }] })
-  assert.ok(oversized.length > 1048576)
-  assert.equal(Model.selfEntryFromShellConfig(oversized, id), "", "bounded")
-
-  // A crafted key never reaches a prototype: a section named __proto__ is not
-  // walked, and one inside the entry is dropped by the strict view.
-  assert.equal(Model.selfEntryFromShellConfig(`{"bar":{"layout":{"__proto__":[{"id":"${id}"}]}}}`, id), "")
-  const hostile = `{"plugins":[{"id":"${id}","tiledExpandedPanel":true,"__proto__":{"polluted":true}}]}`
-  assert.deepEqual(Model.parseSelfSettings(Model.selfEntryFromShellConfig(hostile, id)), { tiledExpandedPanel: true })
-  assert.equal(({}).polluted, undefined, "no prototype was touched")
-
-  // Stored like the other two: the boolean true, or removed.
-  const on = Model.withSelfSetting({ position: "right" }, "tiledExpandedPanel", true)
-  assert.deepEqual(on, { position: "right", tiledExpandedPanel: true })
-  assert.deepEqual(Model.withSelfSetting(on, "tiledExpandedPanel", false), { position: "right" })
 })
 
 // ---- Moving a bar widget between sections ---------------------------------
@@ -4419,35 +3245,6 @@ test("popup positioning stays in Arrange without dead Installed row wiring", () 
   assert.match(panel, /opened: root\.placing\s*message: root\.placementMessage\s*choices: root\.placementChoices/)
 })
 
-test("openAs reads one of three modes, and an old tiled switch as window", () => {
-  for (const mode of ["popup", "overlay", "window"])
-    assert.equal(Model.openAs({ openAs: mode }), mode)
-  assert.equal(Model.openAs({}), "popup")
-  assert.equal(Model.openAs(null), "popup")
-  assert.equal(Model.openAs({ openAs: "tiled" }), "popup", "unknown values fall back")
-  assert.equal(Model.openAs({ openAs: true }), "popup")
-  assert.equal(Model.openAs({ tiledExpandedPanel: true }), "window", "the old switch carries over")
-  assert.equal(Model.openAs({ tiledExpandedPanel: true, openAs: "overlay" }), "overlay", "the new value wins")
-  assert.equal(Model.openAs(Object.create({ openAs: "window" })), "popup", "own key only")
-})
-
-test("withOpenAs stores the mode and drops the switch it replaces", () => {
-  const entry = { id: "manager", tiledExpandedPanel: true, allowUnverifiedUpdates: true }
-  assert.deepEqual(Model.withOpenAs(entry, "overlay"), { allowUnverifiedUpdates: true, openAs: "overlay" })
-  assert.deepEqual(Model.withOpenAs({}, "bogus"), { openAs: "popup" })
-  assert.equal(entry.tiledExpandedPanel, true, "the loaded entry is not mutated")
-  assert.equal(Model.openAs(Model.parseSelfSettings(JSON.stringify(Model.withOpenAs(entry, "window")))), "window")
-})
-
-test("expandedModeFromPayload accepts only overlay or window", () => {
-  assert.equal(Model.expandedModeFromPayload('{"mode":"window"}'), "window")
-  assert.equal(Model.expandedModeFromPayload('{"mode":"overlay","tab":"browse"}'), "overlay")
-  assert.equal(Model.expandedModeFromPayload('{"mode":"popup"}'), "")
-  assert.equal(Model.expandedModeFromPayload('{}'), "")
-  assert.equal(Model.expandedModeFromPayload("not json"), "")
-  assert.equal(Model.expandedModeFromPayload('["window"]'), "")
-})
-
 test("the store owns the pending confirmation flow", () => {
   const store = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
@@ -4457,14 +3254,12 @@ test("the store owns the pending confirmation flow", () => {
   assert.match(store, /property string selfId: ""/)
   assert.match(store, /if \(row\.id === selfId\) \{/)
   assert.match(store, /"omarchy plugin enable " \+ selfId \+ " right"/)
-  for (const name of ["pendingKind", "pendingId", "pendingLabel", "pendingUrl", "pendingPlacement",
-                      "pendingVerifiedCommit", "pendingBranch"])
+  for (const name of ["pendingKind", "pendingId", "pendingLabel"])
     assert.match(store, new RegExp(`property string ${name}: ""`), name)
-  assert.match(store, /function cancelPending\(\) \{[\s\S]*?pendingBranch = ""/)
+  assert.match(store, /function cancelPending\(\) \{[\s\S]*?pendingSection = ""/)
   // Only a marketplace-verified listing is installable at all, so there is no
   // "is it verified" bit left to carry around.
   assert.doesNotMatch(store, /pendingVerified\b/)
-  assert.match(store, /property bool pendingPlacementNeeded: false/)
   // The question, the button and the busy state all call it an install; the
   // old "add" kind is gone, so no message helper keeps a branch for it.
   assert.doesNotMatch(store, /pendingKind === "add"|pendingKind = "add"/)
@@ -4481,7 +3276,7 @@ test("the store owns the pending confirmation flow", () => {
   assert.match(store, /readonly property string confirmMessage: \{/)
   for (const fn of [
     "askRemove(row)", "askEnable(row)", "askDisable(row)",
-    "confirmPlacement(section)", "cancelPending()", "confirmPending()", "startAdd(section)"
+    "confirmPlacement(section)", "cancelPending()", "confirmPending()"
   ]) assert.match(store, new RegExp(`function ${fn.replace(/[()]/g, "\\$&")} \\{`), fn)
   // Asking returns whether the request was taken, so a surface can do its
   // own bookkeeping (close details, retire a probe) only for real requests.
@@ -4490,19 +3285,18 @@ test("the store owns the pending confirmation flow", () => {
   // surface itself are direct actions, exactly as before.
   assert.match(store, /function askEnable\(row\) \{[\s\S]*?if \(!Model\.needsPlacement\(row\)\) \{[\s\S]*?startEnable\(row, ""\)\s*return true/)
   assert.match(store, /function askDisable\(row\) \{[\s\S]*?startDisable\(row\)\s*return true/)
-  assert.match(store, /function confirmPending\(\) \{[\s\S]*?if \(pendingId !== "" && pendingPlacementNeeded\) \{\s*pendingKind = "place"/)
   assert.match(store, /runAction\("remove", pendingLabel, \["omarchy", "plugin", "remove", pendingId, "--yes"\]\)/)
 
   // The popup keeps its bindings through aliases and thin wrappers.
   assert.match(panel, /PluginStore \{\s*id: store\s*externalBusy: !!root\.popupMoveOwner && root\.popupMoveOwner\.busy\s*selfId: root\.moduleName(?:\s*\/\/[^\n]*)*\s*shell: root\.bar \? root\.bar\.shell : null\s*\}/)
-  for (const name of ["pendingKind", "pendingId", "pendingLabel", "pendingUrl", "pendingVerifiedCommit", "pendingPlacementNeeded", "pendingPlacement"])
+  for (const name of ["pendingKind", "pendingId", "pendingLabel"])
     assert.match(panel, new RegExp(`property alias ${name}: store\\.${name}\\b`), name)
   for (const name of ["confirming", "placing", "placementChoices", "placementMessage", "confirmMessage"])
     assert.match(panel, new RegExp(`readonly property alias ${name}: store\\.${name}\\b`), name)
   assert.match(panel, /function askRemove\(row\) \{\s*if \(!store\.askRemove\(row\)\) return\s*revokeReleaseNavigation\(\)\s*\}/)
   assert.match(panel, /function askEnable\(row\) \{\s*if \(!store\.askEnable\(row\)\) return\s*revokeReleaseNavigation\(\)\s*\}/)
   assert.match(panel, /function askDisable\(row\) \{\s*if \(!store\.askDisable\(row\)\) return\s*revokeReleaseNavigation\(\)\s*\}/)
-  assert.match(panel, /function confirmPlacement\(section\) \{\s*if \(pendingKind !== "move" \|\| pendingPlacementNeeded\) \{\s*store\.confirmPlacement\(section\)/)
+  assert.match(panel, /function confirmPlacement\(section\) \{\s*if \(pendingKind !== "move"\) \{\s*store\.confirmPlacement\(section\)/)
   assert.match(panel, /function cancelPending\(\) \{\s*store\.cancelPending\(\)\s*\}/)
   assert.match(panel, /function confirmPending\(\) \{\s*store\.confirmPending\(\)\s*\}/)
   assert.doesNotMatch(panel, /property string pendingKind: ""/)

@@ -16,24 +16,23 @@ function binding(source, name, state, fallback = "false") {
   const expression = source.match(new RegExp(`^\\s*(?:(?:readonly )?property (?:bool|alias) )?${name}: ([^\\n]+)`, "m"))?.[1] || fallback
   return Function("state", `with (state) { return (${expression}) }`)(state)
 }
-function actionStore(owner = null, shellJson = JSON.stringify({ plugins: [{ id: "manager" }] })) {
+function actionStore(owner = null) {
   const effects = []
   const state = { popupMoveOwner: owner, busyKind: "", barMovePending: null, cleanupProcess: null,
     actionProc: { running: false }, pinnedProc: { running: false }, barMoveProc: { running: false },
     selfId: "manager", selfEntry: {}, selfEntryLoaded: true, selfSettings: {},
-    allowUnverifiedUpdates: false, allowUnverifiedInstalls: false, openAs: "popup",
-    pendingKind: "", pendingId: "", pendingLabel: "", pendingPlacementNeeded: false,
+    allowUnverifiedUpdates: false,
+    pendingKind: "", pendingId: "", pendingLabel: "",
     rows: [], catalog: [], catalogLoaded: true, pinnedHelperPath: "/fake/helper", noticeScript: "fake",
     shell: { updateEntryInline(id, entry) { effects.push([id, entry]); return true },
       barConfig: { layout: { left: ["a"], center: [], right: [] } } },
     Quickshell: { execDetached(argv) { effects.push(argv) }, env() { return "" } },
-    openAsConfig: { reload() {}, text() { return shellJson } },
-    Model: Function(read("Model.js") + "; return { withSelfSetting, withOpenAs, parseSelfSettings, parseSelfEntry, selfEntryFromShellConfig, openAs, canEnable, canDisable, needsPlacement, canMove, findRow, moveCommand, enableCommand, disableCommand, successMessage, enableNote, disableNote, moveNote, restartShellCommand, barLayoutMove }")(),
+    Model: Function(read("Model.js") + "; return { withSelfSetting, parseSelfSettings, parseSelfEntry, canEnable, canDisable, needsPlacement, canMove, findRow, moveCommand, enableCommand, disableCommand, successMessage, enableNote, disableNote, moveNote, restartShellCommand, barLayoutMove }")(),
     loadProcessSettled: () => true, updateProcessSettled: () => true }
   state.root = state
-  for (const name of ["setStatus", "writeSelfSetting", "setAllowUnverifiedUpdates", "setAllowUnverifiedInstalls", "setOpenAs",
-    "runDetached", "startEnable", "startDisable", "startMoveTo", "restartShell", "askRemove", "askInstall", "askEnable", "askDisable", "askMove",
-    "confirmPending", "confirmPlacement", "cancelPending", "startAdd", "launchInstall", "runAction", "canStartUpdate", "startUpdate", "runUpdate", "startBarMove"])
+  for (const name of ["setStatus", "writeSelfSetting", "setAllowUnverifiedUpdates",
+    "runDetached", "startEnable", "startDisable", "startMoveTo", "restartShell", "askRemove", "askEnable", "askDisable", "askMove",
+    "confirmPending", "confirmPlacement", "cancelPending", "runAction", "canStartUpdate", "startUpdate", "runUpdate", "startBarMove"])
     state[name] = (...args) => call(storeSource, name, state, ...args)
   Object.defineProperty(state, "externalBusy", { get: () => binding(panelSource, "externalBusy", state) })
   for (const name of ["busy", "actionRunning"])
@@ -45,16 +44,15 @@ for (const lock of ["owner", "local"]) {
   test(`${lock} lock blocks actual popup setters, inventory actions and restart without consuming confirmations`, () => {
     const owner = { busy: lock === "owner" }
     const attempts = [
-      s => s.setAllowUnverifiedUpdates(true), s => s.setAllowUnverifiedInstalls(true), s => s.setOpenAs("window"),
+      s => s.setAllowUnverifiedUpdates(true),
       s => s.runDetached("test", "test", ["fake"]), s => s.startEnable({ id: "a", name: "A", enabled: false }, "right"),
       s => s.startDisable({ id: "a", name: "A", enabled: true }), s => s.restartShell(),
       s => s.askRemove({ id: "a", removable: true }),
-      s => s.askInstall({ id: "a", installable: true, updateSnapshot: { repository: "fake", verifiedCommit: "a" } }),
       s => s.askEnable({ id: "a", enabled: false }), s => s.askDisable({ id: "a", enabled: true, canDisable: true }),
       s => s.askMove({ id: "a", enabled: true, kinds: ["bar-widget"], barSection: "left" }),
       s => s.startMoveTo({ id: "a", enabled: true, kinds: ["bar-widget"], barSection: "left" }, "right"),
-      s => s.confirmPending(), s => s.confirmPlacement("right"), s => s.startAdd("right"),
-      s => s.launchInstall({}, "A"), s => s.runAction("remove", "A", ["fake"]),
+      s => s.confirmPending(), s => s.confirmPlacement("right"),
+      s => s.runAction("remove", "A", ["fake"]),
       s => s.startUpdate({ id: "a" }), s => s.runUpdate({ id: "a" })
     ]
     for (const attempt of attempts) {
@@ -71,49 +69,12 @@ for (const lock of ["owner", "local"]) {
   })
 }
 
-// The popup's store loads late and never watches shell.json, so how it opens
-// is written over the entry as the file has it at the click, not as the store
-// last saw it.
-test("setOpenAs writes over shell.json as it is now, not the store's copy", () => {
-  const file = JSON.stringify({ plugins: [{ id: "manager", position: "right", openAs: "window" }] })
-  // Not loaded yet: still writes, keeping the entry's other keys.
-  const early = actionStore(null, file)
-  early.state.selfEntryLoaded = false; early.state.selfEntry = {}
-  assert.equal(early.state.setOpenAs("overlay"), true)
-  assert.deepEqual(early.effects, [["manager", { position: "right", openAs: "overlay" }]])
-  // Stale: the store still thinks overlay after the window wrote window.
-  const stale = actionStore(null, file)
-  stale.state.openAs = "overlay"; stale.state.selfSettings = { openAs: "overlay" }
-  assert.equal(stale.state.setOpenAs("overlay"), true)
-  assert.equal(stale.effects.length, 1, "the file says window, so overlay is written")
-  // The file can trail the host by a write, so the write always goes and the
-  // host decides; its "nothing changed" is still a saved setting.
-  const same = actionStore(null, file)
-  same.state.shell.updateEntryInline = (id, entry) => { same.effects.push([id, entry]); return false }
-  assert.equal(same.state.setOpenAs("window"), true)
-  assert.equal(same.effects.length, 1)
-  // A refusal for a mode the file does not hold is a failed write, not
-  // "nothing changed": the form stays put and the store keeps its setting.
-  const refused = actionStore(null, file)
-  refused.state.selfSettings = { openAs: "window" }
-  refused.state.shell.updateEntryInline = (id, entry) => { refused.effects.push([id, entry]); return false }
-  assert.equal(refused.state.setOpenAs("overlay"), false)
-  assert.equal(refused.effects.length, 1)
-  assert.deepEqual(refused.state.selfSettings, { openAs: "window" })
-  // Unreadable, or no entry: refuse rather than rewrite the entry from nothing.
-  for (const text of ["", "{", JSON.stringify({ plugins: [] })]) {
-    const broken = actionStore(null, text)
-    assert.equal(broken.state.setOpenAs("overlay"), false, text)
-    assert.equal(broken.effects.length, 0, text)
-  }
-})
-
-test("owner unlock and removal restore popup actions; local busy and owner-free Expanded stay independent", () => {
+test("owner unlock and removal restore popup actions; local busy and owner-free stores stay independent", () => {
   const owner = { busy: true }, { state, effects } = actionStore(owner)
   assert.equal(state.busy, true)
   owner.busy = false
   assert.equal(state.busy, false)
-  assert.equal(state.setOpenAs("window"), true)
+  assert.equal(state.setAllowUnverifiedUpdates(true), true)
   state.restartShell()
   state.askDisable({ id: "a", name: "A", enabled: true, canDisable: true })
   assert.equal(effects.length, 3)

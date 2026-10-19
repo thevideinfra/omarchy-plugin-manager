@@ -233,7 +233,7 @@ function storeHarness() {
   })
   const names = ["canCleanupUpdateData", "askCleanupUpdateData", "startCleanupUpdateData", "refreshUpdateData",
     "drainUpdateDataRefresh", "invalidateUpdateData", "finishUpdateDataProcess", "readUpdateDataChunk",
-    "stopUpdateDataProcesses", "confirmPending", "cancelPending", "runAction", "launchInstall",
+    "stopUpdateDataProcesses", "confirmPending", "cancelPending", "runAction",
     "canStartUpdate", "writeSelfSetting", "writeSelfIntSetting", "setTransactionLimit",
     "adjustTransactionLimit", "runDetached"]
   runInNewContext(names.map(method).join("\n"), context)
@@ -299,9 +299,8 @@ test("cleanup busy guard prevents all other store mutations from overlapping", (
   const h = storeHarness(), s = h.s
   s.askCleanupUpdateData(); s.confirmPending()
   s.runAction("remove", "sample", ["never-execute"])
-  s.launchInstall({}, "sample")
   assert.equal(s.canStartUpdate({}), false)
-  assert.equal(s.writeSelfSetting("allowUnverifiedInstalls", true, false), false)
+  assert.equal(s.writeSelfSetting("allowUnverifiedUpdates", true, false), false)
   s.runDetached("sample", "sample", ["never-execute"])
   assert.equal(s.actionProc.running, false)
   assert.equal(s.pinnedProc.running, false)

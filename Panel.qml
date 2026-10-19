@@ -312,10 +312,6 @@ Panel {
   property alias pendingKind: store.pendingKind
   property alias pendingId: store.pendingId
   property alias pendingLabel: store.pendingLabel
-  property alias pendingUrl: store.pendingUrl
-  property alias pendingVerifiedCommit: store.pendingVerifiedCommit
-  property alias pendingPlacementNeeded: store.pendingPlacementNeeded
-  property alias pendingPlacement: store.pendingPlacement
   readonly property alias confirming: store.confirming
   readonly property alias placing: store.placing
   readonly property alias placementChoices: store.placementChoices
@@ -424,7 +420,7 @@ Panel {
   }
 
   function confirmPlacement(section) {
-    if (pendingKind !== "move" || pendingPlacementNeeded) {
+    if (pendingKind !== "move") {
       store.confirmPlacement(section)
       return
     }
@@ -1075,7 +1071,7 @@ Panel {
             spacing: Style.space(10)
 
             Repeater {
-              model: Model.actionHints(false, root.bulkUpdatableCount > 0)
+              model: Model.actionHints(root.bulkUpdatableCount > 0)
               delegate: hintDelegate
             }
           }

@@ -4,15 +4,13 @@ import Quickshell.Io
 import "Model.js" as Model
 
 // Everything the plugin manager knows and does, with no window attached: the
-// installed rows and their update check, the marketplace catalog, and the
-// commands that add, update, remove, enable and disable plugins.
+// installed rows and their update check, the verified-snapshot catalog that
+// authorizes updates, and the commands that update, remove, enable and
+// disable plugins.
 //
-// It exists so that more than one surface can show the same plugins. The bar
-// popup and the expanded window are separate QML trees loaded by different
-// hosts, and neither can reach into the other's state; each owns a store of
-// its own instead and binds to it. Nothing here knows about selection,
-// filters, dialogs or focus — those are decisions a surface makes, and the
-// store only reports what happened through its signals.
+// It holds no window: the popup binds to it. Nothing here knows about
+// selection, filters, dialogs or focus — those are decisions the surface
+// makes, and the store only reports what happened through its signals.
 //
 // Every command runs as an argv array, never through a shell, so a repository
 // url or a plugin id can never become a command. The scripts below take their
@@ -58,26 +56,19 @@ Item {
   // ---- Marketplace catalog ------------------------------------------------
   //
   // The catalog omarchyplugins.com publishes. Read from the disk cache first —
-  // it is also what tells the Installed rows who is verified — and fetched
-  // afresh on request.
+  // it is what tells the Installed rows who is verified and which snapshot an
+  // update may install — and fetched afresh on request.
 
   property var catalog: []
   readonly property var verifiedIds: Model.verifiedIdSet(catalog)
   readonly property var starsById: Model.catalogStarsById(catalog)
-  readonly property var heartsById: Model.catalogHeartsById(catalog)
   property bool catalogLoading: false
   property bool catalogLoaded: false
   property string catalogError: ""
 
-  // The registry's previews are WebP, which Qt only decodes when
-  // qt6-imageformats is installed. Rather than probing for it, the first card
-  // that fails tells us, and every card falls back to the registry's own
-  // accent-and-initials tile from then on.
-  property bool previewsSupported: true
-
   // ---- In-flight action ---------------------------------------------------
 
-  property string busyKind: ""   // "install" | "update" | "remove" | "cleanup"
+  property string busyKind: ""   // "update" | "bulk-update" | "remove" | "cleanup"
   onBusyKindChanged: if (busyKind !== "") invalidateUpdateData()
   onBusyChanged: Qt.callLater(drainUpdateDataRefresh)
   onActionRunningChanged: Qt.callLater(drainUpdateDataRefresh)
@@ -105,9 +96,8 @@ Item {
   // ---- Pending confirmation -----------------------------------------------
   //
   // What is being asked, and about which plugin. Shared here rather than in
-  // each surface because the popup and the expanded window ask the very same
-  // questions with the very same answers; only the dialogs that put the
-  // question on screen belong to the surface.
+  // the surface; only the dialogs that put the question on screen belong to
+  // it.
 
   // The plugin id of the surface using this store. Disabling that one plugin
   // takes the surface down with it, which is the single disable that needs a
@@ -115,8 +105,8 @@ Item {
   property string selfId: ""
 
   // The scoped shell API of the surface that owns this store, when it has
-  // one (the expanded window). It is the sanctioned way to write this
-  // plugin's inline shell.json entry; a surface without it can only read.
+  // one. It is the sanctioned way to write this plugin's inline shell.json
+  // entry; a store without it can only read.
   property var shell: null
 
   // This plugin's own inline shell.json entry, as the loader printed it.
@@ -135,19 +125,6 @@ Item {
   property var selfSettings: ({})
   readonly property bool allowUnverifiedUpdates: Model.allowUnverifiedUpdates(selfSettings)
   onAllowUnverifiedUpdatesChanged: rows = Model.applyPinnedUpdates(rows, catalog, allowUnverifiedUpdates)
-
-  // Installing code nobody reviewed is a different decision from updating to
-  // it, so it is a different key. Flipping it re-stamps the cards already on
-  // screen: the answer is derived from data the panel is holding, and making
-  // the user wait on a refetch for it would be theatre.
-  readonly property bool allowUnverifiedInstalls: Model.allowUnverifiedInstalls(selfSettings)
-  onAllowUnverifiedInstallsChanged: restampCatalog()
-
-  // How the manager opens: popup, overlay or window. Held here so the corner
-  // buttons can show and advance it; the bar click and the expanded window
-  // read it from shell.json instead, because they need it before this store's
-  // first load has run.
-  readonly property string openAs: Model.openAs(selfSettings)
 
   // Active-transaction history capacity. The helper reads the same shell.json
   // entry and enforces the same bounds, so this only moves the threshold at
@@ -187,43 +164,6 @@ Item {
 
   function setAllowUnverifiedUpdates(value) {
     return writeSelfSetting("allowUnverifiedUpdates", value, allowUnverifiedUpdates)
-  }
-
-  function setAllowUnverifiedInstalls(value) {
-    return writeSelfSetting("allowUnverifiedInstalls", value, allowUnverifiedInstalls)
-  }
-
-  // Same guards as a switch, for the one setting that is not a boolean, but
-  // over the entry as shell.json has it now rather than as the last list load
-  // left it. Its buttons sit in the header, live before that load lands, and
-  // the popup's store does not watch the file, so a write from the expanded
-  // panel would otherwise leave this one comparing against a stale mode.
-  // The write always goes and the host decides. The host answers false both
-  // for "nothing changed" and for a write it refused, so a false counts as
-  // saved only when the file already holds this mode; otherwise the form
-  // stays as it is rather than show a mode that was never stored.
-  function setOpenAs(mode) {
-    if (busy) return false
-    if (!shell || typeof shell.updateEntryInline !== "function" || selfId === "") {
-      setStatus("Could not save the setting: no shell connection", true)
-      return false
-    }
-    openAsConfig.reload()
-    var raw = Model.selfEntryFromShellConfig(openAsConfig.text(), selfId)
-    var current = raw === "" ? null : Model.parseSelfEntry(raw)
-    if (!current) {
-      setStatus("Could not read the setting from shell.json", true)
-      return false
-    }
-    var next = Model.withOpenAs(current, mode)
-    if (shell.updateEntryInline(selfId, next) !== true
-        && Model.openAs(Model.parseSelfSettings(raw)) !== mode) {
-      setStatus("Could not save the setting", true)
-      return false
-    }
-    selfEntry = next
-    selfSettings = Model.parseSelfSettings(JSON.stringify(next))
-    return true
   }
 
   // Persist a bounded integer setting through the host, merged over the entry
@@ -268,13 +208,6 @@ Item {
   property string pendingKind: ""
   property string pendingId: ""
   property string pendingLabel: ""
-  property string pendingUrl: ""
-  // The one commit an open install question names, so the answer can be held
-  // to exactly that snapshot when the catalog has moved on underneath it.
-  property string pendingVerifiedCommit: ""
-  // The branch an open unreviewed install question names, for the same reason:
-  // there is no commit to hold it to until the helper resolves one.
-  property string pendingBranch: ""
   readonly property bool confirming: pendingKind !== "" && pendingKind !== "place" && pendingKind !== "move"
 
   // Enabling a bar widget is a different question from the yes/no ones above:
@@ -286,15 +219,6 @@ Item {
   // The section a widget being moved sits in now, so the question can leave
   // that one out. Held with the rest of the pending state.
   property string pendingSection: ""
-
-  // Whether the plugin being added takes a place in the bar. Read off the
-  // registry listing, since the manifest that would say so is not on disk yet.
-  property bool pendingPlacementNeeded: false
-
-  // The section chosen for a plugin that is not installed yet. Held from the
-  // moment the question is answered until the install command is built, since
-  // by the time the clone lands the surface no longer exists to be asked.
-  property string pendingPlacement: ""
 
   readonly property var placementChoices: pendingKind === "move"
     ? Model.moveOptions(pendingSection) : Model.placementOptions()
@@ -312,19 +236,6 @@ Item {
         + "This deletion is irreversible: deleted rollback backups cannot be recovered. "
         + "Failed and unresolved histories are preserved, as are installed plugins. "
         + "Unsafe or interrupted entries are preserved. The active count excludes the archive."
-    if (pendingKind === "install" && pendingBranch !== "")
-      return Model.installUnverifiedConfirmMessage(pendingLabel, pendingUrl, pendingBranch, pendingPlacementNeeded)
-    if (pendingKind === "install")
-      return "Install " + pendingLabel + "?\n\n"
-        + pendingUrl + "\n\n"
-        // Exactly what lands on disk: the reviewed commit, not whatever the
-        // branch points at now. Stated as a review rather than a guarantee —
-        // a badge that reads as a safety promise is worse than no badge,
-        // because it retires the judgement the next sentence is asking for.
-        + "Only the marketplace-verified snapshot " + Model.shortSha(pendingVerifiedCommit)
-        + " is installed, never the repository's current tip. Verification is a review and not a guarantee. "
-        + "Plugins run unsandboxed inside omarchy-shell. Only add repositories whose code you are willing to run."
-        + Model.catalogPlacementConfirmationNote(pendingPlacementNeeded)
     if (pendingKind === "remove")
       return "Remove " + pendingLabel + "?\n\nIts folder under ~/.config/omarchy/plugins is deleted."
     if (pendingKind === "update")
@@ -348,21 +259,6 @@ Item {
   // point past the end.
   signal rowsLoaded()
   signal actionFinished(string kind, string label, int exitCode)
-
-  // Installing something changes which cards should read "installed", and the
-  // install opt-in changes which are offered at all. Re-stamp rather than
-  // rebuild: the catalog's sort and its fetch both survive.
-  onRowsChanged: restampCatalog()
-
-  function restampCatalog() {
-    if (catalog.length === 0) return
-    var stampedState = Model.restampCatalogInstallState(
-      catalog, Model.installedIdSet(rows), null, allowUnverifiedInstalls)
-    // Nothing changed, nothing assigned: a fresh array would reset the grid
-    // and rebuild every visible card, right in the middle of an animation.
-    if (!stampedState.changed) return
-    catalog = stampedState.entries
-  }
 
   onCatalogChanged: rows = Model.applyPinnedUpdates(rows, catalog, allowUnverifiedUpdates)
 
@@ -405,7 +301,7 @@ Item {
     var listEntries = sections ? Model.parseArray(sections.list) : null
     if (!sections || !listEntries) {
       // `omarchy plugin list` asks the shell itself over IPC, and a shell that
-      // is busy — starting up, or building the expanded overlay — answers
+      // is busy — starting up — answers
       // with nothing. One bounded retry turns that into a slightly later
       // success instead of a spurious error.
       if (!loadRetried) {
@@ -529,138 +425,22 @@ Item {
     applyCatalog(catalogOutput.text)
   }
 
-  // Parse/build/sort in a separate QML engine, not an in-process WorkerScript:
-  // Qt 6.11.2 can destroy the worker engine before its WorkerScript objects.
   property int catalogGeneration: 0
-  property var catalogBuildPending: null
-  property int catalogBuildGeneration: 0
-  property int catalogBuildExit: 0
-  property bool catalogBuildStarted: false
-  property bool catalogBuildOutputDone: true
-  property bool catalogBuildErrorDone: true
 
+  // The cached projection is small (the helper keeps only the fields read
+  // here), so it is built in-process, one event-loop turn after the fetch.
   function applyCatalog(raw) {
     catalogGeneration += 1
-    catalogBuildPending = null
+    var generation = catalogGeneration
     if (raw.length > 16 * 1024 * 1024) {
-      applyCatalogResult({ generation: catalogGeneration, error: "Catalog exceeds input limit" })
+      applyCatalogResult({ generation: generation, error: "Catalog exceeds input limit" })
       return
     }
-    var ids = Object.keys(Model.installedIdSet(rows))
-    var idUnits = ids.length
-    for (var i = 0; i < ids.length && idUnits <= 1024 * 1024; i++) idUnits += ids[i].length
-    if (idUnits > 1024 * 1024) {
-      applyCatalogResult({ generation: catalogGeneration, error: "Installed ids exceed request limit" })
-      return
-    }
-    catalogBuildPending = { generation: catalogGeneration, raw: raw, installedIds: ids }
-    if (catalogBuildExit === -1) stopCatalogBuild()
-    startCatalogBuild()
-  }
-
-  function stopCatalogBuild() {
-    // running includes Starting, when there may not yet be an owned PID.
-    if (catalogBuilder.running && Number(catalogBuilder.processId) > 0) catalogBuilder.signal(15)
-  }
-
-  function catalogBuildRunningChanged() {
-    if (catalogBuilder.running) return
-    // FailedToStart emits only runningChanged: no exit or stream callbacks.
-    // A started process must still settle those callbacks in either order.
-    if (catalogBuildExit === -1 && !catalogBuildStarted) {
-      catalogBuilder.request = ""
-      catalogBuilder.stdinEnabled = false
-      catalogBuildExit = 1
-      catalogBuildOutputDone = true
-      catalogBuildErrorDone = true
-      applyCatalogResult({ generation: catalogBuildGeneration,
-        error: "Could not start the catalog builder. Try Refresh again." })
-    }
-    startCatalogBuild()
-  }
-
-  function startCatalogBuild() {
-    if (!catalogBuildPending || catalogBuilder.running || catalogBuildExit === -1
-        || !catalogBuildOutputDone || !catalogBuildErrorDone) return
-    catalogBuildGeneration = catalogBuildPending.generation
-    catalogBuilder.request = JSON.stringify(catalogBuildPending)
-    catalogBuildPending = null
-    // REQUEST_LIMIT in helpers/catalog_build.py: six times the catalog budget
-    // (worst-case JSON escaping) plus 1 MiB for the installed ids.
-    if (catalogBuilder.request.length > 97 * 1024 * 1024) {
-      applyCatalogResult({ generation: catalogBuildGeneration, error: "Catalog exceeds request limit" })
-      catalogBuilder.request = ""
-      return
-    }
-    catalogBuildExit = -1
-    catalogBuildStarted = false
-    catalogBuildOutputDone = false
-    catalogBuildErrorDone = false
-    catalogBuilder.stdinEnabled = true
-    catalogBuilder.running = true
-  }
-
-  function finishCatalogBuild() {
-    if (catalogBuildExit === -1 || !catalogBuildOutputDone || !catalogBuildErrorDone) return
-    var generation = catalogBuildGeneration
-    if (generation === catalogGeneration) {
-      if (catalogBuildExit !== 0)
-        applyCatalogResult({ generation: generation, error: "Could not build the plugin catalog. Try Refresh again." })
-      else publishCatalogBuild(catalogBuilt.text, generation)
-    }
-    startCatalogBuild()
-  }
-
-  function publishCatalogBuild(text, generation) {
-    // The supervisor caps bytes before stdout reaches the shell. Parse at most
-    // one 64 KiB frame per event-loop turn; the final array assignment and
-    // current installed/opt-in stamping remain bounded, synchronous work.
-    var frames = text.trim().split("\n")
-    var entries = []
-    var index = 0
-    function nextFrame() {
+    Qt.callLater(function() {
       if (generation !== root.catalogGeneration) return
-      try {
-        var frame = JSON.parse(frames[index++])
-        if (index === frames.length) {
-          if (frame.generation !== generation) throw new Error("generation")
-          root.applyCatalogResult({ generation: generation, entries: frame.error ? null : entries, error: frame.error })
-          return
-        }
-        if (!Array.isArray(frame)) throw new Error("frame")
-        for (var i = 0; i < frame.length; i++) entries.push(frame[i])
-        Qt.callLater(nextFrame)
-      } catch (error) {
-        root.applyCatalogResult({ generation: generation, error: "Could not read the plugin catalog" })
-      }
-    }
-    Qt.callLater(nextFrame)
-  }
-
-  Process {
-    id: catalogBuilder
-    property string request: ""
-    command: ["/usr/bin/python3", "-I", "-S", decodeURIComponent(Qt.resolvedUrl("helpers/catalog_build.py").toString().replace(/^file:\/\//, ""))]
-    clearEnvironment: true
-    onStarted: {
-      root.catalogBuildStarted = true
-      if (root.catalogBuildGeneration !== root.catalogGeneration) root.stopCatalogBuild()
-      else write(request)
-      request = ""
-      stdinEnabled = false
-    }
-    stdout: StdioCollector {
-      id: catalogBuilt
-      waitForEnd: true
-      onStreamFinished: { root.catalogBuildOutputDone = true; root.finishCatalogBuild() }
-    }
-    stderr: StdioCollector {
-      waitForEnd: true
-      onStreamFinished: { root.catalogBuildErrorDone = true; root.finishCatalogBuild() }
-    }
-    onExited: function(code) { root.catalogBuildExit = code; root.finishCatalogBuild() }
-    onRunningChanged: root.catalogBuildRunningChanged()
-    Component.onDestruction: root.stopCatalogBuild()
+      var built = Model.buildCatalog(raw)
+      root.applyCatalogResult({ generation: generation, entries: built.entries, error: built.error })
+    })
   }
 
   function applyCatalogResult(message) {
@@ -675,10 +455,6 @@ Item {
     catalog = message.entries
     catalogLoaded = true
     catalogError = ""
-    // The helper knows nothing about this plugin's own settings, so it builds
-    // every entry with the install opt-in off. One re-stamp here is what makes
-    // a fresh fetch agree with the switch; it assigns nothing when it is off.
-    restampCatalog()
   }
 
   // ---- Actions ------------------------------------------------------------
@@ -747,12 +523,12 @@ Item {
   property bool starStarted: false
   property bool starStartSettled: false
 
-  // A surface opens this in the browser: the signed-out star fallback.
-  signal browseUrlRequested(string url)
+  // A surface opens this web page: the signed-out star fallback.
+  signal externalUrlRequested(string url)
   signal starToggleFinished()
 
-  // Star notices clear themselves after a few seconds. Install and
-  // update messages stay until replaced.
+  // Star notices clear themselves after a few seconds. Update
+  // messages stay until replaced.
   property string flashedText: ""
   function flashStatus(text, isError) {
     flashedText = text
@@ -811,7 +587,7 @@ Item {
     var result = starStarted ? Model.parseStarResult(starOutput, starCode) : { kind: "fallback" }
     if (result.kind === "fallback") {
       starToggleFinished()
-      browseUrlRequested("https://github.com/" + request.slug)
+      externalUrlRequested("https://github.com/" + request.slug)
       return
     }
     if (result.kind === "failed") {
@@ -841,8 +617,7 @@ Item {
         out.push(entry)
       }
     }
-    // A fresh array resets the grid's model, which rebuilds the visible cards
-    // with the moved counts; the details entry follows on catalog change.
+    // A fresh array so bindings on the catalog (star counts) re-evaluate.
     if (touched) catalog = out
   }
 
@@ -876,39 +651,10 @@ Item {
   // and only for a request that was real, so a click on a greyed button never
   // costs anything.
 
-  // Installing from the catalog runs the bundled helper on one reviewed
-  // commit — the registry's own install command is read for its url, shown,
-  // and never executed. Under the install opt-in a listing the marketplace
-  // never reviewed offers its validated branch instead, and the helper
-  // resolves that branch to one commit and pins it.
-  function askInstall(entry) {
-    // Fail closed on the snapshot too: `installable` is derived from it, and
-    // the confirmation is about to name what it carries.
-    if (!entry || !entry.installable || busy) return false
-    var unreviewed = entry.installUnverified === true
-    // The setting is re-read here rather than taken from the stamp on the
-    // entry, which a re-stamp may not have caught up with yet.
-    if (unreviewed && !allowUnverifiedInstalls) return false
-    var snapshot = unreviewed ? entry.unverifiedSnapshot : entry.updateSnapshot
-    if (!snapshot) return false
-    // The url the question shows is the repository the request fetches, not
-    // the registry's free-text install command: a dialog that named a
-    // different place than the one being cloned would be worse than silent.
-    pendingUrl = String(snapshot.repository)
-    pendingLabel = entry.name
-    pendingId = entry.id
-    pendingBranch = unreviewed ? String(snapshot.branch) : ""
-    pendingVerifiedCommit = unreviewed ? "" : String(snapshot.verifiedCommit)
-    pendingPlacementNeeded = Model.catalogNeedsPlacement(entry)
-    pendingKind = "install"
-    return true
-  }
-
   function askRemove(row) {
     if (!row || !row.removable || busy) return false
     pendingId = row.id
     pendingLabel = row.name
-    pendingUrl = ""
     pendingKind = "remove"
     return true
   }
@@ -927,7 +673,6 @@ Item {
 
     pendingId = row.id
     pendingLabel = row.name
-    pendingUrl = ""
     pendingKind = "place"
     return true
   }
@@ -941,7 +686,6 @@ Item {
     if (row.id === selfId) {
       pendingId = row.id
       pendingLabel = row.name
-      pendingUrl = ""
       pendingKind = "disable"
       return true
     }
@@ -958,7 +702,6 @@ Item {
     if (!Model.canMove(row) || busy) return false
     pendingId = row.id
     pendingLabel = row.name
-    pendingUrl = ""
     pendingSection = String(row.barSection || "")
     pendingKind = "move"
     return true
@@ -977,13 +720,9 @@ Item {
 
   function confirmPlacement(section) {
     if (busy) return
-    // Three questions share this dialog: where to put a plugin being
-    // installed, where to put one already sitting in the list switched off,
-    // and where to move one that is already in the bar.
-    if (pendingPlacementNeeded) {
-      startAdd(section)
-      return
-    }
+    // Two questions share this dialog: where to put a plugin already sitting
+    // in the list switched off, and where to move one that is already in the
+    // bar.
     if (pendingKind === "move") {
       var moving = Model.findRow(rows, pendingId)
       var movingLabel = pendingLabel
@@ -1012,21 +751,14 @@ Item {
   function cancelPending() {
     pendingKind = ""
     pendingUnverifiedSha = ""
-    pendingVerifiedCommit = ""
-    pendingBranch = ""
     pendingSection = ""
     pendingId = ""
     pendingLabel = ""
-    pendingUrl = ""
-    pendingPlacementNeeded = false
     // A dismissed bulk question drops its queue; a run in flight keeps it.
     if (!bulkActive) bulkQueue = []
   }
 
-  // Confirmation answered. A bar widget still owes us one more answer, and it
-  // has to be collected now: cloning a plugin makes the shell rebuild every
-  // plugin widget, the surfaces included, so there is no "after the install"
-  // in which to ask anything.
+  // Confirmation answered.
   function confirmPending() {
     if (pendingKind === "cleanup") {
       var allowed = canCleanupUpdateData()
@@ -1067,69 +799,10 @@ Item {
       startNextBulk()
       return
     }
-    if (pendingKind === "install") {
-      if (pendingId !== "" && pendingPlacementNeeded) {
-        pendingKind = "place"
-        return
-      }
-      startAdd("")
-    } else if (pendingKind === "remove") {
+    if (pendingKind === "remove") {
       runAction("remove", pendingLabel, ["omarchy", "plugin", "remove", pendingId, "--yes"])
       cancelPending()
     }
-  }
-
-  // Install, then place — one helper request built from the answers collected
-  // above. The pending state is cleared first: by the time the checkout lands
-  // the surface no longer exists to clear anything.
-  //
-  // Re-gated on the live catalog and on the setting, exactly as an update is:
-  // the grid may have refetched and the switch may have gone off while the
-  // question was on screen. Only what the dialog named is ever installed; a
-  // snapshot or a branch that moved is a no-op, never a substitute.
-  function startAdd(section) {
-    if (busy) return
-    var id = pendingId
-    var label = pendingLabel
-    var commit = pendingVerifiedCommit
-    var branch = pendingBranch
-    cancelPending()
-    var entry = Model.findRow(catalog, id)
-    var request = Model.installRequest(entry, section, allowUnverifiedInstalls)
-    if (!request || String(request.verifiedCommit || "") !== commit
-        || String(request.branch || "") !== branch) {
-      setStatus("Could not install " + label + ": the listing changed", true)
-      return
-    }
-    launchInstall(request, label)
-  }
-
-  // Detached is not an optimisation, it is the requirement. The moment the
-  // checkout lands in ~/.config/omarchy/plugins the shell tears every plugin
-  // widget down and rebuilds it, the popup among them, and a Process owned by
-  // a destroyed surface cannot be relied on to finish. The helper forks an
-  // independent worker before it touches the plugin root, so publication and
-  // placement finish whatever happens to this observer; only the result can
-  // be lost, and a desktop notification covers that.
-  function launchInstall(request, label) {
-    if (busy || pinnedProc.running || actionProc.running) return
-    busyRowId = ""
-    busyId = label
-    busyKind = "install"
-    pinnedOutput = ""
-    pinnedExited = false
-    pinnedOverflow = false
-    setStatus(request.branch
-      ? "Installing the unreviewed tip of " + label
-        + "; closing this window does not cancel it"
-      : "Installing the verified snapshot of " + label
-        + "; closing this window does not cancel it", false)
-    // Process.command is QStringList; avoid the environment property's
-    // QVariantHash binding, which this installed QML toolchain cannot type.
-    pinnedProc.command = ["/usr/bin/env", "-i", "--", "PATH=/usr/bin:/bin",
-      "WAYLAND_DISPLAY=" + String(Quickshell.env("WAYLAND_DISPLAY") || ""),
-      "/usr/bin/python3", "-I", "-S", pinnedHelperPath, JSON.stringify(request)]
-    pinnedProc.running = true
   }
 
   // The commit an open unreviewed-update question names, so the answer can
@@ -1182,7 +855,6 @@ Item {
     }
     pendingId = row.id
     pendingLabel = row.name
-    pendingUrl = ""
     pendingUnverifiedSha = row.remoteSha
     pendingKind = "update"
   }
@@ -1411,18 +1083,14 @@ Item {
       if (nonce !== "") consumeBulkSummary(nonce)
       return
     }
-    if (busyKind !== "update" && busyKind !== "install") return
-    var installing = busyKind === "install"
-    var done = installing ? "installed" : "updated"
+    if (busyKind !== "update") return
+    var done = "updated"
     var outcome = "outcome unknown; inspect retained transactions"
     var reason = ""
     try {
       var result = JSON.parse(pinnedOutput)
-      var allowed = installing
-        ? ["installed", "installed; reload failed", "installed; enable failed",
-           "installed; finalization failed", "unchanged; install refused", "unchanged; request refused"]
-        : ["updated", "updated; reload failed", "updated; finalization failed",
-           "unchanged; update refused", "unchanged; request refused"]
+      var allowed = ["updated", "updated; reload failed", "updated; finalization failed",
+        "unchanged; update refused", "unchanged; request refused"]
       if (!pinnedOverflow && result && allowed.indexOf(result.status) >= 0) {
         outcome = result.status
         // The helper's own static prose; still bounded to printable ASCII here.
@@ -1440,10 +1108,8 @@ Item {
     setStatus(outcome.indexOf("unchanged") === 0 && reason !== "" ? outcome + ": " + reason : outcome,
               outcome !== done)
     if (changed) {
-      if (!installing) {
-        pendingUpdateReport = ""
-        rows = Model.applyPinnedUpdates(Model.applyUpdateReport(rows, {}), null, allowUnverifiedUpdates)
-      }
+      pendingUpdateReport = ""
+      rows = Model.applyPinnedUpdates(Model.applyUpdateReport(rows, {}), null, allowUnverifiedUpdates)
       root.requestFreshUpdateCycle()
     } else root.reload()
     root.refreshUpdateData()
@@ -1628,8 +1294,8 @@ Item {
     }
   }
 
-  // ---- Positional layout moves (Expanded only) -----------------------------
-  // Expanded is keepLoaded: hiding its window retains this owner and lock.
+  // ---- Positional layout moves ----------------------------------------------
+  // The retained move owner keeps this lock across popup closes.
   // Stopping an IPC client cannot undo a request the host already received.
   property var barMovePending: null
   property bool barMoveExited: true
@@ -1751,25 +1417,15 @@ Item {
   // The catalog is fetched once and reused: it is also the only list of every
   // manifest path on the system, built-ins included, and running the command
   // twice would double the slowest step of the load.
-  // Enable and disable are detached commands that rewrite shell.json. The
-  // bar rebuilds the popup with its new state, so the popup never needed to
-  // notice; the expanded panel is not a bar widget and would keep showing the
-  // old rows, so its store watches the file the way the shell itself does and
-  // reloads once the write has settled and the shell has read it too.
-  // Opt-in, because the popup exists once per monitor and three copies
-  // reloading at once for a change the bar already handles is pure waste.
+  // Enable and
+  // disable are detached commands that rewrite shell.json. The bar rebuilds
+  // the popup with its new state; a store that is not part of the bar can opt
+  // in to watching the file the way the shell itself does and reload once the
+  // write has settled and the shell has read it too. Opt-in, because the popup
+  // exists once per monitor and three copies reloading at once for a change
+  // the bar already handles is pure waste.
   property bool watchConfig: false
   onWatchConfigChanged: if (!watchConfig) configReload.stop()
-
-  // The blocking read setOpenAs makes, apart from the watcher below, which
-  // only the expanded panel turns on.
-  FileView {
-    id: openAsConfig
-    path: Quickshell.env("HOME") + "/.config/omarchy/shell.json"
-    preload: false
-    blockAllReads: true
-    printErrors: false
-  }
 
   FileView {
     id: shellConfig

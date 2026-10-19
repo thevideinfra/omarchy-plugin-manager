@@ -1,13 +1,10 @@
-// The way back from the expanded window to the popup.
+// Shared registry of per-monitor bar widgets plus the headless move owner.
 //
-// A panel plugin's scoped shell carries no bar reference, and shell.summon
-// routes a plugin that also declares a panel kind to the panel loader, never
-// to its bar widget. So the expanded window cannot ask the host to reopen the
-// popup. Both windows live in one QML engine, and a `.pragma library` script
-// is a single shared instance there: each per-monitor bar widget registers
-// itself here, and the expanded window picks the one on the output it was
-// summoned to. Nothing crosses a process or trusts anything but live QML
-// objects the plugin itself created.
+// A `.pragma library` script is a single shared instance in one QML engine:
+// each bar widget registers itself here, and the move owner (which survives a
+// bar rebuild) uses it to reopen the popup on the right output after a bar
+// move. Nothing crosses a process or trusts anything but live QML objects the
+// plugin itself created.
 .pragma library
 
 var widgets = []

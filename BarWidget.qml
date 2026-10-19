@@ -46,7 +46,7 @@ BarWidget {
   }
 
   // Restore only when the local overlay is ready. Never recurse through the
-  // host widget or open Expanded as a substitute.
+  // host widget or open another surface as a substitute.
   function openArrange() {
     var target = panelLoader.item
     return !!target && typeof target.openArrange === "function" && target.openArrange() === true
@@ -60,8 +60,8 @@ BarWidget {
   // Project its confirmed count instead of starting another check for the bar.
   readonly property int updateCount: panelLoader.item ? panelLoader.item.behindCount : 0
 
-  // The output this bar instance draws on, so the expanded window can hand
-  // back to the popup on the same monitor (see PopupBridge.js).
+  // The output this bar instance draws on, so a bar move can reopen
+  // the popup on the same monitor (see PopupBridge.js).
   readonly property string screenName: root.QsWindow.window && root.QsWindow.window.screen
     ? String(root.QsWindow.window.screen.name || "") : ""
 

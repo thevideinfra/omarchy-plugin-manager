@@ -14,3 +14,11 @@ test("deleted files stay deleted", () => {
   for (const name of ["Expanded.qml", "CatalogCard.qml", "CatalogDetailsPane.qml", "PluginDetails.qml", "InstalledListRow.qml", "InstalledDetails.qml"])
     assert.equal(existsSync(new URL(`../${name}`, import.meta.url)), false, name)
 })
+
+test("store, model and bridge carry no browse or open-as code", () => {
+  for (const name of ["PluginStore.qml", "Model.js", "PopupBridge.js", "BarWidget.qml"]) {
+    const source = read(name)
+    for (const word of [/browse/i, /openAs/, /tiledExpandedPanel/, /Expanded/])
+      assert.doesNotMatch(source, word, `${name} ${word}`)
+  }
+})

@@ -5,7 +5,7 @@ import assert from "node:assert/strict"
 const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
 const storeSource = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
 const Model = Function(readFileSync(new URL("../Model.js", import.meta.url), "utf8") +
-  "; return { barLayoutSnapshot, barLayoutMove, tiledExpandedPanel, openAs, expandedModeFromPayload, parseSelfSettings, selfEntryFromShellConfig, expandedTabFromPayload, expandedPageFromPayload, expandedScreenFromPayload }")()
+  "; return { barLayoutSnapshot, barLayoutMove, parseSelfSettings }")()
 function call(source, name, state, ...args) {
   const match = source.match(new RegExp(`  function ${name}\\(([^)]*)\\) \\{([\\s\\S]*?)\\n  \\}`))
   assert.ok(match, `${name} exists`)
@@ -56,7 +56,7 @@ test("status source resets for settings errors and ordinary inventory outcomes",
   state.setStatus("Move outcome", true, "layout")
   assert.equal(state.statusSource, "layout")
   Object.assign(state, { busy: false, selfEntryLoaded: false })
-  assert.equal(call(storeSource, "writeSelfSetting", state, "tiledExpandedPanel", true, false), false)
+  assert.equal(call(storeSource, "writeSelfSetting", state, "allowUnverifiedUpdates", true, false), false)
   assert.equal(state.statusSource, "")
   assert.equal(state.statusIsError, true)
   state.setStatus("Plugin removed", false)
