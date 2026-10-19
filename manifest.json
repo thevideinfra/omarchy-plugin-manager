@@ -28,7 +28,8 @@
       "showDescriptions": true,
       "showMeta": true,
       "showSummary": true,
-      "showKeyHints": true
+      "showKeyHints": true,
+      "showSearch": true
     },
     "schema": [
       {
@@ -99,6 +100,13 @@
         "label": "Show key hints",
         "defaultValue": true,
         "description": "Show the keyboard hints at the bottom of the panel."
+      },
+      {
+        "key": "showSearch",
+        "type": "boolean",
+        "label": "Show the search box",
+        "defaultValue": true,
+        "description": "Show the search box above the plugin list."
       }
     ]
   }

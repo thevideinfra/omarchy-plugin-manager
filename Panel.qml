@@ -66,6 +66,13 @@ Panel {
   }
   readonly property var look: panelStyle
 
+  // A term typed before the box was switched off would keep filtering the
+  // list with nothing on screen to show or clear it.
+  Connections {
+    target: root.look
+    function onShowSearchChanged() { if (!root.look.showSearch) root.clearSearch() }
+  }
+
   PluginStore {
     id: store
     externalBusy: !!root.popupMoveOwner && root.popupMoveOwner.busy
@@ -139,13 +146,62 @@ Panel {
     font.bold: true
   }
 
-  // A label with a row of text choices; the selected one is accent, bold and
-  // underlined. choices: array of strings. Clicking one emits picked(value).
+  // On/off switch in the accent colour: accent track and knob when on, a dim
+  // neutral track when off (the look omaudiopanel uses). busy dims it and
+  // stops clicks, like the grey switch it replaces.
+  component AccentSwitch: Item {
+    id: sw
+    property bool checked: false
+    property bool interactive: true
+    property bool busy: false
+    readonly property bool containsMouse: swMouse.containsMouse
+    signal toggled()
+
+    implicitWidth: root.look.sp(34)
+    implicitHeight: root.look.sp(18)
+    opacity: sw.busy || !sw.interactive ? 0.5 : 1.0
+
+    Rectangle {
+      anchors.fill: parent
+      radius: height / 2
+      color: sw.checked ? Qt.alpha(root.look.accent, 0.3) : Qt.alpha(root.contentForeground, 0.1)
+      border.width: 1
+      border.color: sw.checked ? root.look.accent : Qt.alpha(root.contentForeground, 0.25)
+      Behavior on color { ColorAnimation { duration: 120 } }
+
+      Rectangle {
+        width: parent.height - root.look.sp(6)
+        height: width
+        radius: width / 2
+        anchors.verticalCenter: parent.verticalCenter
+        x: sw.checked ? parent.width - width - (parent.height - height) / 2 : (parent.height - height) / 2
+        color: sw.checked ? root.look.accent : Qt.darker(root.contentForeground, 1.4)
+        Behavior on x { NumberAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: 120 } }
+      }
+    }
+
+    MouseArea {
+      id: swMouse
+      anchors.fill: parent
+      anchors.margins: -root.look.sp(3)
+      hoverEnabled: true
+      enabled: sw.interactive && !sw.busy
+      cursorShape: Qt.PointingHandCursor
+      onClicked: sw.toggled()
+    }
+  }
+
+  // A label with a row of choice chips; the selected one is accent filled and
+  // bold. choices: array of strings; the chips wrap, so a long list such as
+  // the accent names stays inside the pane. swatches puts a colour dot before
+  // each name (the accent row). Clicking one emits picked(value).
   component ChoiceRow: Item {
     id: choiceRow
     property string label: ""
     property var choices: []
     property string selected: ""
+    property bool swatches: false
     signal picked(string value)
 
     width: parent ? parent.width : 0
@@ -156,6 +212,7 @@ Panel {
       textFormat: Text.PlainText
       anchors.left: parent.left
       anchors.top: parent.top
+      anchors.topMargin: root.look.sp(4)
       width: root.look.sp(90)
       text: choiceRow.label
       color: root.contentForeground
@@ -168,30 +225,56 @@ Panel {
       anchors.left: choiceLabel.right
       anchors.right: parent.right
       anchors.top: parent.top
-      spacing: root.look.sp(10)
+      spacing: root.look.sp(6)
 
       Repeater {
         model: choiceRow.choices
 
-        Text {
+        Rectangle {
+          id: chip
           required property string modelData
           readonly property bool chosen: choiceRow.selected === modelData
-          textFormat: Text.PlainText
-          text: modelData
-          color: chosen ? root.look.accent : root.contentForeground
-          font.family: root.contentFontFamily
-          font.pixelSize: root.look.font.bodySmall
-          font.bold: chosen
-          font.underline: chosen
-          opacity: chosen || choiceMouse.containsMouse ? 1.0 : 0.6
+
+          width: chipRow.implicitWidth + root.look.sp(8) * 2
+          height: chipRow.implicitHeight + root.look.sp(4) * 2
+          radius: root.look.sp(6)
+          border.width: 1
+          color: chip.chosen ? Qt.alpha(root.look.accent, 0.12)
+            : Qt.alpha(root.contentForeground, choiceMouse.containsMouse ? 0.09 : 0.05)
+          border.color: chip.chosen ? Qt.alpha(root.look.accent, 0.45) : Qt.alpha(root.contentForeground, 0.1)
+
+          Row {
+            id: chipRow
+            anchors.centerIn: parent
+            spacing: root.look.sp(5)
+
+            Rectangle {
+              visible: choiceRow.swatches
+              anchors.verticalCenter: parent.verticalCenter
+              width: root.look.sp(8)
+              height: width
+              radius: width / 2
+              color: root.look.accentSwatch(chip.modelData)
+            }
+
+            Text {
+              textFormat: Text.PlainText
+              anchors.verticalCenter: parent.verticalCenter
+              text: chip.modelData
+              color: chip.chosen ? root.look.accent : root.contentForeground
+              opacity: chip.chosen ? 1.0 : 0.8
+              font.family: root.contentFontFamily
+              font.pixelSize: root.look.font.caption
+              font.bold: chip.chosen
+            }
+          }
 
           MouseArea {
             id: choiceMouse
             anchors.fill: parent
-            anchors.margins: -root.look.sp(3)
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: choiceRow.picked(parent.modelData)
+            onClicked: choiceRow.picked(chip.modelData)
           }
         }
       }
@@ -242,14 +325,13 @@ Panel {
       }
     }
 
-    ToggleSwitch {
+    AccentSwitch {
       id: toggleSwitch
       anchors.right: parent.right
       anchors.rightMargin: root.look.sp(12)
       anchors.verticalCenter: parent.verticalCenter
       checked: root.look[toggleCard.key]
       interactive: true
-      foreground: root.contentForeground
       onToggled: root.setSetting(toggleCard.key, !root.look[toggleCard.key])
     }
   }
@@ -686,7 +768,7 @@ Panel {
       onCloseRequested: { root.closeArrange(); root.revokeReleaseNavigation(); root.close() }
       onTabRequested: function(direction) { root.closeArrange(); root.revokeReleaseNavigation(); root.switchPanel(direction) }
       onTextKey: function(t) {
-        if (t === "/") root.focusSearchField()
+        if (t === "/") { if (root.look.showSearch) root.focusSearchField() }
         else if (t === "r" || t === "R") { root.reload(); root.checkUpdates() }
         else if (t === "f" || t === "F") root.cycleKindFilter()
         else if (t === "s" || t === "S") root.cycleGroupFilter()
@@ -955,7 +1037,7 @@ Panel {
         Item {
           id: filterControls
 
-          readonly property real controlHeight: kindDropdown.implicitHeight
+          readonly property real controlHeight: Math.ceil(filterLabelMetrics.height + root.look.sp(12))
           readonly property real filterRowHeight: filterLabelMetrics.height
             + root.look.sp(4) + controlHeight
 
@@ -966,7 +1048,7 @@ Panel {
           }
 
           width: parent.width
-          height: filterRowHeight + root.look.sp(8) + controlHeight
+          height: filterRowHeight + (root.look.showSearch ? root.look.sp(8) + controlHeight : 0)
 
           Item {
             id: installedFilters
@@ -995,13 +1077,18 @@ Panel {
                 font.bold: true
               }
 
-              Dropdown {
+              PanelDropdown {
                 id: groupDropdown
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
                 height: filterControls.controlHeight
+                rowHeight: filterControls.controlHeight
+                popupRowHeight: root.look.sp(28)
                 showLabel: false
+                fontSize: root.look.font.caption
+                labelFontSize: root.look.font.caption
+                accent: root.look.accent
                 options: root.groupOptions
                 value: root.groupFilter
                 foreground: root.contentForeground
@@ -1028,13 +1115,18 @@ Panel {
                 font.bold: true
               }
 
-              Dropdown {
+              PanelDropdown {
                 id: kindDropdown
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
                 height: filterControls.controlHeight
+                rowHeight: filterControls.controlHeight
+                popupRowHeight: root.look.sp(28)
                 showLabel: false
+                fontSize: root.look.font.caption
+                labelFontSize: root.look.font.caption
+                accent: root.look.accent
                 options: root.kindOptions
                 value: root.kindFilter
                 foreground: root.contentForeground
@@ -1061,13 +1153,18 @@ Panel {
                 font.bold: true
               }
 
-              Dropdown {
+              PanelDropdown {
                 id: statusDropdown
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
                 height: filterControls.controlHeight
+                rowHeight: filterControls.controlHeight
+                popupRowHeight: root.look.sp(28)
                 showLabel: false
+                fontSize: root.look.font.caption
+                labelFontSize: root.look.font.caption
+                accent: root.look.accent
                 options: root.statusOptions
                 value: root.statusFilter
                 foreground: root.contentForeground
@@ -1090,7 +1187,8 @@ Panel {
             anchors.rightMargin: clearFiltersButton.visible ? root.look.sp(4) : 0
             y: filterControls.filterRowHeight + root.look.sp(8)
             height: filterControls.controlHeight
-            active: root.opened
+            visible: root.look.showSearch
+            active: root.opened && root.look.showSearch
             sourceComponent: Component {
               TextField {
                 id: searchField
@@ -1130,7 +1228,7 @@ Panel {
             id: clearFiltersButton
             anchors.right: parent.right
             y: filterControls.filterRowHeight + root.look.sp(8)
-            visible: root.searchText !== ""
+            visible: root.look.showSearch && root.searchText !== ""
             iconText: "󰅙"
             tooltipText: "Clear the search"
             foreground: root.contentForeground
@@ -1213,7 +1311,7 @@ Panel {
             spacing: root.look.sp(10)
 
             Repeater {
-              model: Model.actionHints(root.bulkUpdatableCount > 0)
+              model: Model.actionHints(root.bulkUpdatableCount > 0, root.look.showSearch)
               delegate: hintDelegate
             }
           }
@@ -1571,6 +1669,7 @@ Panel {
             label: "Accent"
             choices: root.look.accentChoices
             selected: root.look.accentChoice
+            swatches: true
             onPicked: function(value) { root.setSetting("accent", value) }
           }
 
@@ -1580,6 +1679,7 @@ Panel {
           ShowToggleCard { key: "showMeta"; title: "Details line"; caption: "Author, kind and version under each row" }
           ShowToggleCard { key: "showSummary"; title: "Summary counts"; caption: "Installed, total and update counts in the header" }
           ShowToggleCard { key: "showKeyHints"; title: "Key hints"; caption: "Filter and action keys at the bottom" }
+          ShowToggleCard { key: "showSearch"; title: "Search"; caption: "Search box above the list" }
 
           // Off is the verified-snapshot promise; on is the user's own call, and
           // the caption says so in the same words the confirmation will.
@@ -1624,7 +1724,7 @@ Panel {
               }
             }
 
-            ToggleSwitch {
+            AccentSwitch {
               id: unverifiedSwitch
               anchors.right: parent.right
               anchors.rightMargin: root.look.sp(12)
@@ -1632,7 +1732,6 @@ Panel {
               checked: store.allowUnverifiedUpdates
               interactive: true
               busy: root.busy
-              foreground: root.contentForeground
               onToggled: store.setAllowUnverifiedUpdates(!store.allowUnverifiedUpdates)
 
               PanelToolTip {

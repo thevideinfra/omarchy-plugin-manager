@@ -17,6 +17,7 @@ Item {
   readonly property bool showMeta: Model.settingBool(settings && settings.showMeta, true)
   readonly property bool showSummary: Model.settingBool(settings && settings.showSummary, true)
   readonly property bool showKeyHints: Model.settingBool(settings && settings.showKeyHints, true)
+  readonly property bool showSearch: Model.settingBool(settings && settings.showSearch, true)
 
   readonly property real densityScale: Model.densityScale(density)
   readonly property real fontScale: (0.5 + 0.5 * densityScale) * Model.fontSizeScale(fontSizeChoice)
@@ -28,6 +29,11 @@ Item {
   readonly property color accent: accentSource.value
   // "theme" first, then the palette names the current theme defines.
   readonly property var accentChoices: accentSource.available
+
+  // The colour a palette name stands for, for the swatch in the settings page.
+  function accentSwatch(name) {
+    return accentSource.colorOf(name)
+  }
 
   function sp(px) { return Style.space(px * densityScale) }
 
