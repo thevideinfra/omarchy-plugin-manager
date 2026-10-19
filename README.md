@@ -30,15 +30,27 @@ removal of the plugin itself, and how to develop it.
 
 ## Appearance
 
-Three settings change how the popup looks. They belong to the plugin's entry in
-the bar widget settings of the Omarchy shell, and are stored in that plugin's
-entry in `~/.config/omarchy/shell.json`.
+The popup's look and what it shows are set in two places that write the same
+keys: the **Appearance** and **Show** sections at the top of the in-popup
+Settings page (the gear in the header), and the plugin's entry in the bar widget
+settings of the Omarchy shell. They are stored in that plugin's entry in
+`~/.config/omarchy/shell.json` and apply to an open popup straight away. The
+Settings page saves with `omarchy bar set <id> <key> <value> --json`, so only
+the one key changes.
 
 | Setting | Choices | Default | Effect |
 |---------|---------|---------|--------|
-| Density | `compact`, `normal`, `comfortable` | `normal` | How tightly the popup is laid out |
-| Font size | `small`, `normal`, `large` | `normal` | Text size, on top of the density's own scaling |
+| Density | `compact` (0.61), `normal` (0.71), `comfortable` (0.83) | `normal` | Spacing and width, as a fraction of the shell's stock sizes (the same scale omaudiopanel uses) |
+| Font size | `small` (0.85), `normal` (0.95), `large` (1.07) | `normal` | Text size, on top of the density's own scaling |
 | Accent colour | `theme`, or a colour from the active theme palette: `blue`, `cyan`, `green`, `magenta`, `yellow`, `red`, `orange` | `theme` | The colour the popup highlights with |
+| `showDescriptions` | on / off | on | The description line under each plugin |
+| `showMeta` | on / off | on | The author, kind and version line under each plugin |
+| `showSummary` | on / off | on | The "installed, total, to update" counts in the header |
+| `showKeyHints` | on / off | on | The filter and action key hints at the bottom |
+
+Switching a line off collapses it; the list reclaims the space. Key hints are
+display only, so the shortcuts keep working when they are hidden. When the popup
+is too narrow for the hints on one line they stack on two.
 
 `theme` follows the theme's own accent. A palette colour is read by name from
 the current theme's `colors.toml`, so it follows a theme change, and falls back
@@ -49,7 +61,7 @@ to the theme accent when the new theme does not define it.
 **Settings**, opened from the gear in the header, groups its switches and
 **Restart Shell** action into rounded cards. Search and filters stay hidden
 while Settings is open, and the cards scroll when the available height is small.
-It holds the **Allow updating unverified plugins** switch, the transaction
+It holds the Appearance and Show sections (above), the **Allow updating unverified plugins** switch, the transaction
 history limit, **Restart Shell**, and the Info card (all described below).
 
 The **Info** card shows the plugin, active update-data, and update-data archive
