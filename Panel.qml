@@ -125,6 +125,135 @@ Panel {
     onTriggered: root.searchQuery = root.searchText
   }
 
+  function setSetting(key, value) {
+    Quickshell.execDetached(["omarchy", "bar", "set", "io.github.juancasanueva.plugin-manager", key, JSON.stringify(value), "--json"])
+  }
+
+  // A heading inside the settings page.
+  component SettingsHeading: Text {
+    // Never rich text: AutoText would fetch what a crafted string points at.
+    textFormat: Text.PlainText
+    color: root.contentForeground
+    font.family: root.contentFontFamily
+    font.pixelSize: root.look.font.body
+    font.bold: true
+  }
+
+  // A label with a row of text choices; the selected one is accent, bold and
+  // underlined. choices: array of strings. Clicking one emits picked(value).
+  component ChoiceRow: Item {
+    id: choiceRow
+    property string label: ""
+    property var choices: []
+    property string selected: ""
+    signal picked(string value)
+
+    width: parent ? parent.width : 0
+    height: Math.max(choiceLabel.implicitHeight, choiceFlow.implicitHeight) + root.look.sp(4)
+
+    Text {
+      id: choiceLabel
+      textFormat: Text.PlainText
+      anchors.left: parent.left
+      anchors.top: parent.top
+      width: root.look.sp(90)
+      text: choiceRow.label
+      color: root.contentForeground
+      font.family: root.contentFontFamily
+      font.pixelSize: root.look.font.bodySmall
+    }
+
+    Flow {
+      id: choiceFlow
+      anchors.left: choiceLabel.right
+      anchors.right: parent.right
+      anchors.top: parent.top
+      spacing: root.look.sp(10)
+
+      Repeater {
+        model: choiceRow.choices
+
+        Text {
+          required property string modelData
+          readonly property bool chosen: choiceRow.selected === modelData
+          textFormat: Text.PlainText
+          text: modelData
+          color: chosen ? root.look.accent : root.contentForeground
+          font.family: root.contentFontFamily
+          font.pixelSize: root.look.font.bodySmall
+          font.bold: chosen
+          font.underline: chosen
+          opacity: chosen || choiceMouse.containsMouse ? 1.0 : 0.6
+
+          MouseArea {
+            id: choiceMouse
+            anchors.fill: parent
+            anchors.margins: -root.look.sp(3)
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: choiceRow.picked(parent.modelData)
+          }
+        }
+      }
+    }
+  }
+
+  // A card with a title, a one-line caption and a switch for one boolean look setting.
+  component ShowToggleCard: Rectangle {
+    id: toggleCard
+    property string key: ""
+    property string title: ""
+    property string caption: ""
+
+    width: parent ? parent.width : 0
+    height: Math.max(toggleText.implicitHeight, toggleSwitch.implicitHeight) + root.look.sp(12) * 2
+    radius: Style.cornerRadius
+    color: Style.normalFill
+    border.width: 1
+    border.color: Qt.alpha(root.secondaryForeground, 0.35)
+
+    Column {
+      id: toggleText
+      anchors.left: parent.left
+      anchors.leftMargin: root.look.sp(12)
+      anchors.right: toggleSwitch.left
+      anchors.rightMargin: root.look.sp(16)
+      anchors.verticalCenter: parent.verticalCenter
+      spacing: root.look.sp(4)
+
+      Text {
+        textFormat: Text.PlainText
+        width: parent.width
+        text: toggleCard.title
+        color: root.contentForeground
+        font.family: root.contentFontFamily
+        font.pixelSize: root.look.font.body
+        wrapMode: Text.WordWrap
+      }
+
+      Text {
+        textFormat: Text.PlainText
+        width: parent.width
+        text: toggleCard.caption
+        color: root.secondaryForeground
+        font.family: root.contentFontFamily
+        font.pixelSize: root.look.font.caption
+        wrapMode: Text.WordWrap
+      }
+    }
+
+    ToggleSwitch {
+      id: toggleSwitch
+      anchors.right: parent.right
+      anchors.rightMargin: root.look.sp(12)
+      anchors.verticalCenter: parent.verticalCenter
+      checked: root.look[toggleCard.key]
+      interactive: true
+      foreground: root.contentForeground
+      onToggled: root.setSetting(toggleCard.key, !root.look[toggleCard.key])
+    }
+  }
+
   function flushSearch() {
     searchDebounce.stop()
     searchQuery = searchText
@@ -539,7 +668,7 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: root.arrangeOpen ? settingsPane : keyCatcher
-    contentWidth: panel.fittedContentWidth(root.look.sp(620))
+    contentWidth: panel.fittedContentWidth(root.look.sp(440))
 
     // Fill the available height while preserving the host's bar gap and screen margins.
     contentHeight: panel.cappedContentHeight(panel.availableCardHeight)
@@ -792,7 +921,7 @@ Panel {
         Item {
           x: title.x
           width: parent.width - x
-          height: subtitle.implicitHeight
+          height: subtitle.visible ? subtitle.implicitHeight : 0
 
           Text {
             id: subtitle
@@ -801,7 +930,7 @@ Panel {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            visible: text !== ""
+            visible: root.look.showSummary && text !== ""
             elide: Text.ElideRight
             text: {
               if (root.loading && root.rows.length === 0) return "reading…"
@@ -1049,6 +1178,7 @@ Panel {
       //      the left, each "[key] value", and the row actions on the right.
       Column {
         id: hintBar
+        visible: root.look.showKeyHints
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
@@ -1057,13 +1187,17 @@ Panel {
         PanelSeparator { foreground: root.contentForeground }
 
         Item {
+          id: hintItem
           width: parent.width
-          height: Math.max(filterHints.implicitHeight, actionHints.implicitHeight)
+          // Two lines when the filters and actions together do not fit one.
+          readonly property bool stacked: filterHints.implicitWidth + actionHints.implicitWidth + root.look.sp(12) > width
+          height: stacked ? filterHints.implicitHeight + actionHints.implicitHeight + root.look.sp(4)
+            : Math.max(filterHints.implicitHeight, actionHints.implicitHeight)
 
           Row {
             id: filterHints
             anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
+            y: hintItem.stacked ? 0 : (hintItem.height - height) / 2
             spacing: root.look.sp(10)
 
             Repeater {
@@ -1075,7 +1209,7 @@ Panel {
           Row {
             id: actionHints
             anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
+            y: hintItem.stacked ? filterHints.implicitHeight + root.look.sp(4) : (hintItem.height - height) / 2
             spacing: root.look.sp(10)
 
             Repeater {
@@ -1125,7 +1259,7 @@ Panel {
         anchors.right: parent.right
         anchors.top: header.bottom
         anchors.topMargin: root.look.sp(10)
-        anchors.bottom: hintBar.top
+        anchors.bottom: root.look.showKeyHints ? hintBar.top : parent.bottom
         anchors.bottomMargin: root.look.sp(10)
         contentWidth: width
         contentHeight: listColumn.implicitHeight
@@ -1416,6 +1550,36 @@ Panel {
             font.pixelSize: root.look.font.title
             font.bold: true
           }
+
+          SettingsHeading { text: "Appearance" }
+
+          ChoiceRow {
+            label: "Density"
+            choices: ["compact", "normal", "comfortable"]
+            selected: root.look.density
+            onPicked: function(value) { root.setSetting("density", value) }
+          }
+
+          ChoiceRow {
+            label: "Font size"
+            choices: ["small", "normal", "large"]
+            selected: root.look.fontSizeChoice
+            onPicked: function(value) { root.setSetting("fontSize", value) }
+          }
+
+          ChoiceRow {
+            label: "Accent"
+            choices: root.look.accentChoices
+            selected: root.look.accentChoice
+            onPicked: function(value) { root.setSetting("accent", value) }
+          }
+
+          SettingsHeading { text: "Show" }
+
+          ShowToggleCard { key: "showDescriptions"; title: "Descriptions"; caption: "Plugin description under each row" }
+          ShowToggleCard { key: "showMeta"; title: "Details line"; caption: "Author, kind and version under each row" }
+          ShowToggleCard { key: "showSummary"; title: "Summary counts"; caption: "Installed, total and update counts in the header" }
+          ShowToggleCard { key: "showKeyHints"; title: "Key hints"; caption: "Filter and action keys at the bottom" }
 
           // Off is the verified-snapshot promise; on is the user's own call, and
           // the caption says so in the same words the confirmation will.

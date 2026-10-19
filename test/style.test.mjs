@@ -9,23 +9,23 @@ const source = readFileSync(new URL("../Model.js", import.meta.url), "utf8")
 const Model = new Function(
   source + `
   return {
-    densityScale, fontSizeScale, parsePalette, accentChoices, paletteAccent, choiceSetting
+    densityScale, fontSizeScale, parsePalette, accentChoices, paletteAccent, choiceSetting, settingBool
   }`
 )()
 
-test("densityScale: compact < normal = 1 < comfortable, unknown is normal", () => {
-  assert.ok(Model.densityScale("compact") < 1)
-  assert.equal(Model.densityScale("normal"), 1)
-  assert.ok(Model.densityScale("comfortable") > 1)
-  assert.equal(Model.densityScale("bogus"), 1)
-  assert.equal(Model.densityScale(undefined), 1)
+test("densityScale matches omaudiopanel: compact < normal < comfortable, all below stock, unknown is normal", () => {
+  assert.equal(Model.densityScale("compact"), 0.61)
+  assert.equal(Model.densityScale("normal"), 0.71)
+  assert.equal(Model.densityScale("comfortable"), 0.83)
+  assert.equal(Model.densityScale("bogus"), 0.71)
+  assert.equal(Model.densityScale(undefined), 0.71)
 })
 
-test("fontSizeScale: small < normal = 1 < large, unknown is normal", () => {
-  assert.ok(Model.fontSizeScale("small") < 1)
-  assert.equal(Model.fontSizeScale("normal"), 1)
-  assert.ok(Model.fontSizeScale("large") > 1)
-  assert.equal(Model.fontSizeScale("bogus"), 1)
+test("fontSizeScale matches omaudiopanel: small < normal < large, unknown is normal", () => {
+  assert.equal(Model.fontSizeScale("small"), 0.85)
+  assert.equal(Model.fontSizeScale("normal"), 0.95)
+  assert.equal(Model.fontSizeScale("large"), 1.07)
+  assert.equal(Model.fontSizeScale("bogus"), 0.95)
 })
 
 test("parsePalette reads quoted hex colours only", () => {
@@ -68,4 +68,16 @@ test("choiceSetting returns an allowed string value, else the fallback", () => {
   assert.equal(Model.choiceSetting({ density: 3 }, "density", allowed, "normal"), "normal")
   assert.equal(Model.choiceSetting({}, "density", allowed, "normal"), "normal")
   assert.equal(Model.choiceSetting(null, "density", allowed, "normal"), "normal")
+})
+
+test("settingBool accepts booleans and their string forms, else the fallback", () => {
+  assert.equal(Model.settingBool(true, false), true)
+  assert.equal(Model.settingBool(false, true), false)
+  assert.equal(Model.settingBool("true", false), true)
+  assert.equal(Model.settingBool("false", true), false)
+  assert.equal(Model.settingBool(undefined, true), true)
+  assert.equal(Model.settingBool(undefined, false), false)
+  assert.equal(Model.settingBool("garbage", true), true)
+  assert.equal(Model.settingBool(1, false), false)
+  assert.equal(Model.settingBool(null, true), true)
 })
