@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs"
+import { readFileSync, existsSync } from "node:fs"
 import { test } from "node:test"
 import assert from "node:assert/strict"
 
@@ -85,4 +85,18 @@ test("settings cards use an AccentSwitch, not the grey ToggleSwitch", () => {
   assert.match(sw, /radius: height \/ 2/)
   assert.equal(panel.split("AccentSwitch {").length - 1, 2) // the two cards
   assert.match(panel, /AccentSwitch \{\s*id: unverifiedSwitch[\s\S]{0,400}busy: root\.busy/)
+})
+
+test("PanelDropdown imports qs.Ui for the types the shell copy got implicitly", () => {
+  const d = read("PanelDropdown.qml")
+  assert.match(d, /^import qs\.Ui$/m)
+  assert.match(d, /^import qs\.Commons$/m)
+})
+
+test("every qs.Ui type PanelDropdown uses is covered by an import", { skip: !existsSync("/usr/share/omarchy/shell/Ui/qmldir") }, () => {
+  const d = read("PanelDropdown.qml")
+  const exported = [...readFileSync("/usr/share/omarchy/shell/Ui/qmldir", "utf8").matchAll(/^([A-Z]\w+)\s+\d/gm)].map(m => m[1])
+  const code = d.replace(/\/\/[^\n]*/g, "")
+  for (const type of exported)
+    if (new RegExp("\\b" + type + "\\b").test(code)) assert.match(d, /^import qs\.Ui$/m, type)
 })

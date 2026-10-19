@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import qs.Commons
 import qs.Commons as Commons
+import qs.Ui
 
 // A copy of the shell's Ui/Dropdown.qml with scalable text: the shell file
 // hard-codes Style.font.body and Style.font.caption, which stay large next to
