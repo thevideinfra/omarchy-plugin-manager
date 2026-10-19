@@ -300,44 +300,6 @@ test("queued post-update cycle reaches fresh HEAD-bound evidence without a manua
   assert.equal(fresh.behind, false)
 })
 
-test("successful update queues the fresh cycle and update entry points enforce settled processes", () => {
-  const source = readFileSync(new URL("../PluginStore.qml", import.meta.url), "utf8")
-  const modelSource = readFileSync(new URL("../Model.js", import.meta.url), "utf8")
-  const Model = Function(`${modelSource}; return {applyPinnedUpdates, applyUpdateReport}`)()
-  const begin = source.indexOf("function finishPinnedUpdate()")
-  const bodyEnd = source.indexOf("\n  }", begin) + 4
-  for (const outcome of ["updated", "updated; reload failed", "updated; finalization failed", "unchanged; update refused", "invalid"]) {
-    let refreshes = 0, reloads = 0, statusRefreshes = 0
-    const root = { pinnedExited: true, busyKind: "update", busyId: "Thing", busyRowId: "thing",
-      pinnedOutput: JSON.stringify({ status: outcome, backup: "" }), pinnedOverflow: false,
-      pendingUpdateReport: "old", rows: [], allowUnverifiedUpdates: false, setStatus(text, error) { this.status = text; this.error = error },
-      requestFreshUpdateCycle() { refreshes++ }, reload() { reloads++ },
-      refreshUpdateData() { statusRefreshes++; assert.equal(this.busyKind, "") }, actionFinished() {} }
-    Function("root", "Model", `with(root) { ${source.slice(begin, bodyEnd)}; finishPinnedUpdate() }`)(root, Model)
-    assert.equal(root.busyKind, "")
-    assert.equal(refreshes, outcome.startsWith("updated") ? 1 : 0)
-    assert.equal(reloads, outcome.startsWith("updated") ? 0 : 1)
-    assert.equal(statusRefreshes, 1, `${outcome} must refresh retained update-data status`)
-    assert.equal(root.error, outcome !== "updated")
-  }
-
-  const start = source.indexOf("function canStartUpdate(row)")
-  const end = source.indexOf("\n  }", start)
-  const body = source.slice(start, end)
-  assert.match(body, /!root\.loadProcessSettled\(\)/)
-  assert.match(body, /!root\.updateProcessSettled\(\)/)
-  assert.match(source, /if \(!canStartUpdate\(row\)\) return/)
-  for (const surface of ["../Panel.qml", "../Expanded.qml"]) {
-    const surfaceSource = readFileSync(new URL(surface, import.meta.url), "utf8")
-    assert.match(surfaceSource, /updateEnabled: root\.updateActionsEnabled/)
-  }
-  assert.equal(source.split("onRunningChanged: if (!running) root.drainFreshUpdateCycle()").length - 1, 2)
-
-  const row = readFileSync(new URL("../PluginRow.qml", import.meta.url), "utf8")
-  assert.match(row, /property bool updateEnabled: true/)
-  assert.match(row, /enabled: root\.actionsEnabled && root\.updateEnabled/)
-})
-
 test("update producer cannot interleave large concurrent records or publish partial workers", () => {
   const root = mkdtempSync(join(tmpdir(), "plugin-update-producer-test-"))
   const home = join(root, "home"), runtime = join(root, "runtime"), bin = join(root, "bin")

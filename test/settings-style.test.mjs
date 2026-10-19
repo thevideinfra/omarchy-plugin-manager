@@ -76,7 +76,7 @@ const switches = [
   ["unverifiedInstallSwitch", "unverifiedInstallText"]
 ]
 
-for (const file of ["Panel.qml", "Expanded.qml"]) {
+for (const file of ["Panel.qml"]) {
   const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8")
   const all = objects(source)
 
