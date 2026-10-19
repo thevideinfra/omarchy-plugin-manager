@@ -26,6 +26,8 @@ Item {
     choice: root.accentChoice
   }
   readonly property color accent: accentSource.value
+  // "theme" first, then the palette names the current theme defines.
+  readonly property var accentChoices: accentSource.available
 
   function sp(px) { return Style.space(px * densityScale) }
 
