@@ -66,6 +66,13 @@ Panel {
   }
   readonly property var look: panelStyle
 
+  // A term typed before the box was switched off would keep filtering the
+  // list with nothing on screen to show or clear it.
+  Connections {
+    target: root.look
+    function onShowSearchChanged() { if (!root.look.showSearch) root.clearSearch() }
+  }
+
   PluginStore {
     id: store
     externalBusy: !!root.popupMoveOwner && root.popupMoveOwner.busy
@@ -686,7 +693,7 @@ Panel {
       onCloseRequested: { root.closeArrange(); root.revokeReleaseNavigation(); root.close() }
       onTabRequested: function(direction) { root.closeArrange(); root.revokeReleaseNavigation(); root.switchPanel(direction) }
       onTextKey: function(t) {
-        if (t === "/") root.focusSearchField()
+        if (t === "/") { if (root.look.showSearch) root.focusSearchField() }
         else if (t === "r" || t === "R") { root.reload(); root.checkUpdates() }
         else if (t === "f" || t === "F") root.cycleKindFilter()
         else if (t === "s" || t === "S") root.cycleGroupFilter()
@@ -966,7 +973,7 @@ Panel {
           }
 
           width: parent.width
-          height: filterRowHeight + root.look.sp(8) + controlHeight
+          height: filterRowHeight + (root.look.showSearch ? root.look.sp(8) + controlHeight : 0)
 
           Item {
             id: installedFilters
@@ -1090,7 +1097,8 @@ Panel {
             anchors.rightMargin: clearFiltersButton.visible ? root.look.sp(4) : 0
             y: filterControls.filterRowHeight + root.look.sp(8)
             height: filterControls.controlHeight
-            active: root.opened
+            visible: root.look.showSearch
+            active: root.opened && root.look.showSearch
             sourceComponent: Component {
               TextField {
                 id: searchField
@@ -1130,7 +1138,7 @@ Panel {
             id: clearFiltersButton
             anchors.right: parent.right
             y: filterControls.filterRowHeight + root.look.sp(8)
-            visible: root.searchText !== ""
+            visible: root.look.showSearch && root.searchText !== ""
             iconText: "󰅙"
             tooltipText: "Clear the search"
             foreground: root.contentForeground
@@ -1213,7 +1221,7 @@ Panel {
             spacing: root.look.sp(10)
 
             Repeater {
-              model: Model.actionHints(root.bulkUpdatableCount > 0)
+              model: Model.actionHints(root.bulkUpdatableCount > 0, root.look.showSearch)
               delegate: hintDelegate
             }
           }
@@ -1580,6 +1588,7 @@ Panel {
           ShowToggleCard { key: "showMeta"; title: "Details line"; caption: "Author, kind and version under each row" }
           ShowToggleCard { key: "showSummary"; title: "Summary counts"; caption: "Installed, total and update counts in the header" }
           ShowToggleCard { key: "showKeyHints"; title: "Key hints"; caption: "Filter and action keys at the bottom" }
+          ShowToggleCard { key: "showSearch"; title: "Search"; caption: "Search box above the list" }
 
           // Off is the verified-snapshot promise; on is the user's own call, and
           // the caption says so in the same words the confirmation will.

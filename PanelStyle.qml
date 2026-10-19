@@ -17,6 +17,7 @@ Item {
   readonly property bool showMeta: Model.settingBool(settings && settings.showMeta, true)
   readonly property bool showSummary: Model.settingBool(settings && settings.showSummary, true)
   readonly property bool showKeyHints: Model.settingBool(settings && settings.showKeyHints, true)
+  readonly property bool showSearch: Model.settingBool(settings && settings.showSearch, true)
 
   readonly property real densityScale: Model.densityScale(density)
   readonly property real fontScale: (0.5 + 0.5 * densityScale) * Model.fontSizeScale(fontSizeChoice)

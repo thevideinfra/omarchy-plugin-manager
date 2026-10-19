@@ -34,7 +34,7 @@ for (const [file, button] of [["Panel.qml", "clearFiltersButton"]]) {
     assert.notEqual(loaderAt, -1, "searchFieldLoader missing")
     const { start, end } = block(source, loaderAt)
     const loader = source.slice(start, end)
-    assert.match(loader, /^\s*Loader \{\s*id: searchFieldLoader[\s\S]*?\n\s*active: root\.opened\n/)
+    assert.match(loader, /^\s*Loader \{\s*id: searchFieldLoader[\s\S]*?\n\s*active: root\.opened( && root\.look\.showSearch)?\n/)
     assert.match(loader, /sourceComponent: Component \{\s*TextField \{\s*id: searchField/)
     // The only text input in the file lives inside the loader.
     const inputs = [...stripComments(source).matchAll(/\b(TextField|TextInput|TextEdit|TextArea)\s*\{/g)]

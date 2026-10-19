@@ -2493,7 +2493,7 @@ test("one hint bar: filter hints left, action hints right, keys cycle the dropdo
   assert.match(bar, /id: filterHints\s+anchors\.left: parent\.left/)
   assert.match(bar, /id: actionHints\s+anchors\.right: parent\.right/)
   assert.match(bar, /model: root\.installedFilterHints/)
-  assert.match(bar, /model: Model\.actionHints\(root\.bulkUpdatableCount > 0\)/)
+  assert.match(bar, /model: Model\.actionHints\(root\.bulkUpdatableCount > 0, root\.look\.showSearch\)/)
   // One delegate for both groups, keys shown uppercase in the accent.
   assert.equal(bar.split("delegate: hintDelegate").length - 1, 2)
   assert.match(bar, /text: "\[" \+ hint\.modelData\.key\.toUpperCase\(\) \+ "\]"\s+color: root\.look\.accent/)

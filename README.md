@@ -47,6 +47,7 @@ the one key changes.
 | `showMeta` | on / off | on | The author, kind and version line under each plugin |
 | `showSummary` | on / off | on | The "installed, total, to update" counts in the header |
 | `showKeyHints` | on / off | on | The filter and action key hints at the bottom |
+| `showSearch` | on / off | on | The search box above the list |
 
 Switching a line off collapses it; the list reclaims the space. Key hints are
 display only, so the shortcuts keep working when they are hidden. When the popup
