@@ -101,7 +101,8 @@ Panel {
   property alias loading: store.loading
   property alias loadError: store.loadError
   property int selectedIndex: -1
-  property string groupFilter: "all"
+  // The Installed / Built-in tab. Never "all": a tab shows one section.
+  property string groupFilter: "installed"
   readonly property var groupOptions: Model.groupOptions()
   property string kindFilter: "all"
   readonly property var kindOptions: Model.kindOptions(rows)
@@ -388,8 +389,6 @@ Panel {
   // every filter a key can cycle replays later changes into its dropdown.
   onKindFilterChanged: if (kindDropdown && kindDropdown.value !== kindFilter)
     kindDropdown.value = kindFilter
-  onGroupFilterChanged: if (groupDropdown && groupDropdown.value !== groupFilter)
-    groupDropdown.value = groupFilter
   onStatusFilterChanged: if (statusDropdown && statusDropdown.value !== statusFilter)
     statusDropdown.value = statusFilter
 
@@ -414,7 +413,7 @@ Panel {
   readonly property alias releaseProbeBusy: releaseNavigator.busy
 
   readonly property alias installedTotal: store.installedTotal
-  readonly property bool filtered: Model.isFiltering(kindFilter, statusFilter, searchQuery, groupFilter)
+  readonly property bool filtered: Model.isFiltering(kindFilter, statusFilter, searchQuery)
   readonly property var installedFilterHints: Model.installedFilterHints(
     { group: groupFilter, kind: kindFilter, status: statusFilter },
     { group: groupOptions, kind: kindOptions, status: statusOptions })
@@ -451,7 +450,7 @@ Panel {
     if (!placementRowsReady && !finalAttempt && (loading || loadError === "")) return false
     settingsOpen = false
     arrangeOpen = false
-    groupFilter = origin.group
+    groupFilter = Model.normalizeGroup(origin.group)
     var kindAvailable = kindOptions.some(function(option) { return option.value === origin.kind })
     kindFilter = kindAvailable ? origin.kind : "all"
     statusFilter = origin.status
@@ -796,7 +795,7 @@ Panel {
       anchors.fill: parent
       blocked: root.confirming || root.placing || root.settingsOpen || root.arrangeOpen
         || root.searchFieldFocused
-        || groupDropdown.popupOpen || kindDropdown.popupOpen || statusDropdown.popupOpen
+        || kindDropdown.popupOpen || statusDropdown.popupOpen
 
       onMoveRequested: function(dx, dy) { root.moveSelection(dx, dy) }
       onActivateRequested: root.startUpdate(root.selectedRow)
@@ -1052,7 +1051,7 @@ Panel {
             elide: Text.ElideRight
             text: {
               if (root.loading && root.rows.length === 0) return "reading…"
-              if (root.filtered) return "showing " + root.visibleRows.length + " of " + root.rows.length
+              if (root.filtered) return "showing " + root.visibleRows.length + " of " + Model.rowsInGroup(root.rows, root.groupFilter).length
               // Tight separators keep the line short even on its own row.
               var summary = root.installedTotal + " installed · " + root.rows.length + " total"
               if (root.behindCount > 0) return summary + " · " + root.behindCount + " to update"
@@ -1076,6 +1075,11 @@ Panel {
           readonly property real controlHeight: Math.ceil(filterLabelMetrics.height + root.look.sp(12))
           readonly property real filterRowHeight: filterLabelMetrics.height
             + root.look.sp(4) + controlHeight
+          // Top to bottom: the tab strip, the Kind / Status dropdown row, then
+          // the search row. Every y below is derived from these three.
+          readonly property real tabsHeight: Math.ceil(filterLabelMetrics.height + root.look.sp(10))
+          readonly property real filtersTop: tabsHeight + root.look.sp(8)
+          readonly property real searchTop: filtersTop + filterRowHeight + root.look.sp(8)
 
           FontMetrics {
             id: filterLabelMetrics
@@ -1084,59 +1088,73 @@ Panel {
           }
 
           width: parent.width
-          height: filterRowHeight + (root.look.showSearch ? root.look.sp(8) + controlHeight : 0)
+          height: searchTop + (root.look.showSearch ? controlHeight : 0)
+
+          // Installed / Built-in. Styled like the Settings chips; the tab only
+          // chooses which section the list shows, so it is not a filter.
+          Row {
+            id: sourceTabs
+            anchors.left: parent.left
+            anchors.top: parent.top
+            height: filterControls.tabsHeight
+            spacing: root.look.sp(6)
+
+            Repeater {
+              model: root.groupOptions
+
+              Rectangle {
+                id: tab
+                required property var modelData
+                readonly property bool chosen: root.groupFilter === modelData.value
+
+                width: tabLabel.implicitWidth + root.look.sp(8) * 2
+                height: sourceTabs.height
+                radius: root.look.sp(6)
+                border.width: 1
+                color: tab.chosen ? Qt.alpha(root.look.accent, 0.12)
+                  : Qt.alpha(root.contentForeground, tabMouse.containsMouse ? 0.09 : 0.05)
+                border.color: tab.chosen ? Qt.alpha(root.look.accent, 0.45) : Qt.alpha(root.contentForeground, 0.1)
+
+                Text {
+                  id: tabLabel
+                  textFormat: Text.PlainText
+                  anchors.centerIn: parent
+                  text: tab.modelData.label
+                  color: tab.chosen ? root.look.accent : root.contentForeground
+                  opacity: tab.chosen ? 1.0 : 0.8
+                  font.family: root.contentFontFamily
+                  font.pixelSize: root.look.font.caption
+                  font.bold: tab.chosen
+                }
+
+                MouseArea {
+                  id: tabMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    root.closeArrange()
+                    root.setGroupFilter(tab.modelData.value)
+                  }
+                }
+              }
+            }
+          }
 
           Item {
             id: installedFilters
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
+            anchors.topMargin: filterControls.filtersTop
             height: filterControls.filterRowHeight
 
             readonly property real gap: root.look.sp(6)
-            readonly property real optionWidth: Math.floor((width - gap * 2) / 3)
-
-            Item {
-              id: groupFilterControl
-              anchors.left: parent.left
-              width: installedFilters.optionWidth
-              height: parent.height
-
-              Text {
-                textFormat: Text.PlainText
-                anchors.left: parent.left
-                anchors.top: parent.top
-                text: "Source"
-                color: root.secondaryForeground
-                font.family: root.contentFontFamily
-                font.pixelSize: root.look.font.caption
-                font.bold: true
-              }
-
-              PanelDropdown {
-                id: groupDropdown
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                height: filterControls.controlHeight
-                rowHeight: filterControls.controlHeight
-                popupRowHeight: root.look.sp(28)
-                showLabel: false
-                fontSize: root.look.font.caption
-                labelFontSize: root.look.font.caption
-                accent: root.look.accent
-                options: root.groupOptions
-                value: root.groupFilter
-                foreground: root.contentForeground
-                fontFamily: root.contentFontFamily
-                onChanged: function(value) { root.closeArrange(); root.setGroupFilter(value) }
-              }
-            }
+            readonly property real optionWidth: Math.floor((width - gap) / 2)
 
             Item {
               id: kindFilterControl
-              anchors.left: groupFilterControl.right
-              anchors.leftMargin: installedFilters.gap
+              anchors.left: parent.left
               width: installedFilters.optionWidth
               height: parent.height
 
@@ -1221,7 +1239,7 @@ Panel {
             anchors.left: parent.left
             anchors.right: clearFiltersButton.visible ? clearFiltersButton.left : parent.right
             anchors.rightMargin: clearFiltersButton.visible ? root.look.sp(4) : 0
-            y: filterControls.filterRowHeight + root.look.sp(8)
+            y: filterControls.searchTop
             height: filterControls.controlHeight
             visible: root.look.showSearch
             active: root.opened && root.look.showSearch
@@ -1263,7 +1281,7 @@ Panel {
           PanelActionButton {
             id: clearFiltersButton
             anchors.right: parent.right
-            y: filterControls.filterRowHeight + root.look.sp(8)
+            y: filterControls.searchTop
             visible: root.look.showSearch && root.searchText !== ""
             iconText: "󰅙"
             tooltipText: "Clear the search"

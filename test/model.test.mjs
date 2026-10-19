@@ -15,7 +15,7 @@ const Model = new Function(
     splitSections, parseArray, parseGitMap, parseManifestMeta, mergePlugins, countRemovable, rowsInGroup,
     groupLabel, sectionHeading, kindLabel, kindsLabel, kindOptions, filterByKind, nextKind, filterKind,
     filterKindLabel, statusOptions, filterByStatus, matchesQuery, filterRows, isFiltering, emptyMessage,
-    groupOptions, installedFilterHints, actionHints, nextOption, verifiedIdSet, isVerified, upToDate,
+    groupOptions, normalizeGroup, installedFilterHints, actionHints, nextOption, verifiedIdSet, isVerified, upToDate,
     catalogStarsById, rowStarLabel, parseCatalog, catalogEntries, plainText, buildCatalog, catalogCount,
     starLabel, starSlugFor, starToggleCommand, parseStarResult, bumpCount, repoShortLabel, browsableUrl,
     repoWebUrl, rowRepoUrl, normalizedManifestVersion, normalizedReleaseVersion, releaseVersionLabel,
@@ -932,9 +932,8 @@ test("status filtering preserves both section classes and their flat selection o
   assert.deepEqual(rejoinedUpdates.map(r => r.id), updates.map(r => r.id))
 })
 
-test("groupOptions offers the two sections plus All, in section order", () => {
+test("groupOptions offers the two tabs, Installed then Built-in, no All", () => {
   assert.deepEqual(Model.groupOptions(), [
-    { value: "all", label: "All" },
     { value: "installed", label: "Installed" },
     { value: "built-in", label: "Built-in" }
   ])
@@ -955,11 +954,17 @@ test("filterRows narrows by group alongside kind, status, and search", () => {
   assert.deepEqual(Model.filterRows(rows, "all", "all", "", "nonsense").map(r => r.id), [])
 })
 
-test("isFiltering and emptyMessage account for the group filter", () => {
+test("the tab is not a filter; emptyMessage still names it", () => {
   assert.equal(Model.isFiltering("all", "all", "", "all"), false)
   assert.equal(Model.isFiltering("all", "all", ""), false)
-  assert.equal(Model.isFiltering("all", "all", "", "installed"), true)
-  assert.equal(Model.isFiltering("all", "all", "", "built-in"), true)
+  assert.equal(Model.isFiltering("all", "all", "", "installed"), false)
+  assert.equal(Model.isFiltering("all", "all", "", "built-in"), false)
+  assert.equal(Model.isFiltering("service", "all", "", "built-in"), true)
+  assert.equal(Model.normalizeGroup("built-in"), "built-in")
+  assert.equal(Model.normalizeGroup("installed"), "installed")
+  assert.equal(Model.normalizeGroup("all"), "installed")
+  assert.equal(Model.normalizeGroup(undefined), "installed")
+  assert.equal(Model.normalizeGroup("nonsense"), "installed")
 
   assert.equal(Model.emptyMessage("all", "all", "", "built-in"), "No built-in plugins found.")
   assert.equal(Model.emptyMessage("all", "all", "zzz", "installed"), "No installed plugins match “zzz”.")
@@ -2245,26 +2250,27 @@ test("the Installed list has no url field and no install entry point", () => {
 test("Installed filters: labels on top, Search on its own row", () => {
   const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
 
-  assert.match(panel, /property string groupFilter: "all"/)
+  assert.match(panel, /property string groupFilter: "installed"/)
   assert.match(panel, /readonly property var groupOptions: Model\.groupOptions\(\)/)
   assert.match(panel, /Model\.filterRows\(rows, kindFilter, statusFilter, searchQuery, groupFilter\)/)
-  assert.match(panel, /Model\.isFiltering\(kindFilter, statusFilter, searchQuery, groupFilter\)/)
+  assert.match(panel, /Model\.isFiltering\(kindFilter, statusFilter, searchQuery\)/)
   assert.match(panel, /Model\.emptyMessage\(root\.kindFilter, root\.statusFilter, root\.searchQuery, root\.groupFilter\)/)
   assert.match(panel, /function setGroupFilter\(group\)/)
 
-  // The Installed row is one labelled block, Source · Kind · Status, sized in
-  // equal columns.
+  // The dropdown row is one labelled block, Kind · Status, in two equal
+  // columns under the Installed / Built-in tabs.
   const start = panel.indexOf("id: installedFilters")
   const end = panel.indexOf("id: searchFieldLoader", start)
   assert.notEqual(start, -1)
   assert.notEqual(end, -1)
   const block = panel.slice(start, end)
   assert.doesNotMatch(panel, /browsing/)
-  assert.match(block, /readonly property real optionWidth: Math\.floor\(\(width - gap \* 2\) \/ 3\)/)
-  for (const label of ["Source", "Kind", "Status"]) {
+  assert.match(block, /readonly property real optionWidth: Math\.floor\(\(width - gap\) \/ 2\)/)
+  for (const label of ["Kind", "Status"]) {
     assert.match(block, new RegExp(`anchors\\.top: parent\\.top\\s+text: "${label}"`), label)
   }
-  for (const id of ["groupDropdown", "kindDropdown", "statusDropdown"]) {
+  assert.doesNotMatch(panel, /groupDropdown|groupFilterControl|text: "Source"/)
+  for (const id of ["kindDropdown", "statusDropdown"]) {
     assert.match(block, new RegExp(`id: ${id}\\s+anchors\\.left: parent\\.left\\s+anchors\\.right: parent\\.right\\s+anchors\\.bottom: parent\\.bottom`), id)
   }
 
@@ -2272,27 +2278,28 @@ test("Installed filters: labels on top, Search on its own row", () => {
   // yields to the new dropdown's popup like the others.
   assert.doesNotMatch(panel, /anchors\.left: root\.browsing \? parent\.left : statusFilterControl\.right/)
   assert.doesNotMatch(panel, /function dropdownWidth\(/)
-  assert.match(panel, /groupDropdown\.popupOpen/)
+  assert.match(panel, /kindDropdown\.popupOpen \|\| statusDropdown\.popupOpen/)
 })
 
-test("installedFilterHints mirrors the Browse row for Source, Kind, and Status", () => {
+test("installedFilterHints: s names the tab, Kind and Status narrow", () => {
   const options = {
     group: Model.groupOptions(),
     kind: [{ value: "all", label: "All" }, { value: "service", label: "Service" }],
     status: Model.statusOptions()
   }
 
-  assert.deepEqual(Model.installedFilterHints({ group: "all", kind: "all", status: "all" }, options), [
-    { key: "s", text: "SOURCE", active: false },
+  assert.deepEqual(Model.installedFilterHints({ group: "installed", kind: "all", status: "all" }, options), [
+    { key: "s", text: "TAB", active: false },
     { key: "f", text: "KIND", active: false },
     { key: "t", text: "STATUS", active: false }
   ])
+  // The tab is a view, not a narrowing: the hint stays TAB and never lights up.
   assert.deepEqual(Model.installedFilterHints({ group: "built-in", kind: "service", status: "update" }, options), [
-    { key: "s", text: "BUILT-IN", active: true },
+    { key: "s", text: "TAB", active: false },
     { key: "f", text: "SERVICE", active: true },
     { key: "t", text: "UPDATE", active: true }
   ])
-  assert.equal(Model.installedFilterHints({}, options)[0].text, "SOURCE")
+  assert.equal(Model.installedFilterHints({}, options)[0].text, "TAB")
 })
 
 test("verifiedIdSet joins installed rows to the marketplace's verified listings by id", () => {
@@ -2456,7 +2463,7 @@ test("every keyboard-cycled filter replays its value into its dropdown", () => {
   // A mouse pick assigns Dropdown.value and breaks the binding; a later key
   // cycle must push the filter back in or the dropdown shows a stale choice.
   for (const [filter, dropdown] of [
-    ["kindFilter", "kindDropdown"], ["groupFilter", "groupDropdown"], ["statusFilter", "statusDropdown"]
+    ["kindFilter", "kindDropdown"], ["statusFilter", "statusDropdown"]
   ]) {
     const handler = "on" + filter[0].toUpperCase() + filter.slice(1) + "Changed"
     assert.match(panel, new RegExp(`${handler}: if \\(${dropdown} && ${dropdown}\\.value !== ${filter}\\)\\s+${dropdown}\\.value = ${filter}`), handler)

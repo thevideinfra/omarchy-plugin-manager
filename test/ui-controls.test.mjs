@@ -23,8 +23,8 @@ test("PanelDropdown: scalable copy of the shell dropdown", () => {
 
 test("Panel uses PanelDropdown with the caption size", () => {
   assert.doesNotMatch(panel.replace(/PanelDropdown/g, ""), /\bDropdown \{/)
-  assert.equal(panel.split("PanelDropdown {").length - 1, 3)
-  for (const id of ["groupDropdown", "kindDropdown", "statusDropdown"]) {
+  assert.equal(panel.split("PanelDropdown {").length - 1, 2)
+  for (const id of ["kindDropdown", "statusDropdown"]) {
     const at = panel.indexOf("id: " + id)
     const block = panel.slice(at, at + 700)
     assert.match(block, /fontSize: root\.look\.font\.caption/, id)

@@ -7,7 +7,7 @@ const widgetSource = read("BarWidget.qml")
 // The retained headless owner; read lazily so a missing file fails only its tests.
 const ownerSource = existsSync(new URL("../MoveOwner.qml", import.meta.url)) ? read("MoveOwner.qml") : ""
 const storeSource = read("PluginStore.qml"), panelSource = read("Panel.qml")
-const Model = Function(read("Model.js") + "; return { barLayoutSnapshot, barLayoutMove, barSectionMovePlan, findRow }")()
+const Model = Function(read("Model.js") + "; return { barLayoutSnapshot, barLayoutMove, barSectionMovePlan, findRow, normalizeGroup }")()
 function call(source, name, state, ...args) {
   const match = source.match(new RegExp(`function ${name}\\(([^)]*)\\) \\{([\\s\\S]*?)\\n  \\}`))
   assert.ok(match, `${name} exists`)
@@ -307,6 +307,12 @@ test("Installed restoration waits for fresh rows, preserves view, and safely los
     assert.equal(s.arrangeOpen, false)
     assert.equal(s.statusSource, "layout")
     if (missing) assert.match(s.status, /no longer.*visible/i)
+  }
+  {
+    const { state: s } = placementPopup()
+    s.rows = [{ id: "a", name: "A" }]; s.visibleRows = s.rows; s.placementRowsReady = true
+    s.openPlacementView({ ...installedOrigin(), group: "all" }, true)
+    assert.equal(s.groupFilter, "installed", "a stored all maps to the Installed tab")
   }
   const { state: s } = placementPopup()
   s.store.reload = () => false

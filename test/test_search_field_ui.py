@@ -123,6 +123,7 @@ Item {{
         id: filterControls
         anchors.fill: parent
         property real filterRowHeight: 30
+        property real searchTop: 38
         property real controlHeight: 26
 {loader_block(source)}
         Item {{
