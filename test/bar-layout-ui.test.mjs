@@ -82,7 +82,7 @@ function lifecycle() {
     store[name] = (...args) => call(storeSource, name, { root: store, barMoveProc: proc, Model }, ...args)
   const state = { shell, store, Model, JSON, opened: false, pluginId: "manager", barSnapshot: null,
     popupMoves: { continuationActive: false, generation: 0 },
-    PopupBridge: { openPopup() { events.push("popup"); return true } } }
+    PopupBridge: { openPopup() { events.push("popup"); return true }, closePopups() { events.push("close popups") } } }
   state.root = state
   for (const name of ["open", "close", "refreshBarLayout", "startPopupMove", "recoverPopupMove"])
     state[name] = (...args) => call(owner, name, state, ...args)

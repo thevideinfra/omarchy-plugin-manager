@@ -15,7 +15,7 @@ import "PopupBridge.js" as PopupBridge
 // `shell` and `manifest` when the root declares them; summon calls
 // `open(payloadJson)`, hide calls `close()`, and isPluginOpen reads `opened`.
 // Nothing here is shown: a summon is forwarded to the popup on the named
-// output and `opened` stays false. Explicit plugin reload, disable/removal or
+// output, and `opened` mirrors whether any popup is open. Explicit plugin reload, disable/removal or
 // shell shutdown destroys the owner and ends its ownership.
 Item {
   id: root
@@ -25,8 +25,9 @@ Item {
 
   property var shell: null
   property var manifest: null
-  // Never true: there is no surface of its own to be open.
-  property bool opened: false
+  // True while any popup is open; PopupBridge pushes it (see popupOpen), so
+  // the shell's toggle closes what its summon opened.
+  readonly property bool opened: popupMoves.popupOpen
 
   readonly property string pluginId: manifest && manifest.id
     ? String(manifest.id) : "io.github.juancasanueva.plugin-manager"
@@ -56,9 +57,10 @@ Item {
     PopupBridge.openPopup(screen)
   }
 
-  // Hiding is never cancellation: keepLoaded retains this owner and its
-  // Process, and the reconciliation lock stays with the store.
+  // Shell hide closes every popup. Hiding is never cancellation: keepLoaded
+  // retains this owner and its Process, and the store keeps the move lock.
   function close() {
+    PopupBridge.closePopups()
   }
 
   // ---- Retained moves --------------------------------------------------------
@@ -72,6 +74,7 @@ Item {
     id: popupMoves
     property bool continuationActive: false
     property int generation: 0
+    property bool popupOpen: false
     readonly property bool pending: root.barMovePending
     readonly property bool exited: store.barMoveExited
     readonly property bool busy: store.busy

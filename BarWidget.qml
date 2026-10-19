@@ -56,6 +56,8 @@ BarWidget {
   //      Bar.findPanelWidget requires open/close/opened on the bar-widget
   //      root, so these delegate down to the loaded panel.
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
+  // The retained owner answers the shell's isPluginOpen; keep it current.
+  onOpenedChanged: PopupBridge.popupOpenedChanged()
   // The loaded panel owns update evidence and the process that produces it.
   // Project its confirmed count instead of starting another check for the bar.
   readonly property int updateCount: panelLoader.item ? panelLoader.item.behindCount : 0

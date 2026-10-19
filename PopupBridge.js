@@ -16,12 +16,14 @@ var continuation = null
 function register(widget) {
   if (widget && widgets.indexOf(widget) < 0) widgets.push(widget)
   if (widget && typeof widget.setMoveOwner === "function") widget.setMoveOwner(moveOwner)
+  popupOpenedChanged()
 }
 
 function unregister(widget) {
   var index = widgets.indexOf(widget)
   if (index >= 0) widgets.splice(index, 1)
   if (widget && typeof widget.setMoveOwner === "function") widget.setMoveOwner(null)
+  popupOpenedChanged()
 }
 
 function registerOwner(owner) {
@@ -29,6 +31,25 @@ function registerOwner(owner) {
   cancelArrange()
   moveOwner = owner
   for (var i = 0; i < widgets.length; i++) register(widgets[i])
+  popupOpenedChanged()
+}
+
+// The shell asks the retained owner whether "the plugin" is open (toggle and
+// hide route there once it declares a panel). This array is not observable,
+// so each widget pushes its opened changes and the owner holds the result.
+function popupOpenedChanged() {
+  if (!moveOwner) return
+  var anyOpen = false
+  for (var i = 0; i < widgets.length; i++)
+    if (widgets[i] && widgets[i].opened === true) { anyOpen = true; break }
+  moveOwner.popupOpen = anyOpen
+}
+
+// Shell hide/toggle-off: close every popup that can close.
+function closePopups() {
+  var list = widgets.slice()
+  for (var i = 0; i < list.length; i++)
+    if (list[i] && typeof list[i].close === "function") list[i].close()
 }
 
 function unregisterOwner(owner) {

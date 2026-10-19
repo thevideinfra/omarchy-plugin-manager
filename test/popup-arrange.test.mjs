@@ -322,7 +322,7 @@ test("Installed restoration waits for fresh rows, preserves view, and safely los
 
 function setup() {
   const bridge = Function(read("PopupBridge.js").replace(/^\.pragma library$/m, "") +
-    "; return { register, unregister, registerOwner, unregisterOwner, requestMove, continueArrange, cancelArrange, openPopup }")()
+    "; return { register, unregister, registerOwner, unregisterOwner, requestMove, continueArrange, cancelArrange, openPopup, closePopups, popupOpenedChanged }")()
   const shell = { barConfig: { layout: { left: ["a", "b"], center: [], right: [] } } }
   let dispatches = 0
   const proc = { running: false, set command(value) { dispatches++; this.argv = value } }
@@ -348,7 +348,10 @@ function setup() {
   function widget(screenName, ready = true) {
     const w = { screenName, ready, opens: 0, arrangements: 0, moveOwner: null,
       setMoveOwner(value) { this.moveOwner = value },
-      open() { this.opens++ },
+      opened: false,
+      // As BarWidget: its opened change pushes the any-popup-open flag.
+      open() { this.opens++; this.opened = true; bridge.popupOpenedChanged?.() },
+      close() { this.closes = (this.closes || 0) + 1; this.opened = false; bridge.popupOpenedChanged?.() },
       openArrange() { if (!this.ready) return false; this.arrangements++; return true } }
     bridge.register(w)
     return w
@@ -582,16 +585,66 @@ test("the retained owner registers itself, continues on its own timer, and widge
 })
 
 test("a shell summon of the owner opens the popup on the named output, never a window", () => {
-  const h = setup(), events = []
-  const state = { opened: false, PopupBridge: h.bridge, JSON }
+  const h = setup()
+  const state = { PopupBridge: h.bridge, JSON }
   state.root = state
   call(ownerSource, "open", state, '{"screen":"DP-2"}')
   assert.equal(h.other.opens, 1)
   call(ownerSource, "open", state, "not json")
   assert.equal(h.first.opens, 1)
-  call(ownerSource, "close", state)
-  assert.equal(state.opened, false, "the owner never reports itself open")
-  assert.equal(h.first.opens + h.other.opens, 2)
+  assert.equal(h.bridge.openPopup("missing"), true, "an unplugged output falls back to the first widget")
+  assert.equal(h.first.opens, 2)
   assert.doesNotMatch(ownerSource, /PanelWindow|FloatingWindow|PopupWindow|Window \{/)
-  assert.match(ownerSource, /property bool opened: false/)
+})
+
+// shell.qml: isPluginOpen reads loader.item.opened at call time; toggle calls
+// hide (-> item.close()) when open, else summon (-> item.open(payload)).
+function shellToggle(h) {
+  const state = { PopupBridge: h.bridge, JSON }
+  state.root = state
+  const item = {
+    get opened() { return h.owner.popupOpen === true },
+    open: payload => call(ownerSource, "open", state, payload),
+    close: () => call(ownerSource, "close", state)
+  }
+  return () => item.opened ? item.close() : item.open("")
+}
+
+test("shell toggle opens the popup when none is open and closes every popup when one is", () => {
+  const h = setup(), toggle = shellToggle(h)
+  assert.equal(h.owner.popupOpen === true, false)
+  toggle()
+  assert.equal(h.first.opens, 1)
+  assert.equal(h.owner.popupOpen, true)
+  h.other.open()
+  toggle()
+  assert.equal(h.first.opened || h.other.opened, false)
+  assert.equal(h.first.closes, 1); assert.equal(h.other.closes, 1)
+  assert.equal(h.owner.popupOpen, false)
+  toggle()
+  assert.equal(h.first.opens, 2, "closed again, a toggle reopens")
+  assert.match(ownerSource, /readonly property bool opened: popupMoves\.popupOpen/)
+  assert.match(ownerSource, /property bool popupOpen: false/)
+  assert.match(ownerSource, /function close\(\) \{\s*PopupBridge\.closePopups\(\)\s*\}/)
+  assert.match(widgetSource, /onOpenedChanged: PopupBridge\.popupOpenedChanged\(\)/)
+})
+
+test("popupOpenedChanged tracks any open popup, including register/unregister, and closePopups skips widgets without close", () => {
+  const h = setup()
+  h.first.opened = true; h.bridge.popupOpenedChanged()
+  assert.equal(h.owner.popupOpen, true)
+  h.first.opened = false; h.bridge.popupOpenedChanged()
+  assert.equal(h.owner.popupOpen, false)
+  h.other.opened = true; h.bridge.popupOpenedChanged()
+  h.bridge.unregister(h.other)
+  assert.equal(h.owner.popupOpen, false, "a destroyed popup no longer counts")
+  const late = { screenName: "DP-3", opened: true }
+  h.bridge.register(late)
+  assert.equal(h.owner.popupOpen, true)
+  const replacement = { continuationActive: false }
+  h.bridge.registerOwner(replacement)
+  assert.equal(replacement.popupOpen, true, "a new owner starts with the current state")
+  assert.doesNotThrow(() => h.bridge.closePopups())
+  assert.equal(h.first.closes, 1)
+  assert.equal(late.opened, true)
 })
