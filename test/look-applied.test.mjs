@@ -26,3 +26,8 @@ test("every child that takes a look is handed one by Panel", () => {
       assert.match(block[1], /look:\s*root\.look/, `${type} instance gets look`)
   }
 })
+
+test("search field padding stays at the shell's default xs spacing of 3px", () => {
+  const panel = readFileSync(new URL("../Panel.qml", import.meta.url), "utf8")
+  assert.match(panel, /verticalPadding: root\.look\.sp\(3\)/)
+})

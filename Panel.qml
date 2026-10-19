@@ -973,7 +973,7 @@ Panel {
                 placeholderTextColor: root.secondaryForeground
                 font.family: root.contentFontFamily
                 font.pixelSize: root.look.font.caption
-                verticalPadding: root.look.sp(4)
+                verticalPadding: root.look.sp(3)
 
                 // Enter hands the list back the keyboard with the results in
                 // place, so you can type a name and arrow straight into it.
