@@ -1,10 +1,11 @@
 // Shared registry of per-monitor bar widgets plus the headless move owner.
 //
 // A `.pragma library` script is a single shared instance in one QML engine:
-// each bar widget registers itself here, and the move owner (which survives a
-// bar rebuild) uses it to reopen the popup on the right output after a bar
-// move. Nothing crosses a process or trusts anything but live QML objects the
-// plugin itself created.
+// each bar widget registers itself here, and the retained move owner
+// (MoveOwner.qml, the keepLoaded panel entry that survives a bar rebuild)
+// uses it to reopen the popup on the right output after a bar move. Nothing
+// crosses a process or trusts anything but live QML objects the plugin itself
+// created.
 .pragma library
 
 var widgets = []

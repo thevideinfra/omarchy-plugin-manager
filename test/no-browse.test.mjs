@@ -16,7 +16,7 @@ test("deleted files stay deleted", () => {
 })
 
 test("store, model and bridge carry no browse or open-as code", () => {
-  for (const name of ["PluginStore.qml", "Model.js", "PopupBridge.js", "BarWidget.qml"]) {
+  for (const name of ["PluginStore.qml", "Model.js", "PopupBridge.js", "BarWidget.qml", "MoveOwner.qml"]) {
     const source = read(name)
     for (const word of [/browse/i, /openAs/, /tiledExpandedPanel/, /Expanded/])
       assert.doesNotMatch(source, word, `${name} ${word}`)
