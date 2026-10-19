@@ -3,3 +3,5 @@
 .codegraph/
 .pi/
 __pycache__/
+docs/superpowers/
+.superpowers/
