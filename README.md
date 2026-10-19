@@ -1,94 +1,54 @@
 # Plugin Manager
 
-An Omarchy bar widget that manages your plugins from the bar: browse the
-marketplace, install from it — choosing where in the bar each widget goes —
-and enable, disable, update, or remove what you already have. It opens as a
-popup under the bar and expands, on request, into a full-size panel with a
-details pane.
+An Omarchy bar widget that manages the plugins you already have, from the bar:
+see what is installed, enable, disable, update, or remove it, and arrange where
+each widget sits in the bar. It opens as a popup under the bar.
+
+Fork of juancasanueva/omarchy-plugin-manager; Browse and the windowed mode removed.
+
+Plugins are installed with the Omarchy CLI (`omarchy plugin add ...`). This
+plugin no longer installs from a catalog.
 
 ![kind: bar-widget](https://img.shields.io/badge/kind-bar--widget-informational)
 
-![The expanded panel's Installed tab: the same heading and summary, a search
-box and Source, Kind, and Status dropdowns in one labelled row, a list of
-plugin rows with state marks, verified pills, star counts, and one-line
-descriptions beside a details pane showing the selected plugin's name, on/off
-switch, Update, Remove, and Open repository buttons, its screenshot, and its
-description, above a hint bar with tab, action, and close keys](preview-expanded.png)
-
-## What it does
-
-Click the puzzle icon and you get two tabs in a popup: **Installed**, which is
-what the shell actually found on disk, and **Browse**, which is the
-marketplace. Both are described below. When the popup is too small for the
-job, the same two tabs open in a full-size panel.
-
-![The popup's Installed tab: a puzzle icon and Plugins heading with an
-installed, total, and to-update summary, Installed and Browse tabs, expand and
-refresh icons, labelled Source, Kind, and Status dropdowns, a Search field, and
-separated plugin rows with descriptions, metadata, repository links, update
+![The popup: a puzzle icon and Plugins heading with an installed, total, and
+to-update summary, labelled Source, Kind, and Status dropdowns, a Search field,
+and separated plugin rows with descriptions, metadata, repository links, update
 badges, switches, and actions above a hint bar with filter keys on the left and
 row actions on the right](preview.png)
 
-## The expanded panel
+## What it does
 
-The popup is built for a glance. When you want room, the icon left of the
-refresh button (`󰊓`) hands the same manager to a full-size panel, and the
-same corner (`󰊔`) brings the popup back. The button beside it goes straight to
-a window (``), or from the window back to the overlay (`󰊓`). The header, the tabs, the
-summary counts, the opening animation and the card flip between tabs are the
-ones the popup has; what changes is how much each tab can show. It opens as an
-overlay above everything, or as a window Hyprland tiles, and the bar opens it
-the way it was last left (below).
+Click the puzzle icon and a popup lists what the shell actually found on disk.
+The header shows how many plugins are installed and how many are behind, with a
+refresh button, **Update all**, **Arrange**, and **Settings**. Each row has an
+on/off switch and the actions that apply to it. The Installed list, update safety
+rules, Arrange, and Settings are described below, then the keyboard, install and
+removal of the plugin itself, and how to develop it.
 
-**Installed** becomes a list beside a details pane. The rows are summaries:
-a mark leads the name — a green check when the checkout is up to date, a
-green arrow when a verified update is installable — followed by the `verified` pill
-and, on the right, the repository's GitHub star count, with one line of
-description underneath. Everything else moves to the pane on the right, which
-shows the selected plugin in full: its name, the on/off switch and the Update,
-Remove, and Open repository buttons laid out under it, the plugin's own
-screenshot, the whole description, and its facts. The screenshot is the
-checkout's `preview.png` when it ships one, otherwise the catalog preview for
-the same id. The Version fact is a link that resolves to the matching GitHub
-Release at click time, exactly as the popup's row does. Your place in the list
-survives a trip to Browse and back, and the pane refreshes on its own once the
-shell has finished an enable or disable.
+## Appearance
 
-![The expanded panel's Browse tab: a search box beside Category, Kind,
-Availability, and Sort dropdowns above a four-column grid of marketplace cards
-with whole previews, names, descriptions, star and heart counts, and installed
-and verified badges](preview-expanded-browse.png)
+Three settings change how the popup looks. They belong to the plugin's entry in
+the bar widget settings of the Omarchy shell, and are stored in that plugin's
+entry in `~/.config/omarchy/shell.json`.
 
-**Browse** becomes a wider grid of the same cards, with the card pictures shown
-whole rather than cropped to the frame, so a tall or wide screenshot is still
-the screenshot. The cards drop their info and install buttons because a card
-opens a full page instead: click it, or select it and press `Enter`.
+| Setting | Choices | Default | Effect |
+|---------|---------|---------|--------|
+| Density | `compact`, `normal`, `comfortable` | `normal` | How tightly the popup is laid out |
+| Font size | `small`, `normal`, `large` | `normal` | Text size, on top of the density's own scaling |
+| Accent colour | `theme`, or a colour from the active theme palette: `blue`, `cyan`, `green`, `magenta`, `yellow`, `red`, `orange` | `theme` | The colour the popup highlights with |
 
-![The expanded panel's Browse details page: a Back button, the plugin's preview
-shown whole, its name with star and heart counts, author and kind, verified
-and installed pills, the full description, a table of catalog facts, the
-installation warning, and Open repository and Release buttons](preview-expanded-details.png)
+`theme` follows the theme's own accent. A palette colour is read by name from
+the current theme's `colors.toml`, so it follows a theme change, and falls back
+to the theme accent when the new theme does not define it.
 
-The details page takes the whole panel. It leads with the preview and the
-name, then the author and kind, the `verified` and `installed` pills, the full
-description, and every catalog fact the manager has — author, version,
-category, kind, license, review status, stars, hearts, availability, and
-whether installation will ask for a bar section — followed by the installation
-warning and the repository and Release buttons. A plugin you do not have yet
-gets an **Install** button here; the confirmation overlays the page, and the
-page stays open once the install lands so you can see the `installed` pill
-arrive. The filter row hides while the page is up. `Backspace` or **Back**
-returns you to the grid; `Esc` closes the expanded panel.
+## Settings
 
-Both tabs share one search box and, on this surface, it wears a caption like
-the dropdowns beside it and grows an `x` the moment there is something to
-clear. The hint bar names the tab keys as well as the actions — `[1] INSTALLED
-[2] BROWSE` on the right, before `[ESC] CLOSE` — so every way in and out is
-written down.
-
-**Settings**, opened from the gear in either header, groups its switches and
+**Settings**, opened from the gear in the header, groups its switches and
 **Restart Shell** action into rounded cards. Search and filters stay hidden
 while Settings is open, and the cards scroll when the available height is small.
+It holds the **Allow updating unverified plugins** switch, the transaction
+history limit, **Restart Shell**, and the Info card (all described below).
 
 The **Info** card shows the plugin, active update-data, and update-data archive
 paths, abbreviating the account's passwd home as `~` for display only. Loading
@@ -119,21 +79,10 @@ These counts are not the total retained history and do not claim both roots are
 empty. Unknown or partial outcomes require inspection, not an automatic retry.
 Closing the popup can lose the outcome; reopen Settings for a new observation.
 
-Under the hood the plugin registers a second kind, `panel`, whose entry point
-is `Expanded.qml`. Both surfaces share one data layer, `PluginStore.qml`, so
-an install, update, enable, disable or remove is the same code whichever
-window you started it from. Catalog parsing, enrichment and initial sorting run
-in an isolated offscreen Quickshell process; the desktop receives bounded result
-frames instead of hosting a WorkerScript.
-One consequence of the extra kind: the shell now routes
-`omarchy-shell shell toggle io.github.juancasanueva.plugin-manager` to the
-expanded panel, which makes it the thing to bind a hotkey to, while the bar
-button still opens the popup.
+## Arrange the bar
 
-### Arrange the bar
-
-Choose **Arrange** (`󰕮`) in either header. The popup opens its own overlay, like
-Settings; it never opens Expanded. After a save rebuilds the bar, Arrange returns
+Choose **Arrange** (`󰕮`) in the header. The popup opens its own overlay, like
+Settings. After a save rebuilds the bar, Arrange returns
 to the popup on the same screen. Drag entries within or between **Left**, **Center**, and **Right**.
 **Dropping saves immediately** through `omarchy-bar move`; there is no Apply
 step. Press `Esc` during a drag or release outside the board to cancel it.
@@ -145,27 +94,26 @@ visually, so tray placement on screen can differ from configured order. An ID
 that cannot pass losslessly through the CLI stays visible, with a move-refusal
 message rather than a silently altered ID.
 
-Layout messages stay with Arrange and popup placement, not Settings or the
-expanded plugin lists. In the expanded Settings and Arrange views, relevant
+Layout messages stay with Arrange and popup placement, not Settings. Relevant
 status messages appear below **Back**, above the controls they describe.
 
 A host layout change cancels any stale drag. A client exit alone does not prove
 that the move saved: the manager waits for the expected host layout. After an
 uncertain or mismatched result, inspect the current board and click **Use current
 layout** to accept it after the client exits; the manager never retries a move
-automatically. In the popup, **Back**, `Esc`/`Backspace` outside a drag, **Hide popup**,
-or choosing another page cancels automatic return, not the pending move lock.
-Automatic popup destruction does not cancel return. In Expanded, navigation,
-collapse and restart stay locked; **Hide window** remains safe and reopening
-returns to the pending board. Both boards share the retained owner's move lock.
+automatically. **Back**, `Esc`/`Backspace` outside a drag, **Hide popup**, or choosing another
+page cancels automatic return, not the pending move lock. Automatic popup
+destruction does not cancel return.
 
-The panel is retained with `keepLoaded`, but starts hidden without config reads
-or inventory work. Hiding retains pending reconciliation; explicit plugin
+The plugin's headless `MoveOwner.qml` is its `panel` entry point, retained with
+`keepLoaded`, so a pending move survives the bar rebuild a move causes. It starts
+hidden without config reads or inventory work. It also lets the shell's
+`summon`, `toggle` and `hide` open and close the popup. Hiding retains pending reconciliation; explicit plugin
 reload, disable/removal, or shell shutdown does not. This is not a global lock
 against other tools or popup instances, nor an atomic compare-and-swap with the
 host: avoid concurrent bar edits while a move is pending.
 
-## The Installed tab
+## The Installed list
 
 What the shell actually found, in two sections:
 
@@ -215,8 +163,8 @@ no link, where it is the one thing separating a checkout whose origin has
 gone missing from a folder somebody dropped in by hand. Both lose the link
 and the update button; without the badge they would look identical.
 
-A labelled filter row sits above Search, in the same shape the Browse tab
-uses, and every control narrows both lists at once:
+A labelled filter row sits above Search, and every control narrows both lists
+at once:
 
 - **Source filter** (`s`) — **All**, **Installed**, or **Built-in**. Picking one
   section hides the other, which is also the quickest way to see that a
@@ -235,9 +183,7 @@ uses, and every control narrows both lists at once:
   `hyprmoncfg` finds `crmne.hyprmoncfg`. It deliberately does not search
   descriptions: a search that matched prose would surface plugins whose names
   look nothing like what you typed. An `x` appears at the end of the box while
-  there is a term to clear, and switching tabs clears it too: the two tabs
-  search different things, so a term carried across would be a different
-  query silently shrinking the other list.
+  there is a term to clear.
 
 The hint bar under the list shows the filters on the left — `[S] SOURCE
 [F] KIND  [T] STATUS`, each naming its dropdown while neutral and its value,
@@ -256,8 +202,7 @@ verified update available** and offers nothing, because nothing reviewed is
 there to offer. The background check still records what it observed.
 
 **Allow updating unverified plugins**, in the settings pane (the gear in the
-header of both the popup and the expanded panel; the settings are shared),
-changes that. It is **off by default**. Switched on, every
+header), changes that. It is **off by default**. Switched on, every
 checkout with observed upstream changes shows again, with an orange arrow rather
 than the green one, and is counted. Update works for GitHub origins: the
 button installs the exact upstream commit the check observed after a
@@ -272,23 +217,8 @@ when there is no verified snapshot ahead of the checkout, and a checkout meeting
 both conditions is counted once. With the setting on you are choosing to run
 code the marketplace has not reviewed.
 
-**Allow installing unverified plugins**, the second switch in the same pane,
-is the matching opt-in for Browse, and also **off by default**. Installing
-unreviewed code is a separate decision from updating to it, so it is a
-separate switch under a separate key; neither reads the other's value.
-Switched on, a listing the marketplace never verified a snapshot of becomes
-installable from the tip of the branch its listing names, after a
-confirmation that names the repository and the branch. The helper resolves
-that branch to one commit before it fetches anything and installs exactly
-that commit, so the install is pinned even though the offer was not. The
-listing's own url and the repository behind it must still agree, exactly as
-for a verified listing, and a listing that names no branch stays uninstallable
-rather than having `main` guessed for it. Flipping the switch re-labels the
-cards already on screen; nothing is refetched.
-
-Both settings are stored in this plugin's own entry in
-`~/.config/omarchy/shell.json`, as `allowUnverifiedUpdates: true` and
-`allowUnverifiedInstalls: true`, written
+The setting is stored in this plugin's own entry in
+`~/.config/omarchy/shell.json`, as `allowUnverifiedUpdates: true`, written
 through the host and merged over whatever else that entry holds. The history
 limit lives in the same entry as `transactionLimit`
 (a bounded integer, removed when it equals the default 32). A switch
@@ -298,30 +228,7 @@ the setting off, a checkout whose only difference is an unreviewed upstream
 commit carries neither the arrow nor the green check: the panel does not claim
 it is current, it says **No verified update available**.
 
-**How it opens** is the buttons in the header rather than a switch in this
-pane, and every form has a direct way to the other two. The corner slot is the
-same on every surface: in the popup it expands to the overlay, and in the
-overlay or the window it goes back to the popup. The button beside it opens
-the window from the popup or the overlay, and the overlay from the window. The bar opens the
-manager the way it was last left; the popup is the default. The overlay floats above everything, takes the keyboard
-while it is up, and closes on Esc or a click outside. The window is an ordinary
-one, which Hyprland tiles into the current workspace like any app, so the
-manager can sit beside the terminal you are editing a plugin in. There is no
-scrim and no outside to click; Esc still closes it, and so does the
-compositor's own close. Going from the overlay to the window happens in place:
-the card moves to the new host and nothing reloads. Clicking the bar while the
-window is open on another workspace goes to it. The choice is stored as
-`openAs` (`popup`, `overlay` or `window`) in this plugin's entry and read
-straight out of `shell.json` when the bar is clicked, ahead of everything else
-it loads. An entry that still has the old `tiledExpandedPanel: true` opens as
-a window, and the key is dropped the next time one of the buttons writes.
-
-One Hyprland note: the window carries the shell's own app id rather than one of
-its own, so a per-window rule has to match its title:
-`windowrule = float, title:^(Plugin Manager)$` is what would undo the tiling
-for it.
-
-**Restart Shell**, the button under the two switches, clears Quickshell's
+**Restart Shell**, the button below the other settings, clears Quickshell's
 compiled-QML cache and runs `omarchy restart shell`, so every plugin, this one
 included, is loaded again from what is on disk. Reach for it when a plugin
 edited in place keeps showing its old self after a rescan. What is removed is
@@ -359,21 +266,9 @@ an upstream SHA and no confirmation that overrides a refusal.
 
 ### The actions
 
-- **Add** — from the Browse tab only; there is no url field. Installing a card
-  invokes the same bundled Python helper an update does, with the repository,
-  the full marketplace-verified commit, the id, and the bar section you chose.
-  It installs only that commit, never `origin HEAD` or a branch tip, and the
-  host `omarchy plugin add` command is deliberately not used. A listing the
-  marketplace has not verified a snapshot of cannot be installed from the
-  panel at all — unless **Allow installing unverified plugins** is switched
-  on, in which case it is offered from the tip of its validated branch, marked
-  **Installable (unreviewed)** in details, and installed as the one commit the
-  helper resolves that branch to. A listing whose install command names a
-  repository its own listing does not is refused under either setting: the
-  card states the reason instead of offering a button. The confirmation names
-  the short verified commit, or the branch when there is none, and the
-  repository the request will actually fetch — the same one the helper
-  reauthorizes — rather than the registry's free-text install command.
+- **Update all** (`u`, or the header button) — asks once, then applies every
+  installable update in one background run. A worker stop signal finishes the
+  current preparation and skips unstarted items.
 - **Enable / disable** — one switch per row, not a pair of icons that trade
   places. An icon that changes with the state makes you read the glyph to
   learn where the plugin stands and read it again to work out what clicking
@@ -389,16 +284,9 @@ an upstream SHA and no confirmation that overrides a refusal.
   dimmed and fixed on — a row with no control at all reads as something that
   failed to render. Disabling this panel closes the window you are clicking
   in, so that one confirms and hands you the command to undo it.
-- **Move** — for a bar widget that is on the bar, changes which section it
-  sits in. The expanded panel's details pane shows the three sections as one
-  segmented control, Left | Center | Right, with the current one lit; clicking
-  another moves the widget there. Expanded still uses `omarchy plugin enable <id> <section>`.
-  In the popup, choose **Arrange** in the header to reposition widgets; Installed
-  rows have no move button. Enabling a widget still asks which section to use.
-  Nothing edits `shell.json` directly. The
-  current section is read from `shell.json` at load time, so the control only
-  changes once the shell has actually moved the widget, and a widget whose
-  section could not be read gets no control rather than a guess.
+- **Move** — choose **Arrange** in the header to reposition widgets (see
+  above); Installed rows have no move button. Enabling a widget asks which
+  section to use. Nothing edits `shell.json` directly.
 - **Update** — invokes the bundled Python helper with the displayed repository,
   full target SHA, id, and expected installed HEAD. It installs only that
   commit, never `origin HEAD`, another branch, or a fallback commit. The host
@@ -414,25 +302,21 @@ an upstream SHA and no confirmation that overrides a refusal.
 
 ### Pinned install and update transaction, and recovery
 
-Installs and updates are the same transaction with a different publication
-step, and everything below applies to both. An install request carries the
-repository, the id, and the bar section instead of an expected installed HEAD,
-plus either the verified commit or — under **Allow installing unverified
-plugins** — the validated branch to resolve. Either shape refuses outright
-when `~/.config/omarchy/plugins` already holds that name (directory, file or
-symlink) or when the host already knows that plugin id.
+Updates run as a pinned transaction. The helper also contains an install shape
+of the same transaction (a new directory published with `RENAME_NOREPLACE`),
+but this plugin's popup no longer offers it: plugins are installed with
+`omarchy plugin add`. Where the text below mentions installs it describes the
+helper's behaviour, not a control you can reach.
 
 The helper reads `https://plugins.omarchy.org/catalog.json` directly over HTTPS,
 without redirects or cached fallback, before fetching and again before
-publication. Browse reads the same canonical URL, but through its own cache;
-execution never consults that cache and rejects every redirect response.
+publication. The popup reads the same canonical URL for its verified-update data, but
+through its own cache (below); execution never consults that cache and rejects
+every redirect response.
 A unique community listing must still be verified at exactly the
 requested repository and full SHA. For an unverified request, made only under
-**Allow updating unverified plugins** or **Allow installing unverified
-plugins**, the catalog is not consulted at all: the target is the exact
-upstream commit the panel observed, or — for an unverified install — the
-commit a single `ls-remote` resolves the requested branch to, before anything
-is fetched. No fetch and no checkout ever names a branch, and an ambiguous or
+**Allow updating unverified plugins**, the catalog is not consulted at all: the
+target is the exact upstream commit the popup observed. No fetch and no checkout ever names a branch, and an ambiguous or
 unreadable answer refuses instead of picking among candidates. Every other
 check below applies unchanged. HTTPS and `git@github.com:` / `ssh://git@github.com/`
 origins compare canonically; network Git always uses canonical HTTPS. Repository
@@ -444,17 +328,10 @@ Staging lives in a private 0700 transaction under
 and on the same filesystem. The helper uses isolated, hook-free Git, checks the
 snapshot tree and manifest id, and runs the host validator **before** publishing.
 An update exchanges the installed directory with the staged checkout using Linux
-`RENAME_EXCHANGE`; an install moves the staged checkout into the new name using
-`RENAME_NOREPLACE`, so a name that appeared while the transaction was staging
-wins the race untouched and the checkout stays in the unpublished transaction.
+`RENAME_EXCHANGE`.
 There is no missing-directory gap and nothing the helper did not create is ever
 removed. Files and directory entries are fsynced; only successful publication
-triggers the host `rescanPlugins` IPC operation. Only a successful rescan is
-followed by `omarchy-plugin-enable`, after the same bounded wait for shell
-discovery the host add performs: `<id> --section <section>` for a bar widget
-you placed, a bare `<id>` for everything else, which the host switches on
-without a placement. Every install is enabled; a plugin left on disk and never
-switched on reads as one that did not install.
+triggers the host `rescanPlugins` IPC operation. Only a successful rescan ends the transaction as updated.
 
 | Prerequisite | Refusal behavior |
 |---|---|
@@ -464,19 +341,15 @@ switched on reads as one that did not install.
 | Fast-forward proven within 256 fetched history levels | Divergence, downgrade, missing ancestry, or unavailable target refuses |
 | Bounded work | 120-second transaction; 64 MiB raw authorization catalog; 16 MiB projected catalog/cache; 1,000 source files, depth 20, 16 MiB source tree; 32 MiB Git file limit and 128 MiB inspected checkout limit |
 | Same filesystem with atomic exchange support | Refuse rather than use two renames |
-| Install target name unused, and its id unknown to the host catalog | Refuse rather than overwrite, merge into, or shadow an existing plugin |
 
-Whatever the helper publishes — an installed plugin or a replacement — retains
+Whatever the helper publishes retains
 a fresh `.git`, canonical origin and detached HEAD. It is a shallow clone
 (depth 256) with no tracking branch, so the host's own `omarchy plugin update
 <id>` does not work for that checkout: later updates for it go through this
-panel's pinned update only. To return to the host flow, remove the plugin and
+popup's pinned update only. To return to the host flow, remove the plugin and
 add it with the host command.
 Local branches, tags, reflogs, hooks and configuration are **not migrated**;
-for an update they remain in the original checkout at the transaction's
-`checkout/` backup. An install replaces nothing, so it has no backup and reports
-none: its transaction directory keeps the journal alone once the checkout has
-been published out of it.
+they remain in the original checkout at the transaction's `checkout/` backup.
 
 ### Read-only update-data status
 
@@ -622,17 +495,16 @@ The advisory lock excludes cooperating update/cleanup workers, not arbitrary
 same-user writers. Rechecks detect observed changes but cannot make a recursive
 snapshot or eliminate the final check-to-unlink race. Tests use disposable data
 and simulated mount identities, never host mounts or live update roots.
-
 ### Recovery and retained transactions
 
 When the active directory holds at least the configured limit (default 32) of
-entries, the next install or update first archives
+entries, the next update first archives
 provably completed transactions into
 `~/.config/omarchy/plugin-manager-updates-archive/txn-<same-id>/` and refuses
 only when the recount after that walk still sits at the limit, so a limit
 lowered into the active count archives down instead of wedging every update.
-Below that threshold, nothing is archived. Only exact `installed` or `updated` results
-qualify: the published result, original request, prepared identities and
+Below that threshold, nothing is archived. Only exact `updated` results (or an
+`installed` result recorded by the helper's install shape) qualify: the published result, original request, prepared identities and
 backup layout must agree, with no `refused.json` marker. Reload, enable or
 finalization failures, partial records, unknown schemas and unsafe entries
 stay active. Historical eligibility does not depend on the plugin's current HEAD.
@@ -657,14 +529,13 @@ Inspect `request.json`, `prepared.json` (directory device/inode identities),
 `published.json` and `result.json` to distinguish staging from publication.
 A crash between publication and journaling requires checking those identities
 and both HEADs; do not assume the backup name alone proves which tree it
-contains. An unpublished install leaves its staged `checkout/` in the
-transaction beside `refused.json`; nothing outside that directory changed.
+contains.
 There is no automatic recovery or rollback that could overwrite later edits.
 The advisory lock serializes helper requests, not arbitrary same-user writers;
 final rechecks do not make concurrent external edits race-free.
 Keep backups until reviewed, and recover manually only after preserving the
 current checkout. If every entry within the configured limit remains unresolved,
-or discovery encounters one entry beyond it, further installs/updates refuse
+or discovery encounters one entry beyond it, further updates refuse
 with a README recovery hint. Review
 `~/.config/omarchy/plugin-manager-updates/` and manually move only transactions
 you have understood and preserved; the helper never guesses about incomplete
@@ -675,209 +546,56 @@ archive locations before retrying, since an earlier move may have completed.
 Never resolve a collision by overwriting an archived transaction.
 
 Once clicked, the finite worker runs independently of the QML observer. Closing
-the window is **not cancellation**, including during a manager self-update.
+the popup is **not cancellation**, including during a manager self-update.
 For a bulk update, a worker stop signal finishes the current preparation and
 skips unstarted items. Already checked updates still apply after final safety
 checks, followed by a shell rescan and the recorded summary. There is no bulk
-Stop control in the panel.
+Stop control in the popup.
 The already-loaded Python worker retains no dependency on reopening its helper
 source after publication. Its bounded notification and transaction records
-outlive the window. A rescan failure reports **updated; reload failed** or
-**installed; reload failed**, not unchanged, and an install that published but
-could not be placed reports **installed; enable failed**. A refusal reports
-**unchanged; update refused** or **unchanged; install refused** followed by the
-helper's reason (for example a dirty checkout, a name already taken, or a
-revoked verification), and the same reason is written to `refused.json` in the
+outlive the window. A rescan failure reports **updated; reload failed**, not unchanged. A refusal
+reports **unchanged; update refused** followed by the helper's reason (for
+example a dirty checkout or a revoked verification), and the same reason is written to `refused.json` in the
 transaction directory when one was opened.
 If the observer loses the result, inspect the retained transaction; do not retry
 blindly. Live Quickshell hot-reload/self-update behavior still needs runtime
 validation; disposable transaction tests do not prove desktop integration.
 
-## The Browse tab
+### Where verified-update data comes from
 
-![The popup's Browse tab: a puzzle icon and Plugins heading with a Browse-only
-Marketplace link to the left of the tabs, labelled Category, Kind,
-Availability, and Sort dropdowns above a search field, and a grid of compact
-plugin cards with previews, descriptions, creator lines, versions, GitHub
-stars, Marketplace hearts, installed and verified badges, and details or
-install actions, above a hint bar with filter keys on the left and details and
-search keys on the right](preview-browse.png)
+The popup still fetches the Omarchy marketplace catalog,
+`https://plugins.omarchy.org/catalog.json`, but only as the source of
+verified-update snapshots and of the `verified` pill beside an installed plugin's
+name (joined by id). It is never browsed or installed from. The catalog is read
+from the cache when the popup opens and fetched when that cache is missing or
+stale, projected down to the fields the update checks use, and cached for six
+hours in `~/.cache/omarchy-plugin-manager/`. A failed automatic fetch falls back
+to the cached copy. The refresh button forces a re-fetch.
 
-<sub>Shown with `qt6-imageformats` installed, so the registry thumbnails
-decode too. Without it the second source is skipped and more cards fall back
-to accent tiles — see below.</sub>
-
-The second tab is the [omarchyplugins.com](https://omarchyplugins.com)
-marketplace. Search matches name, id, author, and description. Category and
-kind options come from the current catalog, while Availability narrows to
-plugins that can be installed here or plugins already installed. All four
-filters compose, and an empty result offers **Clear filters** rather than
-leaving you at a dead end. The hint bar under the grid shows the filters on
-the left — `[C] CATEGORY  [F] KIND  [A] AVAILABILITY  [S] RECENTLY ADDED`,
-each naming its dropdown while neutral and its value, brighter, once it
-narrows — and `[↵] DETAILS  [/] SEARCH` on the right.
-
-Sort explicitly by **Recently added** (newest first, the default), **Recent
-activity**, **Most starred**, **Most viewed**, **Most copied**, **Most
-hearts**, **Top ranked**, **Install rate**, **A–Z**, **Verified**, or
-**Unverified**, matching the website order and meaning.
-Unknown counts stay unknown and sort after real counts; stars, views, copies,
-and hearts are never combined. Install rate follows the website Wilson lower
-bound with a 20-view minimum. Top ranked sums per-metric ranks over hearts,
-copies, views, and stars. Verified and Unverified group that status first.
-Names and ids provide deterministic tie-breakers.
-
-Cards are summaries: preview, three description lines, creator, version,
-separate popularity counts, installed state, and an install or details action.
-Open details by clicking a card or selecting it and pressing `Enter`. In the
-popup the details open over the grid; in the expanded panel they take the
-whole window. Either way the details surface leads with the same preview the
-card showed, then shows every available catalog fact used by the manager,
-including the full description, author, version, category, kind, license,
-repository and Release actions, both popularity counts, install state,
-placement requirement, and installation limitations. Missing fields are
-omitted rather than replaced with claims the catalog did not make.
-
-Repository and Release actions open through `omarchy-launch-browser`, so they
-land in whichever browser `omarchy default browser` selected, and only trusted
-`https://` URLs are passed to it. Use `Tab`, arrow keys, or `Shift+Tab` to move
-between details actions, `Enter` to activate one, and `Esc` to close.
-
-The creator gets one line and the catalog version shares the next with a
-yellow star for GitHub stars and a red heart for anonymous Marketplace hearts,
-each count sitting on its icon's baseline beside the details and install
-buttons. The metrics stay separate: stars come from each `catalog.json`
-listing, while views, copies, and hearts
-come from `https://api.omarchyplugins.com/v1/stats` at
-`plugins[pluginId].views`, `plugins[pluginId].copies`, and
-`plugins[pluginId].hearts`. Missing or malformed counts are omitted rather than
-shown as zero.
-
-The GitHub star count is also the control, so no new button competes with the
-card's details action. Clicking it toggles the star without leaving when the
-GitHub CLI is signed in. When the CLI is missing or not signed in, the click
-opens the repository in your browser instead. Each click checks GitHub afresh.
-Star notices clear themselves after a few seconds. Marketplace heart counts
-remain read-only until the marketplace API supports plugin clients.
-
-For an exact GitHub repository, opening the Release action checks names
-`v<version>` and then `<version>` through the same bounded, click-time probe used
-by Installed rows. A match opens the published Release; absence or failure falls
-back to the validated repository root. Non-GitHub and missing versions remain
-plain or absent, and opening Browse never performs a Release API request.
-
-Not everything the registry lists is installable from here — suites ship their
-own installers, some repos are not plugin-shaped, some listings have no
-marketplace-verified snapshot for the panel to install exactly, and some name
-one repository in their install command and another in the snapshot that was
-reviewed. Those cards show
-a visible blocked reason, with the full explanation in details, instead of a
-button that could only fail. A listing blocked only for want of a verified
-snapshot, and carrying a branch the marketplace validated, says so: its reason
-adds that **Allow installing unverified plugins** would offer it.
-Plugins you already have carry an `installed` badge on the preview, beside the
-`verified` one, rather than offering themselves again.
-
-### Installing asks where it goes
-
-Installing a plugin makes the shell tear every plugin widget down and rebuild
-it — this panel among them. There is no "after the install" in which a plugin's
-own window can ask you anything, so the section question comes *before*
-anything is staged, off the kind the registry publishes. Both answers in hand,
-the helper forks an independent worker before it touches the plugin root, so
-publication and placement finish whatever happens to the window that started
-them; a process owned by a destroyed panel cannot be relied on to finish, and
-the placement is the half that would be dropped. Only the result can be lost,
-and the helper reports through a desktop notification that outlives all of
-this. The enable runs after publication and a successful rescan, so an install
-that could not be switched on still says **installed; enable failed** rather
-than being rolled back.
-
-### Where the catalog comes from
-
-`https://plugins.omarchy.org/catalog.json`, the same file the website renders
-from, generated by
-[HANCORE-linux/omarchy-plugin-marketplace](https://github.com/HANCORE-linux/omarchy-plugin-marketplace)
-(MIT). It is read from the cache when the panel opens and fetched when that
-cache is missing or stale, projected down to the fields this panel uses, and
-cached for six hours in `~/.cache/omarchy-plugin-manager/`. A failed automatic
-fetch falls back to the cached copy — a stale storefront beats an apparently
-empty one. The refresh button forces a re-fetch; if it fails, Browse shows a
-refresh error and keeps the catalog already on screen. Retry Refresh to check
-for new listings.
-
-Raw marketplace downloads are capped at 64 MiB by both curl and the helper's
-stream reader. The projected catalog sent to Browse and stored in the cache
-is capped at 16 MiB; unused upstream fields do not consume that budget.
-Consumer entry-count, nesting-depth, string-length and time limits are unchanged.
-
-The cache is read and written only by `helpers/pinned_update.py`, the same
-helper that installs and updates. It reaches the cache directory component by
-component through owner-checked no-follow directory descriptors, creating a
-missing one private (0700) relative to its parent's descriptor, and refuses a
-symlink, another owner, or group/world write anywhere on that path. The cached
-file is opened no-follow through that descriptor and must be a regular file
-the account owns; a fresh projection is written to an exclusive temporary file
-beside it and renamed into place relative to the same descriptor, so readers
-see the old bytes or the new ones and nothing outside that directory is ever
-created or replaced.
-
-The work per keystroke is kept small on purpose. Each entry's lowercased
-search text and its listing timestamp are derived once, in the isolated builder,
-so the main thread does one substring test per entry rather than lowercasing
-four fields and parsing a date. The catalog is sorted once per sort mode and
-then filtered in that order, since filtering keeps the order it is given, so
-typing never re-sorts two thousand entries. The search box itself is
-debounced: the lists follow it after a short pause rather than rebuilding
-every visible row or card once per letter, and clearing applies at once. And
-the Browse grid has no model until the tab has been shown, because a hidden
-`GridView` still builds the cards in its viewport — and fetches their
-previews — the moment the catalog lands.
-
-The catalog's `installCommand` is **read, never executed**: the url is parsed
-out of it, validated, and passed to the same argv array everything else uses.
-
-### Where the card previews come from
-
-Each card tries three sources in order and stops at the first that decodes:
-
-1. **The repository's own `preview.png`**, read straight from
-   `raw.githubusercontent.com` at the branch the registry validated. Most
-   plugins ship one — 31 of a 40-repo sample — and PNG is a format Qt always
-   reads.
-2. **The registry's curated thumbnail.** These are WebP, which Qt decodes only
-   when `qt6-imageformats` is installed. It is not a dependency of Omarchy or
-   Quickshell, so on a stock system this step is skipped after the first
-   failure tells the panel so.
-3. **The accent-and-initials tile** the registry ships for listings with no
-   screenshot at all.
-
-Installing `qt6-imageformats` adds the second source, which fills in most of
-what the first one misses:
-
-```bash
-sudo pacman -S qt6-imageformats
-```
+Raw downloads are capped at 64 MiB by both curl and the helper's stream reader;
+the projected catalog sent to the popup and stored in the cache is capped at
+16 MiB. The cache is read and written only by `helpers/pinned_update.py`, the
+same helper that updates. It reaches the cache directory component by component
+through owner-checked no-follow directory descriptors, creating a missing one
+private (0700), and refuses a symlink, another owner, or group/world write
+anywhere on that path. A fresh projection is written to an exclusive temporary
+file beside the cache and renamed into place relative to the same descriptor.
 
 ### Verified is a signal, not a promise
 
 The registry runs a security baseline over listings and marks some verified.
-The badge is shown on Browse cards and, joined by id to the same catalog, as a
-pill beside the name of Installed rows — so what you already run says whether
-the registry reviewed it. The install dialog says in words that a review is not
-a guarantee. Plugin code runs unsandboxed with your user's privileges whether
-or not it carries a badge.
+Joined by id to the catalog, the badge appears as a pill beside the name of
+Installed rows, so what you already run says whether the registry reviewed it.
+Plugin code runs unsandboxed with your user's privileges whether or not it
+carries a badge.
 
 ## Why it confirms
 
-Adding a plugin fetches a repository and loads its QML into the long-running
+Updating fetches a repository and loads its QML into the long-running
 `omarchy-shell` process. Plugin code is **unsandboxed**: it runs with your
 user's full privileges. Removing deletes a directory. Both actions confirm
-first, and the install dialog shows the short verified commit and the full
-repository url the fetch will use, so you can read both before anything runs.
-There is no free-text url entry, and the url shown is the one bound to the
-reviewed snapshot rather than anything the listing's install command claims:
-a listing whose two disagree cannot be installed here at all.
+first; an update confirmation shows the short commit and the repository the
+fetch will use, so you can read both before anything runs.
 
 Commands are executed as argv arrays, never through a shell, so a repository
 url cannot become a command. Urls are also validated against `https://`,
@@ -887,24 +605,18 @@ url cannot become a command. Urls are also validated against `https://`,
 
 | Key | Action |
 |-----|--------|
-| `↑` `↓` / `k` `j` | Move the selection; Browse also supports `←` `→` and `h` `l` |
-| `Enter` | Update the selected Installed plugin; open the selected Browse card's details |
+| `↑` `↓` / `k` `j` | Move the selection |
+| `Enter` | Update the selected plugin |
 | `Delete` | Remove the selected plugin |
+| `u` | Update all |
 | `/` | Focus the search box |
-| `f` | Cycle the Kind dropdown on either tab |
-| `s` | Cycle Source (Installed) or Sort (Browse) |
-| `t` | Installed: cycle the Status dropdown |
-| `c` `a` | Browse: cycle the Category and Availability dropdowns |
-| `1` `2` | Switch to the Installed / Browse tab |
-| `r` | Refresh the plugin list or re-fetch the active Browse catalog |
-| `Esc` | Clear the search, then leave the field, then close the panel |
+| `f` | Cycle the Kind dropdown |
+| `s` | Cycle the Source dropdown |
+| `t` | Cycle the Status dropdown |
+| `r` | Refresh the plugin list and re-check updates |
+| `Esc` | Clear the search, then leave the field, then close the popup |
 
-In the popup's Browse details, `Tab`, `Shift+Tab`, and the arrow keys move
-between actions; `Enter` activates the selected action and `Esc` returns to
-the card grid. In the expanded panel's Browse details, `Backspace` or **Back**
-returns to the grid, while `Esc` closes the panel. `Backspace` still edits text
-when search has focus, and open dialogs retain their keys. The expanded hint
-bar shows `[BACKSPACE] BACK` alongside the `1` and `2` tab shortcuts.
+Open dialogs retain their own keys.
 
 ## Install
 
@@ -917,7 +629,6 @@ Then move it if it did not land where you want it:
 ```bash
 omarchy bar move io.github.juancasanueva.plugin-manager --section right
 ```
-
 ## Remove
 
 ```bash
@@ -925,7 +636,7 @@ omarchy plugin remove io.github.juancasanueva.plugin-manager --yes
 ```
 
 That deletes `~/.config/omarchy/plugins/io.github.juancasanueva.plugin-manager`
-and takes the widget out of your bar. The catalog cache at
+and takes the widget out of your bar. The verified-update cache at
 `~/.cache/omarchy-plugin-manager/` and transactions/backups under
 `~/.config/omarchy/plugin-manager-updates/` and
 `~/.config/omarchy/plugin-manager-updates-archive/` survive removal. An already accepted
@@ -941,116 +652,74 @@ omarchy plugin disable io.github.juancasanueva.plugin-manager
 
 ## Requirements
 
-No dependencies are installed automatically. Enable/disable/install/remove use
-the host commands; pinned updates additionally require system Python 3 (stdlib
-only), Linux `/proc`, `flock`, and libc/filesystem `renameat2` exchange support.
+No dependencies are installed automatically. Enable/disable/remove use the host
+commands; pinned updates additionally require system Python 3 (stdlib only),
+Linux `/proc`, `flock`, and libc/filesystem `renameat2` exchange support.
 A fixed `/usr/bin/env -i` argv supplies only PATH and WAYLAND_DISPLAY, then
 executes `/usr/bin/python3 -I -S`; helper subprocesses use their own clean environment.
-This uses Quickshell's supported command list instead of a map-to-hash environment binding.
 
 | Command | Used for |
 |---------|----------|
 | `git` | discovery and isolated exact-SHA fetch/ancestry/checkout |
 | `jq` | parsing plugin manifests and the shell configuration |
-| `curl` | fetching the catalog and remote manifests |
-| `notify-send` | reporting install and pinned-update outcomes outside the panel |
+| `curl` | fetching the verified-update catalog and remote manifests |
+| `notify-send` | reporting pinned-update outcomes outside the popup |
 | `python3`, `omarchy-plugin-validate`, `qs` | bounded update transaction, staged validation, and post-publication rescan |
-| `/usr/bin/quickshell` | isolated offscreen catalog building with the existing `Model.js` |
-| `bash`, coreutils | the loading and install scripts |
-| `omarchy-launch-browser` | opening repository links in your chosen browser |
-| `gh` | starring and unstarring GitHub repositories without leaving the panel (`/usr/bin/gh` or the mise `global`/`latest` install, never `PATH`) |
-
-Optional: **`qt6-imageformats`** turns on the registry's WebP card thumbnails
-(see [above](#where-the-card-previews-come-from)). Without it the panel falls
-back to repository `preview.png` files and accent tiles.
+| `bash`, coreutils | the loading and update scripts |
+| `omarchy-launch-browser` | opening repository and Release links in your chosen browser |
 
 ### What it writes
 
 Only on an explicit action: enabling/disabling edits shell configuration via
-host commands, and installation/removal uses host commands. Pinned updates
-write private staging, transaction records and retained original checkouts,
-and atomically exchange one plugin directory. At the active transaction limit,
-pinned installs/updates can create `~/.config/omarchy/plugin-manager-updates-archive/`
-and move completed transaction directories there, preserving all recovery data.
-Archival does not edit shell.json or change installed plugins.
-The Browse cache at `~/.cache/omarchy-plugin-manager/` is written automatically
-when the catalog is missing or stale, through owner-checked no-follow
-directory descriptors with a descriptor-relative atomic rename, never through
-a path a symlink could redirect.
-Each catalog build also uses a private `/tmp/omarchy-catalog-*` directory for its
-request descriptor and isolated XDG config/cache/runtime/logs. Its guardian removes
-that directory on completion, failure, cancellation, or owner exit. Force-killing
-the guardian itself can leave this temporary state behind.
+host commands, and removal uses host commands. Pinned updates write private
+staging, transaction records and retained original checkouts, and atomically
+exchange one plugin directory. At the active transaction limit, pinned updates
+can create `~/.config/omarchy/plugin-manager-updates-archive/` and move completed
+transaction directories there, preserving all recovery data. Archival does not
+edit shell.json or change installed plugins. The verified-update cache at
+`~/.cache/omarchy-plugin-manager/` is written automatically when the catalog is
+missing or stale, through owner-checked no-follow directory descriptors with a
+descriptor-relative atomic rename, never through a path a symlink could redirect.
+Appearance settings, the unverified-updates switch and the history limit are
+written to the plugin's entry in `~/.config/omarchy/shell.json` through the host.
 
 ## Develop
 
 The plugin directory must live at
 `~/.config/omarchy/plugins/io.github.juancasanueva.plugin-manager`. Saving any
-file under `~/.config/omarchy/plugins/` hot-reloads the plugin code.
+file under `~/.config/omarchy/plugins/` hot-reloads the plugin code, except
+through a symlinked checkout, where the shell needs a restart after QML edits.
 
 ```bash
 omarchy plugin validate ~/.config/omarchy/plugins/io.github.juancasanueva.plugin-manager
-qmllint -I /usr/share/omarchy/shell BarWidget.qml Panel.qml Expanded.qml
+qmllint -I /usr/share/omarchy/shell BarWidget.qml Panel.qml MoveOwner.qml
+
+node --test test/*.test.mjs
+python3 -m unittest discover -s test -p 'test_*.py'
 
 omarchy-shell shell rescanPlugins
 omarchy-shell shell toggle io.github.juancasanueva.plugin-manager '{}'
 ```
 
-### Catalog shutdown workaround
-
-Issue #3 reports a Qt 6.11.2 / Quickshell 0.3.1 shutdown crash in WorkerScript
-destruction. The plugin no longer instantiates WorkerScript, even when Browse
-has never opened. `CatalogBuilder.qml` imports the unchanged `Model.js` in a
-separate process; `helpers/catalog_build.py` supervises it without network access
-or a new runtime dependency. This avoids the implicated lifetime boundary; the
-original full-shell crash has not been reproduced locally.
-
-The helper rejects, rather than truncates, requests above 16 MiB of catalog text,
-1 MiB of encoded installed IDs, or 97 MiB of transport JSON. Enriched publication
-has a separate 32 MiB budget and 64 KiB frames (each entry must fit one frame).
-There is no entry-count cap on the catalog, only byte budgets. Child stdout and stderr are bounded, and the
-offscreen engine has a 2 GiB address-space limit. The helper checks a cooperative
-20-second budget at I/O boundaries, not an independent wall-clock watchdog:
-JSON processing, framing, process launch/wait and filesystem cleanup can extend
-elapsed time beyond that budget. An observer/guardian pair handles early owner
-destruction, when Quickshell kills its direct child before that child can clean
-up; it terminates the owned engine group and reaps its direct engine child.
-Teardown tests check for non-running descendants, not the absence of zombies.
-Failed launches retain the catalog and permit retry. Cancellation waits for an
-owned positive PID, and stale generations never replace the displayed catalog.
-
-The desktop parses one result frame per event-loop turn. Final assignment,
-installed/opt-in re-stamping and view bindings still cost synchronous time; this
-is not a claim of zero-cost publication. Run the isolated regression/timing suite
-without installing the plugin or restarting the desktop:
-
-```bash
-node --test test/catalog-builder.test.mjs
-```
-
-It tests Model parity, errors/retry, stale results, budgets, owner/parent teardown
-and complete 6,000-entry publication. Its timing smoke test covers the store,
-not rendering a full panel or the reporter's exact IPC shutdown sequence.
-
 ## Layout
 
 | File | Role |
 |------|------|
-| `manifest.json` | Plugin contract — id, kinds, entry points |
+| `manifest.json` | Plugin contract: id, kinds, entry points, and the density, font size and accent settings |
 | `BarWidget.qml` | The bar slot and the open/close contract the bar routes through |
-| `Panel.qml` | The popup: both tabs, search, filters, and the dialogs |
-| `Expanded.qml` | The full-size panel: one card hosted by either the overlay or a tiled window, Installed as list plus details, Browse as a wider card grid with a full-page details face |
-| `InstalledListRow.qml` | One summary row in the expanded list: state mark, name, verified pill, star count, one line of description |
-| `InstalledDetails.qml` | One installed plugin in full: switch and action buttons, screenshot, description, facts, and links |
-| `CatalogDetailsPane.qml` | The expanded panel's Browse details page: preview, facts, warning, repository, Release, and Install |
-| `PluginStore.qml` | The shared data layer: plugin list, update check, catalog fetch, actions, and what is pending confirmation |
-| `CatalogBuilder.qml`, `helpers/catalog_build.py` | Isolated catalog model builder and bounded process supervisor |
-| `ReleaseNavigator.qml` | The click-time Release probe and the one place a browser is launched from, shared by both surfaces |
-| `PluginRow.qml` | One popup row: name, author/kind/version, description, repository link, on/off switch, and its buttons |
-| `CatalogCard.qml` | One compact marketplace card: preview, summary, state, metrics, details, and install |
-| `PluginDetails.qml` | The popup's Browse details: full Marketplace metadata, trusted links, limitations, and keyboard actions |
-| `ChoiceDialog.qml` | The modal that asks which one, where ConfirmDialog asks whether |
+| `Panel.qml` | The popup: Installed list, filters, search, header actions, Settings, Arrange, and the dialogs |
+| `MoveOwner.qml` | Headless retained owner (the `panel` entry point) of bar moves, so Arrange survives the bar rebuild; also lets shell summon/toggle/hide open and close the popup |
+| `PanelStyle.qml`, `AccentSource.qml` | Density, font size and accent settings |
+| `PluginStore.qml` | The data layer: plugin list, update check, verified-update data, actions, and what is pending confirmation |
+| `PluginRow.qml` | One row: name, author/kind/version, description, repository link, on/off switch, and its buttons |
+| `SettingsInfo.qml` | The Settings Info card and Delete update data |
+| `ActionConfirmDialog.qml`, `ChoiceDialog.qml` | The modals: confirm an action, or ask which one |
+| `BarLayoutPane.qml` | The Arrange board |
+| `ReleaseNavigator.qml` | The click-time Release probe and the one place a browser is launched from |
+| `PopupBridge.js` | Hand-off between the popup and the retained owner |
 | `Model.js` | Pure parsing, merging, grouping, searching, and filtering |
+| `helpers/pinned_update.py` | The pinned update transaction, update-data status and cleanup, and the catalog cache |
+| `helpers/github_star.py` | GitHub star toggle helper |
 
 ## License
 
