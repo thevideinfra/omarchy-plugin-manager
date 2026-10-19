@@ -3518,3 +3518,32 @@ test("the store reloads when shell.json changes under it", () => {
   assert.doesNotMatch(panel, /watchConfig: true/)
   assert.match(store, /Timer \{\s*id: configReload\s*interval: 1000\s*repeat: false\s*onTriggered: if \(root\.watchConfig\) root\.reload\(\)/)
 })
+
+test("buildCatalog fails closed on hostile field values instead of throwing", () => {
+  for (const field of ["name", "repo", "id"]) {
+    const plugin = { id: "a", name: "A", repo: "https://github.com/acme/a" }
+    plugin[field] = { toString: 1 }
+    const built = Model.buildCatalog(JSON.stringify({ plugins: [plugin] }))
+    assert.equal(built.entries, null, field)
+    assert.equal(built.error, "Could not read the plugin catalog", field)
+  }
+})
+
+test("an update snapshot exists only for an unambiguous verified GitHub commit", () => {
+  const base = { id: "acme.fresh", name: "Fresh", repo: "https://github.com/acme/fresh",
+    sourceType: "community", verificationStatus: "unverified" }
+  const snapshot = change => Model.catalogEntries({ plugins: [{ ...base, ...change }] })[0].updateSnapshot
+  assert.equal(snapshot({}), null)
+  for (const change of [{ verificationStatus: "verified" },
+    { verificationStatus: "verified", verificationCommit: "d".repeat(39) },
+    { verificationStatus: "verified", verificationCommit: "d".repeat(40), sourceType: "builtin2" },
+    { verificationStatus: "verified", verificationCommit: "d".repeat(40), repo: "https://evil.test/a/b" }])
+    assert.equal(snapshot(change), null, JSON.stringify(change))
+  assert.deepEqual(snapshot({ verificationStatus: "verified", verificationCommit: "d".repeat(40) }),
+    { id: "acme.fresh", repository: "https://github.com/acme/fresh", verifiedCommit: "d".repeat(40) })
+  const duplicated = Model.catalogEntries({ plugins: [
+    { ...base, verificationStatus: "verified", verificationCommit: "d".repeat(40) },
+    { ...base, verificationStatus: "verified", verificationCommit: "e".repeat(40) }] })
+  assert.equal(duplicated.length, 2)
+  assert.ok(duplicated.every(entry => entry.updateSnapshot === null))
+})

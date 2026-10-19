@@ -1020,7 +1020,13 @@ function parseCatalog(raw) {
 function buildCatalog(raw) {
   var doc = parseCatalog(raw)
   if (!doc) return { entries: null, error: "Could not read the plugin catalog" }
-  return { entries: catalogEntries(doc), error: "" }
+  // A hostile field (an object whose toString is not callable) makes the
+  // sanitizers throw; that is an unreadable catalog, not a crash.
+  try {
+    return { entries: catalogEntries(doc), error: "" }
+  } catch (error) {
+    return { entries: null, error: "Could not read the plugin catalog" }
+  }
 }
 
 // The marketplace is the only party that says who passed its security
